@@ -1,0 +1,9 @@
+# https://docs.railway.com/guides/config-as-code
+# Raíz del servicio en Railway = carpeta convivencia_v3 (donde está app.py).
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+# Crea tablas y datos demo si la BD está vacía (seguro en redespliegues).
+releaseCommand = "python -c \"from ce_db import init_db; init_db()\""

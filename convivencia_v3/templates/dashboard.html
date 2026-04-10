@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convivencia Escolar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<div class="sb-backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
+<div class="sb">
+  <div class="sb-logo"><h2 id="sbSchool">Convivencia Escolar</h2><p>Sistema disciplinar</p></div>
+  <div class="sb-user" id="sbUser"><div class="un" id="sbNombre">—</div><div class="ur" id="sbRol">—</div></div>
+  <nav id="mainNav"></nav>
+  <div class="sb-ft"><button onclick="doLogout()">⎋ Cerrar sesión</button></div>
+</div>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-l">
+      <button class="hamb" onclick="toggleSidebar()" aria-label="Menú">☰</button>
+      <h1 id="topTitle">Inicio</h1>
+    </div>
+    <div class="topbar-r">
+      <label style="font-size:11px;color:var(--mut)" title="Solo se listan faltas del año académico seleccionado">Año:</label>
+      <select class="yr-sel" id="yrSel" onchange="renderCurrentTab()"></select>
+    </div>
+  </div>
+  <div id="citaPendBar" class="cita-pend-bar" style="display:none"></div>
+  <div class="content" id="mainContent"></div>
+</div>
+
+<!-- OVERLAY: Registrar falta -->
+<div class="ov" id="ov-falta">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh"><div class="mh-l"><h3>Registrar falta</h3><small>Complete los 4 pasos</small></div><button onclick="closeOv('ov-falta')">×</button></div>
+  <div class="mb">
+    <div class="step">
+      <div class="sn">1</div>
+      <div class="sb2">
+        <div class="st">¿Quién cometió la falta?</div>
+        <div class="fr">
+          <div><label class="fl">Curso</label><select id="rCurso" onchange="loadREstudiantes()"><option value="">Seleccionar curso</option></select></div>
+          <div><label class="fl">Estudiante</label><select id="rEst"><option value="">Primero seleccione curso</option></select></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="sn">2</div>
+      <div class="sb2">
+        <div class="st">¿Qué tipo de falta es?</div>
+        <div class="fr">
+          <div><label class="fl">Tipo de falta</label>
+            <select id="rTipo" onchange="loadRFaltasEsp()">
+              <option value="">Seleccionar</option><option>Tipo I</option><option>Tipo II</option><option>Tipo III</option>
+            </select>
+          </div>
+          <div><label class="fl">Falta específica</label>
+            <select id="rFaltaEsp" onchange="updateRCatSugerencia()"><option value="">Primero seleccione tipo</option></select>
+          </div>
+        </div>
+        <div id="rAlerta" style="display:none" class="abanner ab-r">⚠ Las faltas Tipo II y III requieren notificación inmediata al director de grupo y coordinador.</div>
+        <div id="rCatRef" style="display:none;margin-top:10px;padding:10px 12px;background:var(--ibg);border-radius:var(--r);border:1px solid var(--brd)">
+          <div style="font-size:10px;font-weight:600;color:var(--ic);letter-spacing:.04em">REFERENCIA DEL CATÁLOGO (manual de convivencia)</div>
+          <p style="font-size:11px;color:var(--mut);margin:6px 0 8px">Guía para el docente; ajuste siempre al contexto real. Lo registrado en el paso 4 es su actuación concreta.</p>
+          <div><div class="plbl">Protocolo sugerido</div><div class="pbox t1" id="rProtoSug" style="min-height:32px;white-space:pre-wrap;font-size:12px"></div></div>
+          <div style="margin-top:8px"><div class="plbl">Sanción o medida de referencia</div><div class="pbox t1" id="rSancSug" style="min-height:32px;white-space:pre-wrap;font-size:12px"></div></div>
+          <button type="button" class="btn btn-g btn-xs" style="margin-top:10px" onclick="aplicarSugerenciaAProc()">Copiar referencia al paso 4 (proceso inicial)</button>
+        </div>
+
+      </div>
+    </div>
+    <div class="step">
+      <div class="sn">3</div>
+      <div class="sb2">
+        <div class="st">¿Qué ocurrió?</div>
+        <div class="fr fr1"><div><label class="fl">Descripción detallada de la situación</label><textarea id="rDesc" rows="3" placeholder="Hora, lugar, personas involucradas, contexto exacto..."></textarea></div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="sn">4</div>
+      <div class="sb2">
+        <div class="st">¿Qué acción tomó inmediatamente?</div>
+        <div id="rCatRefMini" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--t1g);border-radius:var(--r);border:1px solid var(--brd);font-size:11px">
+          <strong style="color:var(--t1c)">Referencia del catálogo</strong> (según la falta elegida en el paso 2)
+          <div style="margin-top:6px"><span class="plbl" style="font-size:9px">Protocolo</span><div id="rProtoSugMini" style="white-space:pre-wrap;color:var(--ink);margin-top:2px"></div></div>
+          <div style="margin-top:6px"><span class="plbl" style="font-size:9px">Sanción / medida</span><div id="rSancSugMini" style="white-space:pre-wrap;color:var(--ink);margin-top:2px"></div></div>
+        </div>
+        <div class="fr fr1"><div><label class="fl">Proceso disciplinar inicial</label><textarea id="rProc" rows="3" placeholder="Diálogo, llamado verbal, retención de objeto, remisión..."></textarea></div></div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--brd)">
+          <label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
+            <input type="checkbox" id="rCitarAcu" onchange="toggleRCita()"> Citar a acudiente (fecha y hora propuestas; el acudiente confirma en su portal)
+          </label>
+          <div id="rCitaFields" style="display:none;margin-top:10px">
+            <div id="rAcuCitaDatos" style="display:none;margin-bottom:12px;padding:11px 12px;background:var(--ibg);border-radius:var(--r);border:1px solid var(--brd)">
+              <div class="plbl" style="margin-bottom:6px">Datos del acudiente (para contacto telefónico)</div>
+              <div id="rAcuCitaBody" style="font-size:12px;line-height:1.55"></div>
+            </div>
+            <label class="fl">Fecha y hora de la cita</label>
+            <input type="datetime-local" id="rCitaDt" style="max-width:280px;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-falta')">Cancelar</button><button class="btn btn-p" onclick="guardarFalta()">Registrar falta</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Ver falta con timeline -->
+<div class="ov" id="ov-ver">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh">
+    <div class="mh-l"><h3 id="verTitle">Detalle de falta</h3><div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap" id="verBdgs"></div></div>
+    <button onclick="closeOv('ov-ver')">×</button>
+  </div>
+  <div class="mb">
+    <div class="fr fr3" style="margin-bottom:11px">
+      <div><label class="fl">Fecha</label><input id="vFecha" readonly></div>
+      <div><label class="fl">Estudiante</label><input id="vEst" readonly></div>
+      <div><label class="fl">Curso</label><input id="vCurso" readonly></div>
+    </div>
+    <div class="fr" style="margin-bottom:11px">
+      <div><label class="fl">Tipo</label><input id="vTipo" readonly></div>
+      <div><label class="fl">Falta específica</label><input id="vEsp" readonly></div>
+    </div>
+    <div class="fr fr1" style="margin-bottom:11px">
+      <div><label class="fl">Descripción</label><textarea id="vDesc" readonly rows="2"></textarea></div>
+    </div>
+    <div id="vProtoSec" style="display:none;margin-bottom:13px">
+      <div class="fr">
+        <div><div class="plbl">PROTOCOLO APLICADO</div><div class="pbox t1" id="vProto"></div></div>
+        <div><div class="plbl">SANCIÓN APLICADA</div><div class="pbox t1" id="vSancion"></div></div>
+      </div>
+    </div>
+    <div id="vCitaSec" style="display:none;margin-bottom:13px;padding:12px;background:var(--t2g);border-radius:var(--r);border:1px solid #e8d4a8">
+      <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">CITA CON ACUDIENTE</div>
+      <div id="vCitaBody" style="font-size:12px;line-height:1.5"></div>
+    </div>
+    <div id="vGestionSec" style="display:none;margin-bottom:13px;padding:12px;background:#f7f5fb;border-radius:var(--r);border:1px solid #e0dce8">
+      <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">ESTADO DE GESTIÓN</div>
+      <p id="vGestionTxt" style="font-size:12px;margin:6px 0 10px;line-height:1.55"></p>
+      <button type="button" class="btn btn-p btn-xs" id="vGestionBtn" onclick="openOvGestion()" style="display:none">Definir cierre (coordinación)</button>
+    </div>
+    <div id="vAcuSec" style="display:none;margin-bottom:13px">
+      <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">INFORMACIÓN DEL ACUDIENTE</div>
+      <div class="fr fr3">
+        <div><label class="fl">Nombre</label><input id="vAcu" readonly></div>
+        <div><label class="fl">Cédula</label><input id="vCed" readonly></div>
+        <div><label class="fl">Teléfono</label><input id="vTel" readonly></div>
+      </div>
+    </div>
+    <div class="fsec" style="padding-top:12px;margin-bottom:12px">LÍNEA DE TIEMPO DEL PROCESO</div>
+    <div class="tl" id="verTL"></div>
+    <div id="verAnotSec" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)">
+      <label class="fl" id="verAnotLbl">Agregar observación</label>
+      <textarea id="vAnotTxt" rows="3" placeholder="Escriba su observación, seguimiento o acción tomada..."></textarea>
+    </div>
+  </div>
+  <div class="mf">
+    <button type="button" class="btn btn-g" onclick="descargarActaFalta()" title="PDF para archivo físico y firmas">📄 Descargar acta (PDF)</button>
+    <button class="btn" onclick="closeOv('ov-ver')">Cerrar</button>
+    <button class="btn btn-p" id="verSaveBtn" onclick="guardarAnotacion()" style="display:none">Guardar observación</button>
+  </div>
+</div>
+</div>
+
+<!-- OVERLAY: Estudiante -->
+<div class="ov" id="ov-est">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh"><div class="mh-l"><h3 id="estTit">Nuevo estudiante</h3><small>El acudiente accederá con el documento indicado como usuario y contraseña inicial</small></div><button onclick="closeOv('ov-est')">×</button></div>
+  <div class="mb">
+    <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:9px">DATOS DEL ESTUDIANTE</div>
+    <div class="fr">
+      <div><label class="fl">Tipo de documento</label><select id="eTipoDocEst"><option value="">Seleccionar</option><option>Tarjeta de identidad (TI)</option><option>Cédula de ciudadanía (CC)</option><option>Cédula de extranjería (CE)</option><option>Pasaporte (PP)</option><option>Registro civil (RC)</option><option>Permiso por protección temporal (PPT)</option><option>Sin documento / pendiente (SD)</option></select></div>
+      <div><label class="fl">Documento</label><input id="eDocId" placeholder="Número" oninput="this.value=this.value.replace(/[^0-9A-Za-z-]/g,'')" maxlength="20"></div>
+      <div><label class="fl">Curso *</label><select id="eCurso"><option value="">Seleccionar</option></select></div>
+    </div>
+    <div class="fr" style="margin-top:8px">
+      <div><label class="fl">Apellido 1 *</label><input id="eAp1Est" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Apellido 2</label><input id="eAp2Est" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Nombre 1 *</label><input id="eNom1Est" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Nombre 2</label><input id="eNom2Est" maxlength="50" oninput="valNom(this)"></div>
+    </div>
+    <div class="fr fr1" style="margin-top:8px"><div><label class="fl">Barreras para el aprendizaje y la participación</label>
+      <select id="eBarreras">
+        <option>Ninguna identificada</option>
+        <option>Discapacidad sensorial</option>
+        <option>Discapacidad física (motora)</option>
+        <option>Discapacidad cognitiva (intelectual)</option>
+        <option>Trastornos del desarrollo</option>
+        <option>Trastornos específicos del aprendizaje</option>
+        <option>Trastornos emocionales y del comportamiento</option>
+        <option>Discapacidad múltiple</option>
+      </select>
+    </div></div>
+    <div class="fsec">DATOS DEL ACUDIENTE</div>
+    <div class="fr">
+      <div><label class="fl">Tipo de documento</label><select id="eTipoDocAcu"><option value="">Seleccionar</option><option>Tarjeta de identidad (TI)</option><option>Cédula de ciudadanía (CC)</option><option>Cédula de extranjería (CE)</option><option>Pasaporte (PP)</option><option>Registro civil (RC)</option><option>Permiso por protección temporal (PPT)</option><option>Sin documento / pendiente (SD)</option></select></div>
+      <div><label class="fl">Documento *</label><input id="eCed" placeholder="Número" oninput="valCed(this)" maxlength="15"><div class="ferr" id="eCedErr"></div></div>
+    </div>
+    <div class="fr" style="margin-top:8px">
+      <div><label class="fl">Apellido 1 *</label><input id="eAp1Acu" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Apellido 2</label><input id="eAp2Acu" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Nombre 1 *</label><input id="eNom1Acu" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Nombre 2</label><input id="eNom2Acu" maxlength="50" oninput="valNom(this)"></div>
+    </div>
+    <div class="fr" style="margin-top:8px">
+      <div><label class="fl">Parentesco *</label><input id="eParentescoAcu" placeholder="Ej: Madre, padre, tutor" maxlength="60" oninput="valNom(this)"></div>
+      <div><label class="fl">Teléfono *</label><input id="eTel" placeholder="Solo números" oninput="valTel(this)" maxlength="15"><div class="ferr" id="eTelErr"></div></div>
+      <div><label class="fl">Dirección</label><input id="eDir" placeholder="Calle, barrio, ciudad" maxlength="150"></div>
+    </div>
+    <p class="ferr" id="eErr" style="font-size:12px;margin-top:6px"></p>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-est')">Cancelar</button><button class="btn btn-p" onclick="guardarEstudiante()">Guardar</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Usuario -->
+<div class="ov" id="ov-usr">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh"><div class="mh-l"><h3 id="usrTit">Nuevo usuario</h3></div><button onclick="closeOv('ov-usr')">×</button></div>
+  <div class="mb">
+    <div class="fr">
+      <div><label class="fl">Tipo de documento</label><select id="uTipoDoc"><option value="">Seleccionar</option><option>Tarjeta de identidad (TI)</option><option>Cédula de ciudadanía (CC)</option><option>Cédula de extranjería (CE)</option><option>Pasaporte (PP)</option><option>Registro civil (RC)</option><option>Permiso por protección temporal (PPT)</option><option>Sin documento / pendiente (SD)</option></select></div>
+      <div><label class="fl">Documento</label><input id="uDocPer" placeholder="Número" maxlength="20" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+    </div>
+    <div class="fr" style="margin-top:8px">
+      <div><label class="fl">Apellido 1 *</label><input id="uAp1" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Apellido 2</label><input id="uAp2" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Nombre 1 *</label><input id="uNom1" maxlength="50" oninput="valNom(this)"></div>
+      <div><label class="fl">Nombre 2</label><input id="uNom2" maxlength="50" oninput="valNom(this)"></div>
+    </div>
+    <div class="fr" style="margin-top:8px">
+      <div><label class="fl">Usuario (login) *</label><input id="uUsr" placeholder="sin espacios" autocomplete="off" maxlength="30" oninput="this.value=this.value.replace(/\s/g,'').toLowerCase()"></div>
+      <div><label class="fl">Contraseña</label><input id="uPas" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></div>
+      <div><label class="fl">Rol</label><select id="uRol" onchange="toggleUsrF()"><option value="">Seleccionar</option><option>Coordinador</option><option>Director</option><option>Orientador</option><option>Docente</option></select></div>
+    </div>
+    <div id="uCursoRow" style="display:none;margin-bottom:11px"><label class="fl">Curso a cargo</label><select id="uCurso"><option value="">Seleccionar</option></select></div>
+    <div id="uAsigRow" style="display:none;margin-bottom:11px"><label class="fl">Asignatura(s) que imparte</label><input id="uAsig" placeholder="Ej: Matemáticas — 6A" maxlength="120"></div>
+    <div style="margin-bottom:11px"><label class="fl">Teléfono</label><input id="uTel" maxlength="15" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+    <p class="ferr" id="uErr" style="font-size:12px"></p>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-usr')">Cancelar</button><button class="btn btn-p" onclick="guardarUsuario()">Guardar</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Colegio -->
+<div class="ov" id="ov-col">
+<div class="modal" style="margin-top:14px">
+  <div class="mh"><div class="mh-l"><h3 id="colTit">Nueva institución</h3></div><button onclick="closeOv('ov-col')">×</button></div>
+  <div class="mb">
+    <div class="fr fr1"><div><label class="fl">Nombre de la institución *</label><input id="colNom" maxlength="120"></div></div>
+    <div class="fr"><div><label class="fl">NIT / Código DANE</label><input id="colNit" maxlength="20"></div><div><label class="fl">Municipio</label><input id="colMun" maxlength="60"></div></div>
+    <div class="fr"><div><label class="fl">Rector / Representante</label><input id="colRec" maxlength="80"></div><div><label class="fl">Teléfono</label><input id="colTel" maxlength="20"></div></div>
+    <div class="fr"><div><label class="fl">Dirección</label><input id="colDir" maxlength="120"></div><div><label class="fl">Correo institucional</label><input id="colEmail" type="email" maxlength="80"></div></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-col')">Cancelar</button><button class="btn btn-p" onclick="guardarColegio()">Guardar</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Importar estudiantes -->
+<div class="ov" id="ov-import">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh"><div class="mh-l"><h3>Carga masiva de estudiantes</h3><small><strong>Recomendado (17 columnas, CSV):</strong> tipo_doc_est, documento_est, apellido1, apellido2, nombre1, nombre2, curso, barreras, tipo_doc_acu, documento_acu, apellido1_acu, apellido2_acu, nombre1_acu, nombre2_acu, parentesco, teléfono, dirección. <strong>Legado (8):</strong> nombre completo estudiante, curso, barreras, nombre completo acudiente, doc. acudiente, tel, dir, doc. estudiante.</small></div><button onclick="closeOv('ov-import')">×</button></div>
+  <div class="mb">
+    <div class="abanner ab-i">
+      <div>
+        <strong>Formato de columnas (separadas por coma):</strong><br>
+        <code style="font-size:11px;background:rgba(0,0,0,.06);padding:2px 5px;border-radius:3px">Nombre Apellido, Curso, Discapacidad, Nombre Acudiente, Cédula, Teléfono, Dirección</code><br>
+        Mínimo requerido: <strong>Nombre</strong> y <strong>Curso</strong>. El resto es opcional pero recomendado.<br>
+        Las líneas que empiecen con <code>#</code> se ignoran (comentarios).
+      </div>
+    </div>
+    <div style="margin-bottom:10px"><label class="fl">Curso por defecto (si no viene en la lista)</label><select id="impCurso" style="max-width:200px"><option value="">Seleccionar</option></select></div>
+    <label class="fl">Lista de estudiantes</label>
+    <textarea id="impData" rows="10" style="font-family:monospace;font-size:12px;background:#faf8f4" placeholder="# Extendido (una fila ejemplo):&#10;Tarjeta de identidad (TI),1234567890,García,López,Ana,María,6A,Ninguna identificada,Cédula de ciudadanía (CC),9876543210,García,Pérez,Carlos,,Padre,3001234567,Calle 10 5-20&#10;# Legado:&#10;Alejandro Pérez, 6A, Ninguna identificada, Roberto Pérez, 1234567890, 3001234567, Calle 10, 1090123456"></textarea>
+    <div id="impPreview" style="margin-top:8px"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-import')">Cancelar</button><button class="btn btn-g" onclick="previewImport()">Previsualizar</button><button class="btn btn-p" onclick="ejecutarImport()">Importar</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Editar protocolo/sancion -->
+<div class="ov" id="ov-proto-edit">
+<div class="modal" style="margin-top:14px;max-width:520px">
+  <div class="mh"><div class="mh-l"><h3>Protocolo y sanción</h3><small id="peDesc">—</small></div><button onclick="closeOv('ov-proto-edit')">×</button></div>
+  <div class="mb">
+    <div class="abanner ab-i" style="margin-bottom:12px">Estos textos aparecerán automáticamente al registrar una falta de este tipo.</div>
+    <div class="fr fr1"><div><label class="fl">Protocolo de atención</label><textarea id="peProto" rows="4" placeholder="Pasos a seguir según el manual de convivencia..."></textarea></div></div>
+    <div class="fr fr1"><div><label class="fl">Sanción disciplinar sugerida</label><textarea id="peSancion" rows="3" placeholder="Consecuencia disciplinar establecida..."></textarea></div></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-proto-edit')">Cancelar</button><button class="btn btn-p" onclick="guardarProtoSancion()">Guardar</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Nueva falta catálogo -->
+<div class="ov" id="ov-cat-new">
+<div class="modal" style="margin-top:14px;max-width:500px">
+  <div class="mh"><div class="mh-l"><h3>Nueva falta al catálogo</h3></div><button onclick="closeOv('ov-cat-new')">×</button></div>
+  <div class="mb">
+    <div class="abanner ab-i" style="margin-bottom:12px">Complete protocolo y sanción en la barra lateral «Protocolos» → «Protocolo por falta del catálogo».</div>
+    <div class="fr"><div><label class="fl">Tipo de falta</label><select id="ctTipo"><option>Tipo I</option><option>Tipo II</option><option>Tipo III</option></select></div><div><label class="fl">Descripción de la falta *</label><input id="ctDesc" placeholder="Ej: Uso inadecuado del celular en clase" maxlength="200"></div></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-cat-new')">Cancelar</button><button class="btn btn-p" onclick="guardarNuevaCat()">Agregar</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Carga masiva catálogo -->
+<div class="ov" id="ov-cat-bulk">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh"><div class="mh-l"><h3>Carga masiva al catálogo</h3><small>Una línea por falta: Tipo, Descripción</small></div><button onclick="closeOv('ov-cat-bulk')">×</button></div>
+  <div class="mb">
+    <div class="abanner ab-i" style="margin-bottom:10px;font-size:11px">Cada línea: <code>Tipo I,Descripción breve</code> — el tipo debe ser exactamente <strong>Tipo I</strong>, <strong>Tipo II</strong> o <strong>Tipo III</strong>. Líneas con <code>#</code> se ignoran.</div>
+    <textarea id="catBulkTxt" rows="12" style="width:100%;font-family:monospace;font-size:12px;background:#faf8f4" placeholder="Tipo I,Conflicto verbal leve&#10;Tipo II,Bullying en redes"></textarea>
+    <p class="ferr" id="catBulkErr" style="font-size:12px;margin-top:6px"></p>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-cat-bulk')">Cancelar</button><button class="btn btn-p" onclick="guardarCatBulk()">Importar</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Conductas de riesgo -->
+<div class="ov" id="ov-senal">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh"><div class="mh-l"><h3>Registrar conducta de riesgo</h3></div><button onclick="closeOv('ov-senal')">×</button></div>
+  <div class="mb">
+    <div class="abanner ab-r" style="margin-bottom:12px;font-size:11px;line-height:1.45">Registro institucional de conductas. Complete con hechos observables. La evidencia adjunta es opcional y debe respetar la protección de datos personales.</div>
+    <div class="fr">
+      <div><label class="fl">Curso</label><select id="crCurso" onchange="loadCrEstudiantes()"><option value="">Seleccionar</option></select></div>
+      <div><label class="fl">Estudiante</label><select id="crEst"><option value="">Primero elija curso</option></select></div>
+    </div>
+    <div class="fr" style="margin-top:10px">
+      <div><label class="fl">Tipo</label><select id="crTipo" onchange="refreshCrSubOpciones()"><option value="">Seleccionar</option>
+        <option value="conv_i">Tipo I (convivencia)</option>
+        <option value="conv_ii">Tipo II (riesgo o afectación moderada)</option>
+        <option value="conv_iii">Tipo III (vulneración grave o delito)</option>
+      </select></div>
+      <div style="flex:2"><label class="fl">Opción</label><select id="crSub" onchange="refreshCrAccion()"><option value="">Primero elija tipo</option></select></div>
+    </div>
+    <div style="margin-top:10px;padding:10px 12px;background:var(--ibg);border-radius:var(--r);border:1px solid var(--brd)">
+      <div class="plbl" style="font-size:10px">Acción asociada</div>
+      <div id="crAccionText" class="mut" style="margin-top:4px;font-size:12px;line-height:1.45">—</div>
+    </div>
+    <div class="fr fr1" style="margin-top:10px"><div><label class="fl">Descripción objetiva *</label><textarea id="crDesc" rows="4" placeholder="Hechos, contexto, fecha/hora aproximada, personas involucradas…"></textarea></div></div>
+    <div class="fr" style="margin-top:10px">
+      <div><label class="fl">Nivel de urgencia</label><select id="crUrg"><option value="baja">Baja</option><option value="moderada">Moderada</option><option value="alta">Alta</option><option value="critica">Crítica</option></select></div>
+      <div><label class="fl">Evidencias (opcional)</label><input type="file" id="crEvid" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></div>
+    </div>
+    <p class="ferr" id="crErr" style="font-size:12px"></p>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-senal')">Cancelar</button><button class="btn btn-p" onclick="guardarConducta()">Enviar registro</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Coordinador — estado de gestión -->
+<div class="ov" id="ov-gestion">
+<div class="modal" style="margin-top:14px;max-width:440px">
+  <div class="mh"><div class="mh-l"><h3>Cierre de gestión del expediente</h3><small>Solo coordinación (o superadmin)</small></div><button onclick="closeOv('ov-gestion')">×</button></div>
+  <div class="mb" style="font-size:12px;line-height:1.5">
+    <p class="fhint" style="margin-bottom:12px"><strong>Cerrada</strong> archiva el caso. <strong>En revisión</strong> deja seguimiento sin cierre formal (visible como tal aunque el flujo siga). <strong>Automático</strong> anula la decisión manual y el sistema vuelve a marcar pendiente o en revisión según las anotaciones.</p>
+    <label style="display:flex;gap:8px;margin-bottom:10px;cursor:pointer;align-items:flex-start"><input type="radio" name="gestDec" id="gestDec_auto" value="auto" style="margin-top:3px"> Según flujo automático</label>
+    <label style="display:flex;gap:8px;margin-bottom:10px;cursor:pointer;align-items:flex-start"><input type="radio" name="gestDec" id="gestDec_rev" value="en_revision" style="margin-top:3px"> En revisión / seguimiento (decisión explícita)</label>
+    <label style="display:flex;gap:8px;margin-bottom:10px;cursor:pointer;align-items:flex-start"><input type="radio" name="gestDec" id="gestDec_cerr" value="cerrada" style="margin-top:3px"> Cerrada (archivo)</label>
+  </div>
+  <div class="mf"><button type="button" class="btn" onclick="closeOv('ov-gestion')">Cancelar</button><button type="button" class="btn btn-p" onclick="guardarGestionOverlay()">Guardar</button></div>
+</div>
+</div>
+
+<!-- OVERLAY: Acudiente solicita cita con rol institucional -->
+<div class="ov" id="ov-cita-solic">
+<div class="modal" style="margin-top:14px;max-width:420px">
+  <div class="mh"><div class="mh-l"><h3>Agendar cita</h3><small>La institución recibirá la solicitud y propondrá fecha y hora</small></div><button onclick="closeOv('ov-cita-solic')">×</button></div>
+  <div class="mb">
+    <input type="hidden" id="solFaltaId" value="">
+    <div id="solFaltaRow" style="display:none;margin-bottom:12px">
+      <label class="fl">Falta asociada</label>
+      <select id="solFaltaSel" style="width:100%;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px"></select>
+      <small style="display:block;font-size:10px;color:var(--mut);margin-top:4px">La solicitud queda vinculada al registro seleccionado.</small>
+    </div>
+    <label class="fl">¿Con quién desea la cita?</label>
+    <select id="solRolDest" style="width:100%;max-width:100%;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit">
+      <option value="">Seleccionar</option>
+      <option>Coordinador</option>
+      <option>Director</option>
+      <option>Orientador</option>
+      <option>Docente</option>
+    </select>
+    <p class="ferr" id="solCitaErr" style="font-size:12px;margin-top:8px"></p>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-cita-solic')">Cancelar</button><button class="btn btn-p" onclick="enviarSolicitudCita()">Enviar solicitud</button></div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+env/
+
+# Base de datos (no subir al repo)
+*.db
+*.sqlite
+
+# Archivos subidos por usuarios
+static/uploads/
+
+# Logs
+logs/
+*.log
+
+# VS Code
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Producción
+gunicorn.conf.py
+convivencia.service

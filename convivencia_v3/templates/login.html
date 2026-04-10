@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Convivencia Escolar · Acceso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #0f0e17;
+      --paper: #fffcf5;
+      --gold: #c9a84c;
+      --gold-light: #e8d5a3;
+      --rust: #c0392b;
+      --muted: #7a7070;
+      --surface: rgba(255,252,245,0.92);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── decorative grid lines ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(201,168,76,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,168,76,.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    /* ── animated corner ornament ── */
+    .corner {
+      position: fixed;
+      width: 240px; height: 240px;
+      border: 1px solid rgba(201,168,76,.2);
+      pointer-events: none;
+    }
+    .corner-tl { top: 24px; left: 24px; border-right: none; border-bottom: none; }
+    .corner-br { bottom: 24px; right: 24px; border-left: none; border-top: none; }
+
+    /* ── layout ── */
+    .scene {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(201,168,76,.3);
+      border-radius: 4px;
+      width: min(440px, 92vw);
+      padding: 52px 48px 44px;
+      box-shadow: 0 40px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(201,168,76,.1);
+      animation: rise .6s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(32px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .escudo {
+      width: 72px; height: 72px;
+      margin: 0 auto 24px;
+      display: block;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      padding: 4px;
+      object-fit: cover;
+    }
+
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--ink);
+      text-align: center;
+      letter-spacing: -.01em;
+      line-height: 1.1;
+    }
+    .card-sub {
+      color: var(--muted);
+      font-size: .8rem;
+      text-align: center;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-top: 6px;
+      margin-bottom: 36px;
+    }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 36px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--gold-light);
+    }
+    .divider span { color: var(--gold); font-size: .7rem; letter-spacing: .15em; }
+
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      background: #fff;
+      color: var(--ink);
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    .field input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,.12);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      background: var(--ink);
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .85rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background .2s, color .2s;
+    }
+    .btn-primary:hover { background: var(--gold); color: var(--ink); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    .error-msg {
+      color: var(--rust);
+      font-size: .82rem;
+      text-align: center;
+      margin-top: 12px;
+      min-height: 20px;
+    }
+
+    .register-link {
+      text-align: center;
+      margin-top: 24px;
+      font-size: .82rem;
+      color: var(--muted);
+    }
+    .register-link a {
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .register-link a:hover { text-decoration: underline; }
+
+    /* ── Modal registro ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(15,14,23,.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--paper);
+      border: 1px solid rgba(201,168,76,.3);
+      border-radius: 4px;
+      width: min(480px, 94vw);
+      padding: 36px 40px;
+      animation: rise .4s cubic-bezier(.16,1,.3,1) both;
+    }
+    .modal-box h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      margin-bottom: 24px;
+    }
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+    .btn-secondary {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .85rem;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { background: #f0f0f0; }
+    .btn-gold {
+      padding: 10px 20px;
+      background: var(--gold);
+      color: var(--ink);
+      border: none;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-gold:hover { background: #b8922e; color: #fff; }
+
+    select.field-select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      background: #fff;
+      color: var(--ink);
+      appearance: none;
+      outline: none;
+      cursor: pointer;
+    }
+    select.field-select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.12); }
+    #cursoContainer { display: none; }
+  </style>
+</head>
+<body>
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-br"></div>
+
+  <div class="scene">
+    <div class="card">
+      <img class="escudo"
+        src="https://drive.google.com/thumbnail?sz=w200&id=1BG_kKYH5zFtnxCNFI1ViFfv4Y5JqcTMR"
+        onerror="this.src='https://placehold.co/72x72/c9a84c/0f0e17?text=CE'"
+        alt="Escudo">
+      <h1 class="card-title">Convivencia Escolar</h1>
+      <p class="card-sub">Sistema de Gestión Disciplinar</p>
+
+      <div class="divider"><span>acceso</span></div>
+
+      <div class="field">
+        <label>Usuario</label>
+        <input type="text" id="usuario" placeholder="Ingrese su usuario" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="contrasena" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <button class="btn-primary" id="btnLogin" onclick="iniciarSesion()">Ingresar</button>
+      <p class="error-msg" id="mensajeError"></p>
+
+      <p class="register-link">
+        ¿Sin cuenta? <a href="#" onclick="abrirRegistro()">Regístrate aquí</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Modal Registro -->
+  <div class="modal-overlay" id="modalRegistro">
+    <div class="modal-box">
+      <h3>Registro de Usuario</h3>
+
+      <div class="field">
+        <label>Nombre Completo</label>
+        <input type="text" id="reg-nombre" placeholder="Tu nombre completo">
+      </div>
+      <div class="field">
+        <label>Usuario</label>
+        <input type="text" id="reg-usuario" placeholder="Nombre de usuario">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="reg-contrasena" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="field">
+        <label>Rol</label>
+        <select class="field-select" id="reg-rol" onchange="mostrarCursoReg()">
+          <option value="">Seleccionar rol</option>
+          <option value="Docente">Docente</option>
+          <option value="Director">Director de Grupo</option>
+          <option value="Coordinador">Coordinador</option>
+        </select>
+      </div>
+      <div class="field" id="cursoContainer">
+        <label>Curso a cargo</label>
+        <select class="field-select" id="reg-curso">
+          <option value="">Seleccionar curso</option>
+          <option>Preescolar A</option><option>Preescolar B</option>
+          <option>Primero A</option><option>Primero B</option>
+          <option>Segundo A</option><option>Tercero A</option>
+          <option>Cuarto A</option><option>Quinto A</option>
+          <option>6A</option><option>6B</option>
+          <option>7A</option><option>8A</option>
+          <option>9A</option><option>10A</option><option>11A</option>
+        </select>
+      </div>
+      <p class="error-msg" id="regError"></p>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarRegistro()">Cancelar</button>
+        <button class="btn-gold" onclick="registrarUsuario()">Registrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Enter key support
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') iniciarSesion();
+    });
+
+    async function iniciarSesion() {
+      const btn = document.getElementById('btnLogin');
+      const err = document.getElementById('mensajeError');
+      btn.disabled = true;
+      btn.textContent = 'Verificando…';
+      err.textContent = '';
+
+      const usuario = document.getElementById('usuario').value.trim();
+      const contrasena = document.getElementById('contrasena').value;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, contrasena })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          window.location.href = '/dashboard';
+        } else {
+          err.textContent = data.error || 'Credenciales incorrectas';
+          btn.disabled = false;
+          btn.textContent = 'Ingresar';
+        }
+      } catch {
+        err.textContent = 'Error de conexión. Intente de nuevo.';
+        btn.disabled = false;
+        btn.textContent = 'Ingresar';
+      }
+    }
+
+    function abrirRegistro() {
+      document.getElementById('modalRegistro').classList.add('open');
+    }
+    function cerrarRegistro() {
+      document.getElementById('modalRegistro').classList.remove('open');
+    }
+    function mostrarCursoReg() {
+      const rol = document.getElementById('reg-rol').value;
+      document.getElementById('cursoContainer').style.display = rol === 'Director' ? 'block' : 'none';
+    }
+
+    async function registrarUsuario() {
+      const nombre = document.getElementById('reg-nombre').value.trim();
+      const usuario = document.getElementById('reg-usuario').value.trim();
+      const contrasena = document.getElementById('reg-contrasena').value;
+      const rol = document.getElementById('reg-rol').value;
+      const curso = document.getElementById('reg-curso').value;
+      const err = document.getElementById('regError');
+
+      if (!nombre || !usuario || !contrasena || !rol) {
+        err.textContent = 'Todos los campos son obligatorios';
+        return;
+      }
+      if (rol === 'Director' && !curso) {
+        err.textContent = 'Selecciona el curso que diriges';
+        return;
+      }
+
+      const res = await fetch('/api/registrar-usuario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, usuario, contrasena, rol, curso })
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        cerrarRegistro();
+        document.getElementById('mensajeError').style.color = 'green';
+        document.getElementById('mensajeError').textContent = 'Usuario creado. Ya puedes ingresar.';
+      } else {
+        err.textContent = data.error || 'Error al registrar';
+      }
+    }
+  </script>
+</body>
+</html>
