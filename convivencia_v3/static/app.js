@@ -138,7 +138,7 @@ async function renderTab(id){
   else tab.innerHTML='<div class="empty">Sección en construcción</div>';
 }
 
-// ── Inicio: orden de proceso, gravedad, recientes ─────────────────────────────
+// ── Inicio: pendiente (por rol), gravedad II/III, recientes ────────────────────
 function gravedadRank(t){
   if(t==='Tipo III') return 0;
   if(t==='Tipo II') return 1;
@@ -189,72 +189,51 @@ function inicioEsMiTurno(f){
   if(role==='Docente') return f.docente===CU.nombre;
   return true;
 }
-function faltaMatchesBusq(f,q){
-  if(!q) return true;
-  const qq=q.toLowerCase();
-  let blob=[f.estudiante,f.curso,f.descripcion,f.falta_especifica,f.docente,f.proceso_inicial,f.tipo_falta,f.protocolo_aplicado,f.sancion_aplicada,f.estado_gestion,f.siguiente_rol]
-    .map(x=>String(x||'').toLowerCase()).join(' ');
-  (f.anotaciones||[]).forEach(a=>{
-    blob+=' '+String(a.texto||'').toLowerCase()+' '+String(a.autor||'').toLowerCase()+' '+String(a.rol||'').toLowerCase();
+/** Hasta `lim` textos distintos de falta_especifica con conteo (por defecto 5). */
+function iniTopFaltasEspecificas(faltas, lim){
+  const n=Math.min(5,Math.max(1,lim==null?5:lim));
+  const map={};
+  faltas.forEach(f=>{
+    const k=String(f.falta_especifica||'').trim();
+    const key=k||'(Sin texto en catálogo)';
+    map[key]=(map[key]||0)+1;
   });
-  return blob.includes(qq);
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,n);
 }
-function filtInicio(q){
-  const qq=(q||'').trim();
-  const sl=window._inicioSlices;if(!sl) return;
-  ['proc','atn','rec'].forEach(key=>{
-    const el=document.getElementById('ini-wrap-'+key);
-    if(!el) return;
-    const arr=sl[key].filter(f=>faltaMatchesBusq(f,qq));
-    el.innerHTML=fCards(arr);
+/** Curso con más faltas en la lista; null si vacío. */
+function iniCursoMasFaltas(faltas){
+  if(!faltas.length) return null;
+  const map={};
+  faltas.forEach(f=>{
+    const k=String(f.curso||'').trim()||'(Sin curso)';
+    map[k]=(map[k]||0)+1;
   });
-  const c=document.querySelector('.ini-count');
-  if(c){
-    const n=sl.proc.filter(f=>faltaMatchesBusq(f,qq)).length;
-    c.textContent='('+n+')';
-  }
+  const ent=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  return ent[0];
 }
-
 // ── Inicio ───────────────────────────────────────────────────────────────────
 const EST_GEST_TXT={pendiente:'Pendiente',en_revision:'En revisión',cerrada:'Cerrada'};
-function setIniEstFilt(v){window._iniEstFilt=v;renderCurrentTab();}
 
 async function renderInicio(tab){
   const faltasAll=await api(`/api/faltas?anio=${getAnio()}`);
-  if(window._iniEstFilt===undefined)window._iniEstFilt=null;
   const rep=await api(`/api/reportes?anio=${getAnio()}`);
   const canReg=['Coordinador','Director','Docente','Superadmin'].includes(CU.rol);
   const t2t3=faltasAll.filter(f=>f.tipo_falta==='Tipo II'||f.tipo_falta==='Tipo III');
   const rT1=rep.reincidencias_tipo_i||[];
-  const nPen=faltasAll.filter(f=>f.estado_gestion==='pendiente').length;
-  const nRev=faltasAll.filter(f=>f.estado_gestion==='en_revision').length;
-  const nCer=faltasAll.filter(f=>f.estado_gestion==='cerrada').length;
-  const filt=window._iniEstFilt;
-  const faltas=filt?faltasAll.filter(f=>f.estado_gestion===filt):faltasAll;
-  const proc=faltas.filter(inicioEsMiTurno).sort(cmpGravedad);
-  const atn=[...faltas].sort(cmpGravedad);
-  const rec=[...faltas].sort(cmpFechaDesc);
-  window._inicioSlices={proc,atn,rec};
-  const hintProc='Según el orden del proceso (registro → director → coordinación → orientación → cierre docente en casos II/III). Las cerradas no aparecen en «Por continuar».';
-  const chip=(k,lab,n,on)=>`<button type="button" class="ini-chip${on?' on':''}" onclick="setIniEstFilt(${k===null?'null':`'${k}'`})">${lab} <strong>${n}</strong></button>`;
+  const proc=faltasAll.filter(inicioEsMiTurno).sort(cmpGravedad);
+  const atn=faltasAll.filter(f=>f.tipo_falta==='Tipo II'||f.tipo_falta==='Tipo III').sort(cmpGravedad);
+  const rec=[...faltasAll].sort(cmpFechaDesc);
+  const topEsp=iniTopFaltasEspecificas(faltasAll,5);
+  const curTop=iniCursoMasFaltas(faltasAll);
+  const rankBlock=!faltasAll.length
+    ?'<div class="empty" style="padding:14px">Sin faltas registradas en este año.</div>'
+    :(!topEsp.length
+      ?'<div class="empty" style="padding:14px">Sin datos para clasificar.</div>'
+      :`<ol class="ini-rk-list">${topEsp.map(([lab,cnt],i)=>`<li><span class="ini-rk-txt" title="${escHtml(lab)}"><span class="ini-rk-idx">${i+1}</span>${escHtml(lab)}</span><span class="ini-rk-cnt">${cnt}</span></li>`).join('')}</ol>`);
+  const curBlock=!faltasAll.length||!curTop
+    ?'<div class="mut" style="font-size:12px;padding:4px 0">Aparecerá cuando haya faltas con curso asignado.</div>'
+    :`<div class="ini-cur-box"><div class="ini-cur-lbl">Curso con más faltas (${getAnio()})</div><div class="ini-cur-val"><strong>${escHtml(curTop[0])}</strong><span class="ini-rk-cnt">${curTop[1]}</span></div><div class="ini-cur-hint">Útil para focalizar acompañamiento o charlas de convivencia.</div></div>`;
   tab.innerHTML=`
-    <div class="card" style="margin-bottom:12px">
-      <div class="ch">
-        <h3>Buscar en el resumen</h3>
-        <div class="ch-r"><input class="srch" id="iniSearch" type="search" placeholder="Estudiante, curso, tipo, descripción, docente…" autocomplete="off" oninput="filtInicio(this.value)"></div>
-      </div>
-      <p class="fhint" style="padding:0 14px 12px;margin:0">Filtra las tres columnas siguientes a la vez.</p>
-    </div>
-    <div class="card" style="margin-bottom:12px">
-      <div class="ch"><h3>Por estado de gestión</h3></div>
-      <p class="fhint" style="padding:0 14px 4px;margin:0">Pendiente = falta un paso del flujo automático. En revisión = flujo cumplido o seguimiento sin cierre. Cerrada = decisión del coordinador.</p>
-      <div class="ini-chips" style="padding:0 14px 14px;display:flex;flex-wrap:wrap;gap:8px">
-        ${chip(null,'Todas',faltasAll.length,!filt)}
-        ${chip('pendiente','Pendientes',nPen,filt==='pendiente')}
-        ${chip('en_revision','En revisión',nRev,filt==='en_revision')}
-        ${chip('cerrada','Cerradas',nCer,filt==='cerrada')}
-      </div>
-    </div>
     <div class="stats">
       <div class="stat"><div class="n">${faltasAll.length}</div><div class="l">Total ${getAnio()}</div><div class="stat-ln sl-b"></div></div>
       <div class="stat"><div class="n">${faltasAll.filter(f=>f.tipo_falta==='Tipo I').length}</div><div class="l">Tipo I — Leves</div><div class="stat-ln sl-g"></div></div>
@@ -265,24 +244,29 @@ async function renderInicio(tab){
     ${rT1.length?`<div class="abanner ab-a">⚡ Reincidencia Tipo I detectada: ${rT1.map(r=>`<strong>${r.estudiante}</strong> (${r.count} faltas)`).join(', ')} — requiere proceso Tipo II</div>`:''}
     <div class="ini-grid">
       <div class="card">
-        <div class="ch"><h3>Por continuar proceso <span class="ini-count">(${proc.length})</span></h3></div>
-        <p class="fhint" style="padding:0 14px 8px;margin:0">${hintProc}</p>
-        <div class="ini-list" id="ini-wrap-proc">${proc.length?fCards(proc):'<div class="empty">Nada pendiente con usted en este momento según ese orden.</div>'}</div>
+        <div class="ch"><h3>Pendiente <span class="ini-count">(${proc.length})</span></h3></div>
+        <div class="ini-list">${proc.length?fCards(proc):'<div class="empty">Nada pendiente con usted en este momento según ese orden.</div>'}</div>
       </div>
       <div class="card">
-        <div class="ch"><h3>Mayor atención</h3></div>
-        <p class="fhint" style="padding:0 14px 8px;margin:0">Ordenadas por gravedad (Tipo III, II, I) y luego por fecha.</p>
-        <div class="ini-list" id="ini-wrap-atn">${fCards(atn)}</div>
+        <div class="ch"><h3>Gravedad <span style="font-size:12px;font-weight:500;color:var(--mut)">(Tipo II y III)</span></h3></div>
+        <div class="ini-list">${atn.length?fCards(atn):'<div class="empty">Sin faltas Tipo II o III en este año.</div>'}</div>
       </div>
       <div class="card">
         <div class="ch"><h3>Faltas recientes</h3>${canReg?`<button class="btn btn-p btn-xs" onclick="openOv('ov-falta')">+ Registrar</button>`:''}</div>
-        <p class="fhint" style="padding:0 14px 8px;margin:0">De la más reciente a la más antigua.</p>
-        <div class="ini-list" id="ini-wrap-rec">${fCards(rec)}</div>
+        <div class="ini-list">${fCards(rec)}</div>
       </div>
     </div>
     <div class="card">
-      <div class="ch"><h3>Distribución por tipo</h3></div>
-      <div style="padding:13px">${mBars(faltasAll)}</div>
+      <div class="ch"><h3>Panorama para la acción</h3></div>
+      <div class="ini-panorama">
+        <div class="ini-pan-col">
+          <div class="ini-pan-sub">Faltas específicas más frecuentes <span class="mut">(hasta 5)</span></div>
+          ${rankBlock}
+        </div>
+        <div class="ini-pan-col ini-pan-col-cur">
+          ${curBlock}
+        </div>
+      </div>
     </div>`;
 }
 
@@ -339,11 +323,6 @@ function fCards(faltas){
 function bdg(t){
   const m={'Tipo I':`<span class="bdg b1"><span class="dot dg"></span>Tipo I</span>`,'Tipo II':`<span class="bdg b2"><span class="dot da"></span>Tipo II</span>`,'Tipo III':`<span class="bdg b3"><span class="dot dr"></span>Tipo III</span>`};
   return m[t]||t;
-}
-function mBars(faltas){
-  const tipos=[['Tipo I','#639922'],['Tipo II','#BA7517'],['Tipo III','#e74c3c']];
-  const max=Math.max(faltas.length,1);
-  return tipos.map(([t,c])=>{const n=faltas.filter(f=>f.tipo_falta===t).length;return`<div class="brow"><div class="blbl">${t}</div><div class="btrk"><div class="bfil" style="width:${Math.round(n/max*100)}%;background:${c}"></div></div><div class="bval">${n}</div></div>`;}).join('');
 }
 
 async function refreshCitasPendientes(){
@@ -404,7 +383,7 @@ function abrirSolicitudCita(fid){
 }
 
 function abrirSolicitudCitaGlobal(){
-  const lista=window._fc||[];
+  const lista=window._faltasTabRaw||[];
   if(!lista.length){
     toast('No hay faltas en el año seleccionado. Si acaba de cambiar el año en la barra superior, elija el año en que está registrada la falta.','e');
     return;
@@ -482,10 +461,90 @@ function refreshAcudienteCitaPanel(){
   wrap.style.display='block';
 }
 
-// ── Faltas tab ───────────────────────────────────────────────────────────────
+// ── Faltas tab (tabla + filtros en cliente) ───────────────────────────────────
+function _ftTipoRank(t){if(t==='Tipo III')return 0;if(t==='Tipo II')return 1;if(t==='Tipo I')return 2;return 3;}
+function _ftEstadoRank(e){if(e==='pendiente')return 0;if(e==='en_revision')return 1;if(e==='cerrada')return 2;return 3;}
+function faltasTabFiltered(){
+  const raw=window._faltasTabRaw||[];
+  const c=(document.getElementById('ftCurso')?.value||'').trim();
+  const t=(document.getElementById('ftTipo')?.value||'').trim();
+  const e=(document.getElementById('ftEstado')?.value||'').trim();
+  const d0=document.getElementById('ftDesde')?.value||'';
+  const d1=document.getElementById('ftHasta')?.value||'';
+  const qq=(document.getElementById('fcSrch')?.value||'').trim().toLowerCase();
+  return raw.filter(f=>{
+    if(c&&f.curso!==c)return false;
+    if(t&&f.tipo_falta!==t)return false;
+    const eg=f.estado_gestion||'pendiente';
+    if(e&&eg!==e)return false;
+    const fd=f.fecha||'';
+    if(d0&&fd<d0)return false;
+    if(d1&&fd>d1)return false;
+    if(!qq)return true;
+    return Object.values(f).some(v=>String(v).toLowerCase().includes(qq));
+  });
+}
+function faltasTabSorted(list){
+  const s=window._faltasTabSort||{key:'fecha',dir:'desc'};
+  const mul=s.dir==='asc'?1:-1;
+  return [...list].sort((a,b)=>{
+    let c=0;
+    if(s.key==='estudiante') c=String(a.estudiante||'').localeCompare(String(b.estudiante||''),'es');
+    else if(s.key==='curso') c=String(a.curso||'').localeCompare(String(b.curso||''),'es');
+    else if(s.key==='fecha') c=String(a.fecha||'').localeCompare(String(b.fecha||''));
+    else if(s.key==='tipo') c=_ftTipoRank(a.tipo_falta)-_ftTipoRank(b.tipo_falta);
+    else if(s.key==='estado') c=_ftEstadoRank(a.estado_gestion||'pendiente')-_ftEstadoRank(b.estado_gestion||'pendiente');
+    c*=mul;
+    if(c!==0)return c;
+    return String(b.fecha||'').localeCompare(String(a.fecha||''))||(b.id||0)-(a.id||0);
+  });
+}
+function faltasTabToggleSort(key){
+  const s=window._faltasTabSort||(window._faltasTabSort={key:'fecha',dir:'desc'});
+  if(s.key===key)s.dir=s.dir==='asc'?'desc':'asc';
+  else{s.key=key;s.dir=key==='fecha'?'desc':'asc';}
+  faltasTabRender();
+}
+function faltasTabRender(){
+  const list=faltasTabSorted(faltasTabFiltered());
+  window._fc=list;
+  const tit=document.getElementById('fcCountTit');
+  if(tit) tit.textContent=`${list.length} faltas — ${getAnio()}`;
+  const tb=document.getElementById('ftBody');
+  if(!tb) return;
+  const egTxt={pendiente:'Pendiente',en_revision:'En revisión',cerrada:'Cerrada'};
+  if(!list.length){
+    tb.innerHTML=`<tr><td colspan="5" class="empty" style="padding:28px">Sin registros con estos criterios</td></tr>`;
+  }else{
+    tb.innerHTML=list.map(f=>{
+      const eg=f.estado_gestion||'pendiente';
+      const cls=eg==='cerrada'?'ce':eg==='en_revision'?'er':'pe';
+      const tb_=f.tipo_falta==='Tipo III'?'b3':f.tipo_falta==='Tipo II'?'b2':'b1';
+      return`<tr onclick="verFalta(${f.id})">
+        <td title="${escHtml(f.estudiante)}">${escHtml(f.estudiante)}</td>
+        <td>${escHtml(f.curso)}</td>
+        <td>${escHtml(f.fecha)}</td>
+        <td><span class="bdg ${tb_}"><span class="dot ${f.tipo_falta==='Tipo III'?'dr':f.tipo_falta==='Tipo II'?'da':'dg'}"></span>${escHtml(f.tipo_falta)}</span></td>
+        <td><span class="bdg beg-${cls}">${egTxt[eg]||eg}</span></td>
+      </tr>`;
+    }).join('');
+  }
+  document.querySelectorAll('#ftTable thead th.ft-sort').forEach(th=>{
+    const k=th.getAttribute('data-sort');
+    const s=window._faltasTabSort||{};
+    const ind=th.querySelector('.ft-ind');
+    if(ind) ind.textContent=s.key===k?(s.dir==='asc'?'▲':'▼'):'';
+    th.classList.toggle('ft-sorted',s.key===k);
+  });
+}
+function faltasTabResetFilt(){
+  ['ftCurso','ftTipo','ftEstado'].forEach(id=>{const el=document.getElementById(id);if(el) el.selectedIndex=0;});
+  const d0=document.getElementById('ftDesde');if(d0) d0.value='';
+  const d1=document.getElementById('ftHasta');if(d1) d1.value='';
+  const sc=document.getElementById('fcSrch');if(sc) sc.value='';
+  faltasTabRender();
+}
 async function renderFaltas(tab){
-  const faltas=await api(`/api/faltas?anio=${getAnio()}`);
-  window._fc=faltas;
   const canReg=['Coordinador','Director','Docente','Superadmin'].includes(CU.rol);
   const acuAgenda=CU.rol==='Acudiente'?`
     <div class="card" style="margin-bottom:12px">
@@ -497,19 +556,50 @@ async function renderFaltas(tab){
         <button type="button" class="btn btn-p" style="flex-shrink:0" onclick="abrirSolicitudCitaGlobal()">Agendar cita</button>
       </div>
     </div>`:'';
+  const optsCurso=`<option value="">Curso</option>${CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('')}`;
   tab.innerHTML=`
     ${acuAgenda}
     <div class="card">
-      <div class="ch"><h3>${faltas.length} faltas — ${getAnio()}</h3>
+      <div class="ch"><h3 id="fcCountTit">Cargando…</h3>
         <div class="ch-r">
-          <input class="srch" placeholder="Buscar..." oninput="filtF(this.value)">
+          <input class="srch ft-srch" id="fcSrch" placeholder="Buscar…" oninput="faltasTabRender()">
           ${canReg?`<button class="btn btn-p btn-xs" onclick="openOv('ov-falta')">+ Registrar</button>`:''}
         </div>
       </div>
-      <div id="fc-wrap" style="padding:9px">${fCards(faltas)}</div>
+      <div class="ft-toolbar">
+        <select id="ftCurso" class="ft-inp" onchange="faltasTabRender()">${optsCurso}</select>
+        <input type="date" id="ftDesde" class="ft-inp" title="Desde" oninput="faltasTabRender()" onchange="faltasTabRender()">
+        <input type="date" id="ftHasta" class="ft-inp" title="Hasta" oninput="faltasTabRender()" onchange="faltasTabRender()">
+        <select id="ftTipo" class="ft-inp" onchange="faltasTabRender()">
+          <option value="">Tipo</option><option>Tipo I</option><option>Tipo II</option><option>Tipo III</option>
+        </select>
+        <select id="ftEstado" class="ft-inp" onchange="faltasTabRender()">
+          <option value="">Estado</option><option value="pendiente">Pendiente</option><option value="en_revision">En revisión</option><option value="cerrada">Cerrada</option>
+        </select>
+        <button type="button" class="btn btn-xs" onclick="faltasTabResetFilt()">Limpiar</button>
+      </div>
+      <div class="table-wrap ft-tw">
+        <table id="ftTable" class="table-faltas">
+          <thead>
+            <tr>
+              <th class="ft-sort" data-sort="estudiante" onclick="faltasTabToggleSort('estudiante')">Estudiante <span class="ft-ind"></span></th>
+              <th class="ft-sort" data-sort="curso" onclick="faltasTabToggleSort('curso')">Curso <span class="ft-ind"></span></th>
+              <th class="ft-sort" data-sort="fecha" onclick="faltasTabToggleSort('fecha')">Fecha <span class="ft-ind"></span></th>
+              <th class="ft-sort" data-sort="tipo" onclick="faltasTabToggleSort('tipo')">Tipo <span class="ft-ind"></span></th>
+              <th class="ft-sort" data-sort="estado" onclick="faltasTabToggleSort('estado')">Estado <span class="ft-ind"></span></th>
+            </tr>
+          </thead>
+          <tbody id="ftBody"></tbody>
+        </table>
+      </div>
     </div>`;
+  window._faltasTabSort={key:'fecha',dir:'desc'};
+  const raw=await api(`/api/faltas?anio=${encodeURIComponent(getAnio())}`);
+  window._faltasTabRaw=Array.isArray(raw)?raw:[];
+  const ftC=document.getElementById('ftCurso');
+  if(ftC&&CU.rol==='Director'&&CU.curso) ftC.value=CU.curso;
+  faltasTabRender();
 }
-function filtF(q){const r=(window._fc||[]).filter(f=>!q||Object.values(f).some(v=>String(v).toLowerCase().includes(q.toLowerCase())));const w=document.getElementById('fc-wrap');if(w)w.innerHTML=fCards(r);}
 
 // ── Conductas de riesgo ───────────────────────────────────────────────────────
 function refreshCrSubOpciones(){

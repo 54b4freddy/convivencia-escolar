@@ -4,12 +4,16 @@ from datetime import datetime
 from ce_db import USE_PG, execute, get_db, ph
 
 
-def fq(usuario, anio):
-    """Query base de faltas según rol y año. Retorna (sql, params)."""
+def fq(usuario, anio, filtros=None):
+    """Query base de faltas según rol y año. Retorna (sql, params).
+
+    filtros opcionales (dict): curso, tipo_falta, fecha_desde, fecha_hasta (YYYY-MM-DD).
+    """
     try:
         anio = int(anio)
     except (TypeError, ValueError):
         anio = datetime.now().year
+    filtros = filtros or {}
     p = ph()
     params = [usuario["colegio_id"] or 1, anio]
     q = f"SELECT f.* FROM faltas f WHERE f.colegio_id={p} AND f.anio={p}"
@@ -22,6 +26,18 @@ def fq(usuario, anio):
     elif usuario["rol"] == "Acudiente":
         q += f" AND f.estudiante_id={p}"
         params.append(usuario["estudiante_id"])
+    if filtros.get("curso"):
+        q += f" AND f.curso = {p}"
+        params.append(filtros["curso"])
+    if filtros.get("tipo_falta") in ("Tipo I", "Tipo II", "Tipo III"):
+        q += f" AND f.tipo_falta = {p}"
+        params.append(filtros["tipo_falta"])
+    if filtros.get("fecha_desde"):
+        q += f" AND f.fecha >= {p}"
+        params.append(filtros["fecha_desde"])
+    if filtros.get("fecha_hasta"):
+        q += f" AND f.fecha <= {p}"
+        params.append(filtros["fecha_hasta"])
     return q + " ORDER BY f.fecha DESC, f.id DESC", params
 
 
