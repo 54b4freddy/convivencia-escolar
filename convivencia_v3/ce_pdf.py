@@ -5,9 +5,9 @@ from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import cm
+from reportlab.lib.units import cm, inch
 from reportlab.platypus import HRFlowable, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from ce_sugerencias import generar_sugerencias
@@ -527,222 +527,229 @@ def _plantilla_ie_linea(col: dict) -> str:
     return f"{nom} · {mun}  |  NIT {nit}"
 
 
+def _pdf_cabecera_plantilla_compacta(els, e, col_nom: str, titulo: str, sub: str = ""):
+    """Cabecera baja en altura para plantillas de una sola página (carta)."""
+    w = 7.35 * inch
+    ch_st = ParagraphStyle(
+        "chpc",
+        fontSize=9.5,
+        fontName="Helvetica-Bold",
+        textColor=COLS["hfg"],
+        alignment=TA_CENTER,
+        leading=11,
+    )
+    tbl = Table([[Paragraph(_esc_para(col_nom), ch_st)]], colWidths=[w])
+    tbl.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), COLS["hbg"]),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
+    els.append(tbl)
+    els.append(Spacer(1, 3))
+    t_st = ParagraphStyle("plTit", fontSize=13, fontName="Helvetica-Bold", textColor=COLS["hfg"], alignment=TA_CENTER, spaceAfter=2, leading=15)
+    els.append(Paragraph(_esc_para(titulo), t_st))
+    if sub:
+        s_st = ParagraphStyle("plSub", fontSize=7.5, fontName="Helvetica", textColor=COLS["mut"], alignment=TA_CENTER, leading=9, spaceAfter=3)
+        els.append(Paragraph(_esc_para(sub), s_st))
+    els.append(HRFlowable(width="100%", thickness=0.7, color=COLS["brd"]))
+    els.append(Spacer(1, 3))
+
+
 def generar_pdf_plantilla_acta_descargos_vacia(col: dict):
-    """Plantilla en blanco: acta de descargos (estudiante) — Art. 29 C.P., Ley 1620/2013."""
+    """Plantilla en blanco: acta de descargos — una página carta."""
     buf = BytesIO()
     doc = SimpleDocTemplate(
         buf,
-        pagesize=A4,
-        topMargin=1.1 * cm,
-        bottomMargin=1.1 * cm,
-        leftMargin=1.4 * cm,
-        rightMargin=1.4 * cm,
+        pagesize=letter,
+        topMargin=0.42 * inch,
+        bottomMargin=0.42 * inch,
+        leftMargin=0.52 * inch,
+        rightMargin=0.52 * inch,
     )
     e = E()
+    p8 = ParagraphStyle("p8", parent=e["N"], fontSize=8, leading=10)
+    p7 = ParagraphStyle("p7", parent=e["Sm"], fontSize=7, leading=9)
+    h9 = ParagraphStyle("h9", parent=e["H"], fontSize=9, spaceBefore=4, spaceAfter=2, leading=11)
     nom_ie = col.get("nombre") or "Institución educativa"
     els = []
-    pdf_cabecera(
+    _pdf_cabecera_plantilla_compacta(
         els,
         e,
         nom_ie,
         "ACTA DE DESCARGOS",
-        "Versión del estudiante · Art. 29 C.P. · Ley 1620/2013 · Plantilla en blanco (llenar a mano y escanear)",
+        "Estudiante · Art. 29 C.P. · Ley 1620/2013 · En blanco",
     )
-    els.append(Paragraph(f"<b>{_esc_para(_plantilla_ie_linea(col))}</b>", e["S"]))
-    els.append(Spacer(1, 8))
+    els.append(Paragraph(f"<b>{_esc_para(_plantilla_ie_linea(col))}</b>", p7))
+    els.append(Spacer(1, 2))
     els.append(
         Paragraph(
-            "N.º Registro en sistema: _______________________ &nbsp;&nbsp; Fecha: ____________ &nbsp;&nbsp; Hora: ____________",
-            e["N"],
+            "N.º registro sistema: ______________ &nbsp; Fecha: __________ &nbsp; Hora: ________",
+            p8,
+        )
+    )
+    els.append(Spacer(1, 3))
+    els.append(
+        Paragraph(
+            "<b>Debido proceso:</b> conocimiento de hechos, versión libre y valoración previa a sanción "
+            "(Art. 29 C.P.; Dec. 1965/2013 Art. 40).",
+            p7,
+        )
+    )
+    els.append(Spacer(1, 4))
+    els.append(Paragraph("<b>1. Conocimiento de los hechos</b>", h9))
+    els.append(Paragraph("¿Informado en el sistema? ☐ Sí &nbsp; ☐ No &nbsp;&nbsp; ¿Desea versión? ☐ Sí &nbsp; ☐ No", p8))
+    els.append(Spacer(1, 3))
+    els.append(Paragraph("<b>2. Versión libre del estudiante</b> (no editar ni resumir)", h9))
+    w = 7.35 * inch
+    ver_rows = [[Paragraph(" ", p8)] for _ in range(5)]
+    vt = Table(ver_rows, colWidths=[w])
+    vt.setStyle(
+        TableStyle(
+            [
+                ("BOX", (0, 0), (-1, -1), 0.35, COLS["brd"]),
+                ("INNERGRID", (0, 0), (-1, -1), 0.2, COLS["brd"]),
+                ("MINROWHEIGHT", (0, 0), (-1, -1), 22),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
+    els.append(vt)
+    els.append(Spacer(1, 4))
+    els.append(Paragraph("<b>3. Actitud frente a los hechos</b>", h9))
+    els.append(
+        Paragraph(
+            "☐ Reconoce &nbsp; ☐ Niega &nbsp; ☐ Parcial &nbsp; ☐ No se pronuncia &nbsp;&nbsp; "
+            "¿Consideración especial? ☐ No ☐ Sí: _____________ &nbsp;&nbsp; ¿Negó firmar? ☐ No ☐ Sí: _____________",
+            p8,
         )
     )
     els.append(Spacer(1, 6))
-    els.append(
-        Paragraph(
-            "<b>Derecho al debido proceso:</b> el estudiante conoce los hechos que se le atribuyen, puede expresarse "
-            "libremente y sus descargos serán valorados antes de cualquier sanción. (Art. 29 C.P. · Decreto 1965/2013 Art. 40)",
-            e["Sm"],
-        )
-    )
-    els.append(Spacer(1, 10))
-    els.append(Paragraph("<b>1. Conocimiento de los hechos</b>", e["H"]))
-    els.append(Paragraph("El estudiante fue informado de los hechos registrados en el sistema &nbsp; ☐ Sí &nbsp; ☐ No", e["N"]))
-    els.append(Paragraph("¿Desea expresar su versión? &nbsp; ☐ Sí &nbsp; ☐ No", e["N"]))
-    els.append(Spacer(1, 8))
-    els.append(Paragraph("<b>2. Versión libre del estudiante</b>", e["H"]))
-    els.append(Paragraph("<i>Escribir con las propias palabras del estudiante. No editar ni resumir.</i>", e["Sm"]))
-    for _ in range(10):
-        els.append(Paragraph("_" * 92, e["Sm"]))
-    els.append(Spacer(1, 8))
-    els.append(Paragraph("<b>3. Actitud frente a los hechos</b>", e["H"]))
-    els.append(
-        Paragraph(
-            "☐ Reconoce los hechos &nbsp; ☐ Los niega &nbsp; ☐ Los reconoce parcialmente &nbsp; ☐ No desea pronunciarse",
-            e["N"],
-        )
-    )
-    els.append(Paragraph("¿Solicita alguna consideración especial? &nbsp; ☐ No &nbsp; ☐ Sí — Cuál: _______________________________", e["N"]))
-    els.append(Paragraph("¿El estudiante se negó a firmar? &nbsp; ☐ No &nbsp; ☐ Sí — Constancia: _______________________________", e["N"]))
-    els.append(Spacer(1, 14))
-    sig_style = ParagraphStyle("plSig", parent=e["Sm"], fontSize=8, alignment=TA_CENTER, textColor=COLS["mut"])
+    sig_style = ParagraphStyle("plSig", fontSize=7.5, alignment=TA_CENTER, textColor=COLS["mut"], leading=9)
     sig = Table(
         [
             [
-                Paragraph("_______________________________<br/><b>Estudiante</b><br/>Nombre: _________________<br/>C.C./T.I.: _______________", sig_style),
-                Paragraph("_______________________________<br/><b>Docente / Directivo</b><br/>Nombre: _________________<br/>C.C./T.I.: _______________", sig_style),
+                Paragraph("________________________<br/><b>Estudiante</b> · Nombre _______________ · Doc. ___________", sig_style),
+                Paragraph("________________________<br/><b>Docente / directivo</b> · Nombre _______________ · Doc. ___________", sig_style),
             ],
         ],
-        colWidths=[8.25 * cm, 8.25 * cm],
+        colWidths=[3.65 * inch, 3.65 * inch],
     )
-    sig.setStyle(TableStyle([("TOPPADDING", (0, 0), (-1, -1), 10), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    sig.setStyle(TableStyle([("TOPPADDING", (0, 0), (-1, -1), 4), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
     els.append(sig)
-    els.append(Spacer(1, 10))
-    els.append(
-        Paragraph(
-            "Adjuntar al registro N.° _______ en el sistema · " + _esc_para(nom_ie) + " · Manual de convivencia",
-            e["Sm"],
-        )
-    )
+    els.append(Spacer(1, 4))
+    els.append(Paragraph("Adjuntar al registro N.° ______ en el sistema · " + _esc_para(nom_ie), p7))
     doc.build(els)
     buf.seek(0)
     return buf
 
 
 def generar_pdf_plantilla_acta_sesion_vacia(col: dict):
-    """Plantilla en blanco: acta de sesión (Comité / acudientes / directivos) — Ley 1620/2013."""
+    """Plantilla en blanco: acta de sesión — una página carta; tablas amplias."""
     buf = BytesIO()
     doc = SimpleDocTemplate(
         buf,
-        pagesize=A4,
-        topMargin=1.0 * cm,
-        bottomMargin=1.0 * cm,
-        leftMargin=1.3 * cm,
-        rightMargin=1.3 * cm,
+        pagesize=letter,
+        topMargin=0.4 * inch,
+        bottomMargin=0.4 * inch,
+        leftMargin=0.5 * inch,
+        rightMargin=0.5 * inch,
     )
     e = E()
+    p8 = ParagraphStyle("p8s", parent=e["N"], fontSize=8, leading=10)
+    p7 = ParagraphStyle("p7s", parent=e["Sm"], fontSize=7, leading=8.5)
+    h9 = ParagraphStyle("h9s", parent=e["H"], fontSize=9, spaceBefore=3, spaceAfter=2, leading=11)
+    th = ParagraphStyle("ths", parent=e["Sm"], fontSize=7.5, fontName="Helvetica-Bold", textColor=COLS["ink"], leading=9)
     nom_ie = col.get("nombre") or "Institución educativa"
     els = []
-    pdf_cabecera(
+    _pdf_cabecera_plantilla_compacta(
         els,
         e,
         nom_ie,
         "ACTA DE SESIÓN",
-        "Comité de Convivencia / Reunión con padres y directivos · Ley 1620/2013 · Plantilla en blanco",
+        "Comité / padres y directivos · Ley 1620/2013 · En blanco",
     )
-    els.append(Paragraph(f"<b>{_esc_para(_plantilla_ie_linea(col))}</b>", e["S"]))
-    els.append(Spacer(1, 6))
+    els.append(Paragraph(f"<b>{_esc_para(_plantilla_ie_linea(col))}</b>", p7))
+    els.append(Spacer(1, 2))
+    els.append(Paragraph("N.º registro: ______________ &nbsp; Fecha __________ &nbsp; Hora ________", p8))
+    els.append(Spacer(1, 3))
+    els.append(Paragraph("<b>1. Tipo de sesión</b>", h9))
     els.append(
         Paragraph(
-            "N.º Registro en sistema: _______________________ &nbsp;&nbsp; Fecha: ____________ &nbsp;&nbsp; Hora: ____________",
-            e["N"],
+            "☐ Ordinaria comité &nbsp; ☐ Extraordinaria &nbsp; ☐ Reunión acudiente-estudiante &nbsp; ☐ Otra: _______________",
+            p7,
         )
     )
-    els.append(Spacer(1, 8))
-    els.append(Paragraph("<b>1. Tipo de sesión</b>", e["H"]))
-    els.append(
-        Paragraph(
-            "☐ Ordinaria del Comité &nbsp; ☐ Extraordinaria del Comité &nbsp; ☐ Reunión con acudiente y estudiante &nbsp; ☐ Otra: ___________________",
-            e["Sm"],
-        )
-    )
-    els.append(
-        Paragraph(
-            "Situación vinculada: &nbsp; ☐ Tipo I &nbsp; ☐ Tipo II &nbsp; ☐ Tipo III &nbsp;&nbsp; Acta de descargos N.°: _______",
-            e["Sm"],
-        )
-    )
-    els.append(Spacer(1, 8))
-    els.append(Paragraph("<b>2. Asistentes y firmas</b>", e["H"]))
-    els.append(
-        Paragraph(
-            "La firma certifica participación y conocimiento de los acuerdos. Quórum: mayoría simple de los integrantes del Comité.",
-            e["Sm"],
-        )
-    )
+    els.append(Paragraph("Situación: ☐ Tipo I &nbsp; ☐ II &nbsp; ☐ III &nbsp;&nbsp; Acta descargos N.° _______", p7))
+    els.append(Spacer(1, 3))
+    els.append(Paragraph("<b>2. Asistentes y firmas</b>", h9))
+    els.append(Paragraph("La firma certifica participación y conocimiento de acuerdos (quórum: mayoría simple del Comité).", p7))
+    w = 7.35 * inch
     hdr = ["Nombre completo", "Rol", "Firma", "Asistió"]
-    rows = [[Paragraph(f"<b>{h}</b>", e["Sm"]) for h in hdr]]
-    for _ in range(6):
-        rows.append([Paragraph("", e["Sm"]) for _ in hdr])
-    at = Table(rows, colWidths=[5.5 * cm, 3.2 * cm, 4.5 * cm, 2.8 * cm])
+    rows = [[Paragraph(f"<b>{_esc_para(h)}</b>", th) for h in hdr]]
+    for _ in range(4):
+        rows.append([Paragraph("", p8) for _ in hdr])
+    cw = [3.05 * inch, 1.35 * inch, 1.85 * inch, 1.1 * inch]
+    at = Table(rows, colWidths=cw)
     at.setStyle(
         TableStyle(
             [
                 ("GRID", (0, 0), (-1, -1), 0.35, COLS["brd"]),
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f4f1eb")),
-                ("MINROWHEIGHT", (0, 1), (-1, -1), 18),
+                ("MINROWHEIGHT", (0, 1), (-1, -1), 26),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )
     els.append(at)
-    els.append(Spacer(1, 6))
-    els.append(
-        Paragraph(
-            "Total asistentes: _______ &nbsp;&nbsp; ¿Hay quórum? &nbsp; ☐ Sí &nbsp; ☐ No &nbsp;&nbsp; Hora inicio: _______ &nbsp;&nbsp; Fin: _______",
-            e["N"],
-        )
-    )
-    els.append(Spacer(1, 8))
-    els.append(Paragraph("<b>3. Acuerdos y compromisos</b>", e["H"]))
-    els.append(
-        Paragraph(
-            "Solo registrar lo acordado en esta reunión. Los antecedentes, hechos y seguimiento quedan en el sistema. "
-            "Las medidas deben ser pedagógicas y proporcionales (Ley 1620/2013 Art. 22).",
-            e["Sm"],
-        )
-    )
-    h2 = ["Compromiso / Acción", "Responsable", "Fecha límite"]
-    rows2 = [[Paragraph(f"<b>{h}</b>", e["Sm"]) for h in h2]]
-    for _ in range(5):
-        rows2.append([Paragraph("", e["Sm"]) for _ in h2])
-    t2 = Table(rows2, colWidths=[8.5 * cm, 4.5 * cm, 3.5 * cm])
+    els.append(Spacer(1, 2))
+    els.append(Paragraph("Total asistentes: _____ &nbsp; ¿Quórum? ☐ Sí ☐ No &nbsp; Inicio: _____ &nbsp; Fin: _____", p8))
+    els.append(Spacer(1, 3))
+    els.append(Paragraph("<b>3. Acuerdos y compromisos</b> (solo esta reunión; proporcionalidad Art. 22 Ley 1620/2013)", h9))
+    h2 = ["Compromiso / acción", "Responsable", "Fecha límite"]
+    rows2 = [[Paragraph(f"<b>{_esc_para(h)}</b>", th) for h in h2]]
+    for _ in range(4):
+        rows2.append([Paragraph("", p8) for _ in h2])
+    cw2 = [3.75 * inch, 1.85 * inch, 1.75 * inch]
+    t2 = Table(rows2, colWidths=cw2)
     t2.setStyle(
         TableStyle(
             [
                 ("GRID", (0, 0), (-1, -1), 0.35, COLS["brd"]),
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f4f1eb")),
-                ("MINROWHEIGHT", (0, 1), (-1, -1), 20),
+                ("MINROWHEIGHT", (0, 1), (-1, -1), 28),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )
     els.append(t2)
-    els.append(Spacer(1, 8))
-    els.append(Paragraph("<b>4. Medida disciplinaria adoptada</b>", e["H"]))
+    els.append(Spacer(1, 3))
+    els.append(Paragraph("<b>4. Medida disciplinaria</b>", h9))
     els.append(
         Paragraph(
-            "☐ Amonestación escrita &nbsp; ☐ Acción restaurativa &nbsp; ☐ Suspensión provisional (____ días) &nbsp; ☐ Matrícula en observación",
-            e["Sm"],
+            "☐ Amonestación escrita &nbsp; ☐ Restaurativa &nbsp; ☐ Susp. prov. (___ días) &nbsp; ☐ Matrícula observación",
+            p7,
         )
     )
     els.append(
         Paragraph(
-            "☐ Cancelación de cupo año siguiente &nbsp; ☐ Remisión al ICBF / Policía de Infancia &nbsp; ☐ Ninguna",
-            e["Sm"],
+            "☐ Cancelación cupo año sig. &nbsp; ☐ Remisión ICBF/Policía Inf. &nbsp; ☐ Ninguna &nbsp;&nbsp; "
+            "SIUCE: ☐ Hecho ☐ Pend. &nbsp; Notif. ICBF III: ☐ Hecho ☐ N/A",
+            p7,
         )
     )
-    els.append(Spacer(1, 4))
-    els.append(Paragraph("Reporte SIUCE: ☐ Hecho &nbsp; ☐ Pendiente &nbsp;&nbsp; Notif. ICBF (Tipo III): ☐ Hecho &nbsp; ☐ No aplica", e["Sm"]))
-    els.append(Spacer(1, 6))
-    els.append(
-        Paragraph(
-            "¿Algún participante se negó a firmar? &nbsp; ☐ No &nbsp; ☐ Sí — Nombre y razón: _____________________________",
-            e["N"],
-        )
-    )
-    els.append(Spacer(1, 6))
-    els.append(
-        Paragraph(
-            "Siendo las ________ horas, se da por cerrada la sesión. &nbsp;&nbsp; Próxima sesión: Fecha ________________ &nbsp; Hora ________",
-            e["N"],
-        )
-    )
-    els.append(Spacer(1, 10))
-    els.append(
-        Paragraph(
-            "Adjuntar al registro N.° _______ en el sistema · " + _esc_para(nom_ie) + " · Manual de convivencia",
-            e["Sm"],
-        )
-    )
+    els.append(Spacer(1, 2))
+    els.append(Paragraph("¿Negó a firmar? ☐ No ☐ Sí (nombre y razón): ___________________________", p8))
+    els.append(Paragraph("Cierre: hora ______ &nbsp; Próxima sesión: fecha __________ hora ______", p8))
+    els.append(Spacer(1, 2))
+    els.append(Paragraph("Adjuntar al registro N.° ______ en el sistema · " + _esc_para(nom_ie), p7))
     doc.build(els)
     buf.seek(0)
     return buf

@@ -1218,6 +1218,7 @@ async function renderSACol(tab){
 
 // ── Ver falta con timeline ────────────────────────────────────────────────────
 async function verFalta(id){
+  const prevId=verFId;
   verFId=id;
   const f=await api(`/api/faltas/${id}`);
   window.verFObj=f;
@@ -1297,6 +1298,14 @@ async function verFalta(id){
   const as2=document.getElementById('verAnotSec');const sb=document.getElementById('verSaveBtn');
   if(puedeAnotar){as2.style.display='block';sb.style.display='block';document.getElementById('verAnotLbl').textContent=TLBLS[CU.rol]||'Observación';document.getElementById('vAnotTxt').value='';}
   else{as2.style.display='none';sb.style.display='none';}
+  if(prevId!==id){
+    const ap=document.getElementById('vAdjPanel');
+    const ach=document.getElementById('vAdjChevron');
+    const abt=document.getElementById('vAdjToggle');
+    if(ap)ap.style.display='none';
+    if(ach)ach.textContent='▶';
+    if(abt)abt.setAttribute('aria-expanded','false');
+  }
   syncAdjuntosUI(f);
   openOv('ov-ver');
 }
@@ -1422,6 +1431,17 @@ function descargarActaFalta(){
   window.open(`/api/pdf/acta/${verFId}`,'_blank');
 }
 
+function toggleAdjuntosPanel(){
+  const p=document.getElementById('vAdjPanel');
+  const ch=document.getElementById('vAdjChevron');
+  const bt=document.getElementById('vAdjToggle');
+  if(!p)return;
+  const open=p.style.display==='block';
+  p.style.display=open?'none':'block';
+  if(ch)ch.textContent=open?'▶':'▼';
+  if(bt)bt.setAttribute('aria-expanded',open?'false':'true');
+}
+
 function catAdjLbl(c){
   if(c==='descargos_inicial')return'Acta de descargos (inicial)';
   if(c==='sesion_instancias')return'Acta de sesión';
@@ -1448,14 +1468,20 @@ function syncAdjuntosUI(f){
   const us=document.getElementById('vAdjUpSes');
   if(ud)ud.style.display=puedeSubirAdjDesc(f)?'block':'none';
   if(us)us.style.display=puedeSubirAdjSes(f)?'block':'none';
+  const chip=document.getElementById('vAdjChip');
+  const n=(f.adjuntos||[]).length;
+  if(chip){
+    if(n){chip.style.display='inline';chip.textContent=n+(n===1?' archivo':' archivos');}
+    else{chip.style.display='none';chip.textContent='';}
+  }
   const box=document.getElementById('vAdjBody');
   if(!box)return;
   const adj=f.adjuntos||[];
   if(!adj.length){
-    box.innerHTML='<div class="empty" style="font-size:12px;padding:6px 0">Sin archivos adjuntos aún.</div>';
+    box.innerHTML='<div class="empty" style="font-size:12px;padding:6px 0">Sin archivos.</div>';
     return;
   }
-  box.innerHTML=adj.map(a=>`<div class="adj-row" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--brd)">
+  box.innerHTML=adj.map(a=>`<div class="adj-row" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--brd)">
     <div><span class="bdg bg">${escHtml(catAdjLbl(a.categoria))}</span> <strong>${escHtml(a.nombre_original||'archivo')}</strong>
     <div style="font-size:10px;color:var(--mut);margin-top:3px">${escHtml(a.subido_por_nombre||'')} · ${escHtml(a.creado_en||'')}</div></div>
     <div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap">
@@ -1475,7 +1501,15 @@ async function subirAdjuntoFalta(cat){
   if(!verFId)return;
   const inp=document.getElementById(cat==='descargos_inicial'?'vFileDesc':'vFileSes');
   const j=await uploadFaltaAdjunto(verFId,cat,inp);
-  if(j&&j.ok){if(inp)inp.value='';toast('Archivo adjuntado');await verFalta(verFId);}
+  if(j&&j.ok){
+    if(inp)inp.value='';
+    toast('Archivo adjuntado');
+    const ap=document.getElementById('vAdjPanel');
+    const ach=document.getElementById('vAdjChevron');
+    const abt=document.getElementById('vAdjToggle');
+    if(ap){ap.style.display='block';if(ach)ach.textContent='▼';if(abt)abt.setAttribute('aria-expanded','true');}
+    await verFalta(verFId);
+  }
   else toast((j&&j.error)||'Error','e');
 }
 async function borrarAdjunto(fid,aid){

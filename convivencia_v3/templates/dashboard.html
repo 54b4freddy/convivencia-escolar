@@ -90,12 +90,11 @@
         <div class="fr fr1"><div><label class="fl">Proceso disciplinar inicial</label><textarea id="rProc" rows="3" placeholder="Diálogo, llamado verbal, retención de objeto, remisión..."></textarea></div></div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--brd)">
           <div class="fsec" style="margin-bottom:6px">ACTA DE DESCARGOS (opcional)</div>
-          <p style="font-size:11px;color:var(--mut);margin:0 0 8px;line-height:1.45">Plantillas con datos del colegio (PDF en blanco). El estudiante llena a mano; adjunte escaneo o foto aquí o después en el detalle de la falta.</p>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
-            <a class="btn btn-xs btn-g" href="/api/pdf/plantilla/acta-descargos" target="_blank" rel="noopener">PDF plantilla — descargos</a>
-            <a class="btn btn-xs" href="/api/pdf/plantilla/acta-sesion" target="_blank" rel="noopener">PDF plantilla — sesión</a>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px">
+            <a class="btn btn-xs btn-g" href="/api/pdf/plantilla/acta-descargos" target="_blank" rel="noopener">PDF descargos</a>
+            <a class="btn btn-xs" href="/api/pdf/plantilla/acta-sesion" target="_blank" rel="noopener">PDF sesión</a>
           </div>
-          <label class="fl">Adjuntar acta de descargos firmada (PDF, imagen o Word)</label>
+          <label class="fl">Adjunto (PDF, imagen o Word)</label>
           <input type="file" id="rActaDesc" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--brd)">
@@ -153,29 +152,6 @@
       <p id="vGestionTxt" style="font-size:12px;margin:6px 0 10px;line-height:1.55"></p>
       <button type="button" class="btn btn-p btn-xs" id="vGestionBtn" onclick="openOvGestion()" style="display:none">Definir cierre (coordinación)</button>
     </div>
-    <div id="vAdjSec" style="margin-bottom:13px;padding:12px;background:#f0f7fb;border-radius:var(--r);border:1px solid #c5dbe8">
-      <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">ACTAS Y ARCHIVOS</div>
-      <p style="font-size:11px;color:var(--mut);margin:0 0 10px;line-height:1.45">Adjunte el acta de descargos (reporte inicial) o el acta de sesión (comité, acudientes, directivos) ya cumplimentados. Formatos: PDF, imagen o Word.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-        <a class="btn btn-xs btn-g" href="/api/pdf/plantilla/acta-descargos" target="_blank" rel="noopener">Plantilla PDF — descargos</a>
-        <a class="btn btn-xs" href="/api/pdf/plantilla/acta-sesion" target="_blank" rel="noopener">Plantilla PDF — sesión</a>
-      </div>
-      <div id="vAdjUpDesc" style="display:none;margin-bottom:10px;padding:10px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
-        <label class="fl">Subir acta de descargos (quien registra la falta)</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
-          <input type="file" id="vFileDesc" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
-          <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('descargos_inicial')">Subir</button>
-        </div>
-      </div>
-      <div id="vAdjUpSes" style="display:none;margin-bottom:10px;padding:10px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
-        <label class="fl">Subir acta de sesión (coordinación / director de grupo), si aplica</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
-          <input type="file" id="vFileSes" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
-          <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('sesion_instancias')">Subir</button>
-        </div>
-      </div>
-      <div id="vAdjBody" style="font-size:12px"></div>
-    </div>
     <div id="vAcuSec" style="display:none;margin-bottom:13px">
       <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">INFORMACIÓN DEL ACUDIENTE</div>
       <div class="fr fr3">
@@ -189,6 +165,34 @@
     <div id="verAnotSec" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)">
       <label class="fl" id="verAnotLbl">Agregar observación</label>
       <textarea id="vAnotTxt" rows="3" placeholder="Escriba su observación, seguimiento o acción tomada..."></textarea>
+    </div>
+    <div id="vAdjSec" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--brd)">
+      <button type="button" id="vAdjToggle" class="v-adj-toggle" onclick="toggleAdjuntosPanel()" aria-expanded="false"
+        style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--brd);background:var(--t2g);font:inherit;cursor:pointer;color:var(--ink)">
+        <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong>Actas y archivos</strong><span id="vAdjChip" class="bdg bg" style="display:none;font-size:10px;font-weight:600"></span></span>
+        <span id="vAdjChevron" style="font-size:11px;color:var(--mut);flex-shrink:0">▶</span>
+      </button>
+      <div id="vAdjPanel" style="display:none;margin-top:8px;padding:10px;background:#f0f7fb;border-radius:var(--r);border:1px solid #c5dbe8">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          <a class="btn btn-xs btn-g" href="/api/pdf/plantilla/acta-descargos" target="_blank" rel="noopener">PDF descargos</a>
+          <a class="btn btn-xs" href="/api/pdf/plantilla/acta-sesion" target="_blank" rel="noopener">PDF sesión</a>
+        </div>
+        <div id="vAdjUpDesc" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
+          <label class="fl" style="margin-bottom:4px">Descargos (reporte inicial)</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <input type="file" id="vFileDesc" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
+            <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('descargos_inicial')">Subir</button>
+          </div>
+        </div>
+        <div id="vAdjUpSes" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
+          <label class="fl" style="margin-bottom:4px">Sesión (comité / acudientes), si aplica</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <input type="file" id="vFileSes" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
+            <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('sesion_instancias')">Subir</button>
+          </div>
+        </div>
+        <div id="vAdjBody" style="font-size:12px"></div>
+      </div>
     </div>
   </div>
   <div class="mf">
