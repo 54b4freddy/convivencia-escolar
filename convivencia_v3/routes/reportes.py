@@ -1,5 +1,4 @@
 """Reportes, exportación y PDFs. Datos siempre acotados por colegio_id y rol (multi-institución)."""
-import json
 import re
 from collections import Counter
 from datetime import datetime
@@ -8,7 +7,13 @@ from flask import Blueprint, jsonify, request, Response
 
 from ce_db import commit, execute, get_db, ph
 from ce_export import csv_response
-from ce_pdf import generar_pdf_acta_descargos, generar_pdf_acta_proceso, generar_pdf_curso, generar_pdf_estudiante
+from ce_pdf import (
+    generar_pdf_acta_proceso,
+    generar_pdf_curso,
+    generar_pdf_estudiante,
+    generar_pdf_plantilla_acta_descargos_vacia,
+    generar_pdf_plantilla_acta_sesion_vacia,
+)
 from ce_queries import col_nom, fq, faltas_con_notas
 from ce_sugerencias import generar_sugerencias
 from routes.authz import cu, login_required, resolve_colegio_id, roles
@@ -362,50 +367,49 @@ def api_pdf_general():
     )
 
 
-@bp.route("/api/pdf/acta-descargos/<int:fid>")
+def _colegio_row_pdf(cid):
+    conn = get_db()
+    p = ph()
+    row = execute(conn, f"SELECT nombre,nit,municipio FROM colegios WHERE id={p}", (cid,), fetch="one")
+    conn.close()
+    return dict(row) if row else {"nombre": "Institución educativa", "nit": "", "municipio": ""}
+
+
+@bp.route("/api/pdf/plantilla/acta-descargos")
 @login_required
-def api_pdf_acta_descargos(fid):
+def api_pdf_plantilla_acta_descargos():
     u = cu()
+    if u["rol"] == "Acudiente":
+        return jsonify({"error": "Sin permisos"}), 403
     cid, terr = resolve_colegio_id(u)
     if terr:
         return jsonify({"error": terr}), 400
-    conn = get_db()
-    p = ph()
-    f = execute(
-        conn,
-        f"SELECT f.*, e.documento_identidad FROM faltas f "
-        f"LEFT JOIN estudiantes e ON e.id=f.estudiante_id WHERE f.id={p}",
-        (fid,),
-        fetch="one",
-    )
-    if not f:
-        conn.close()
-        return jsonify({"error": "No encontrada"}), 404
-    if int(f.get("colegio_id") or 0) != int(cid):
-        conn.close()
-        return jsonify({"error": "Sin permisos"}), 403
-    if not _puede_descargar_acta(u, f):
-        conn.close()
-        return jsonify({"error": "Sin permisos"}), 403
-    acta = execute(conn, f"SELECT * FROM acta_descargos WHERE falta_id={p}", (fid,), fetch="one")
-    if not acta:
-        conn.close()
-        return jsonify({"error": "No hay acta de descargos registrada para esta falta"}), 404
-    try:
-        datos = json.loads(acta.get("datos_json") or "{}")
-    except json.JSONDecodeError:
-        datos = {}
-    col = execute(conn, f"SELECT nombre,nit,municipio FROM colegios WHERE id={p}", (cid,), fetch="one") or {}
-    tok = acta.get("verificacion_token") or ""
-    base = request.url_root.rstrip("/")
-    vurl = f"{base}/api/verificar-descargos/{tok}" if tok else ""
-    conn.close()
-    buf = generar_pdf_acta_descargos(col, f, datos, vurl)
-    safe = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(f.get("estudiante", "descargos"))).strip("_") or "descargos"
+    col = _colegio_row_pdf(cid)
+    buf = generar_pdf_plantilla_acta_descargos_vacia(col)
+    nom = re.sub(r"[^a-zA-Z0-9_-]+", "_", (col.get("nombre") or "ie")).strip("_") or "ie"
     return Response(
         buf.read(),
         mimetype="application/pdf",
-        headers={"Content-Disposition": f"attachment;filename=acta_descargos_{fid}_{safe}.pdf"},
+        headers={"Content-Disposition": f"attachment;filename=plantilla_acta_descargos_{nom}.pdf"},
+    )
+
+
+@bp.route("/api/pdf/plantilla/acta-sesion")
+@login_required
+def api_pdf_plantilla_acta_sesion():
+    u = cu()
+    if u["rol"] == "Acudiente":
+        return jsonify({"error": "Sin permisos"}), 403
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    col = _colegio_row_pdf(cid)
+    buf = generar_pdf_plantilla_acta_sesion_vacia(col)
+    nom = re.sub(r"[^a-zA-Z0-9_-]+", "_", (col.get("nombre") or "ie")).strip("_") or "ie"
+    return Response(
+        buf.read(),
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment;filename=plantilla_acta_sesion_{nom}.pdf"},
     )
 
 

@@ -1,15 +1,11 @@
 """Rutas HTTP: faltas disciplinarias y citas con acudientes."""
-import json
+import os
+import secrets
 from datetime import datetime
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
+from werkzeug.utils import secure_filename
 
-from ce_acta_descargos import (
-    compute_content_hash,
-    compute_firma,
-    new_verification_token,
-    normalize_acta_datos,
-)
 from ce_citas import CITA_ROLES_DESTINO, cancelar_citas_abiertas_por_falta, insert_cita_escuela
 from ce_db import USE_PG, commit, execute, get_db, ph
 from ce_faltas_service import attach_cita_falta, listar_faltas_enriquecidas, parse_filtros_faltas_args
@@ -18,8 +14,15 @@ from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("faltas_citas", __name__)
 
+_PKG_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+UPLOAD_FALTAS = os.path.join(_PKG_ROOT, "static", "uploads", "faltas_actas")
+_ALLOWED_ADJ = frozenset({".pdf", ".jpg", ".jpeg", ".png", ".webp", ".doc", ".docx"})
+CAT_DESCARGOS = "descargos_inicial"
+CAT_SESION = "sesion_instancias"
+_VALID_CAT = frozenset({CAT_DESCARGOS, CAT_SESION})
 
-def _puede_editar_acta_descargos(u, f):
+
+def _puede_subir_adjunto_descargos(u, f):
     if u["rol"] == "Superadmin":
         return True
     if int(f.get("colegio_id") or 0) != int(u.get("colegio_id") or 0):
@@ -33,34 +36,58 @@ def _puede_editar_acta_descargos(u, f):
     return False
 
 
-def _attach_acta_descargos(conn, f, fid):
+def _puede_subir_adjunto_sesion(u, f):
+    if u["rol"] == "Superadmin":
+        return True
+    if int(f.get("colegio_id") or 0) != int(u.get("colegio_id") or 0):
+        return False
+    if u["rol"] == "Coordinador":
+        return True
+    if u["rol"] == "Director":
+        return (u.get("curso") or "") == (f.get("curso") or "") or f.get("docente") == u.get("nombre")
+    return False
+
+
+def _puede_ver_adjuntos(u, f):
+    if u["rol"] == "Superadmin":
+        return True
+    if int(f.get("colegio_id") or 0) != int(u.get("colegio_id") or 0):
+        return False
+    if u["rol"] == "Acudiente":
+        return f.get("estudiante_id") == u.get("estudiante_id")
+    if u["rol"] == "Docente":
+        return f.get("docente") == u["nombre"]
+    if u["rol"] == "Director":
+        return f.get("curso") == u.get("curso") or f.get("docente") == u.get("nombre")
+    return u["rol"] in ("Coordinador", "Orientador")
+
+
+def _save_falta_adjunto_file(file_storage, colegio_id: int) -> tuple[str, str, str]:
+    if not file_storage or not file_storage.filename:
+        raise ValueError("Archivo requerido")
+    os.makedirs(UPLOAD_FALTAS, exist_ok=True)
+    orig = secure_filename(file_storage.filename) or "archivo"
+    ext = os.path.splitext(orig)[1].lower()
+    if ext not in _ALLOWED_ADJ:
+        raise ValueError("Use PDF, imagen o Word (.pdf, .jpg, .jpeg, .png, .webp, .doc, .docx).")
+    name = f"{colegio_id}_{secrets.token_hex(12)}{ext}"
+    dest = os.path.join(UPLOAD_FALTAS, name)
+    file_storage.save(dest)
+    rel = os.path.join("faltas_actas", name).replace("\\", "/")
+    mime = (file_storage.content_type or "").strip()
+    return rel, orig, mime
+
+
+def _lista_adjuntos(conn, fid):
     p = ph()
-    row = execute(
+    rows = execute(
         conn,
-        f"SELECT id, datos_json, content_hash, verificacion_token, registrado_en, actualizado_en, registrado_por_nombre "
-        f"FROM acta_descargos WHERE falta_id={p}",
+        f"SELECT id, categoria, nombre_original, subido_por_nombre, subido_por_id, creado_en FROM falta_adjuntos "
+        f"WHERE falta_id={p} ORDER BY id",
         (fid,),
-        fetch="one",
+        fetch="all",
     )
-    if not row:
-        f["acta_descargos"] = None
-        return
-    try:
-        datos = json.loads(row.get("datos_json") or "{}")
-    except json.JSONDecodeError:
-        datos = {}
-    base = request.url_root.rstrip("/") if request else ""
-    tok = row.get("verificacion_token") or ""
-    f["acta_descargos"] = {
-        "id": row.get("id"),
-        "datos": datos,
-        "registrado_en": row.get("registrado_en"),
-        "actualizado_en": row.get("actualizado_en"),
-        "registrado_por_nombre": row.get("registrado_por_nombre") or "",
-        "verificacion_token": tok,
-        "verificacion_url": f"{base}/api/verificar-descargos/{tok}" if tok else "",
-        "huella_integridad": (row.get("content_hash") or "")[:16] + "…",
-    }
+    return rows or []
 
 
 @bp.route("/api/faltas")
@@ -112,7 +139,7 @@ def api_falta_detalle(fid):
     f["anotaciones"] = execute(conn, f"SELECT * FROM anotaciones WHERE falta_id={p} ORDER BY id", (fid,), fetch="all")
     attach_cita_falta(conn, f)
     enriquecer_falta_gestion(f)
-    _attach_acta_descargos(conn, f, fid)
+    f["adjuntos"] = _lista_adjuntos(conn, fid)
     conn.close()
     return jsonify(f)
 
@@ -233,59 +260,125 @@ def api_falta_crear():
     return jsonify({"ok": True, "id": fid})
 
 
-@bp.route("/api/faltas/<int:fid>/acta-descargos", methods=["PUT"])
-@roles("Superadmin", "Coordinador", "Director", "Orientador", "Docente")
-def api_acta_descargos_put(fid):
-    d = request.json or {}
+@bp.route("/api/faltas/<int:fid>/adjuntos", methods=["POST"])
+@login_required
+def api_falta_adjunto_subir(fid):
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
+    if u["rol"] == "Acudiente":
+        return jsonify({"ok": False, "error": "Sin permisos"}), 403
+    cat = (request.form.get("categoria") or "").strip()
+    if cat not in _VALID_CAT:
+        return jsonify({"ok": False, "error": "categoria debe ser descargos_inicial o sesion_instancias"}), 400
+    fs = request.files.get("archivo")
+    conn = get_db()
+    p = ph()
+    f = execute(conn, f"SELECT * FROM faltas WHERE id={p} AND colegio_id={p}", (fid, tenant_id), fetch="one")
+    if not f:
+        conn.close()
+        return jsonify({"ok": False, "error": "No encontrada"}), 404
+    if cat == CAT_DESCARGOS and not _puede_subir_adjunto_descargos(u, f):
+        conn.close()
+        return jsonify({"ok": False, "error": "Sin permisos"}), 403
+    if cat == CAT_SESION and not _puede_subir_adjunto_sesion(u, f):
+        conn.close()
+        return jsonify({"ok": False, "error": "Sin permisos"}), 403
+    try:
+        rel, orig, mime = _save_falta_adjunto_file(fs, tenant_id)
+    except ValueError as e:
+        conn.close()
+        return jsonify({"ok": False, "error": str(e)}), 400
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    execute(
+        conn,
+        f"INSERT INTO falta_adjuntos (falta_id,colegio_id,categoria,stored_path,nombre_original,mime,"
+        f"subido_por_id,subido_por_nombre,creado_en) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p})",
+        (
+            fid,
+            tenant_id,
+            cat,
+            rel,
+            orig[:240],
+            (mime or "")[:120],
+            u.get("id"),
+            (u.get("nombre") or "")[:200],
+            now,
+        ),
+    )
+    commit(conn)
+    adj = _lista_adjuntos(conn, fid)
+    conn.close()
+    return jsonify({"ok": True, "adjuntos": adj})
+
+
+@bp.route("/api/faltas/<int:fid>/adjuntos/<int:aid>", methods=["DELETE"])
+@login_required
+def api_falta_adjunto_borrar(fid, aid):
     u = cu()
     tenant_id, terr = resolve_colegio_id(u)
     if terr:
         return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
     p = ph()
-    f = execute(
+    row = execute(
         conn,
-        f"SELECT * FROM faltas WHERE id={p} AND colegio_id={p}",
-        (fid, tenant_id),
+        f"SELECT * FROM falta_adjuntos WHERE id={p} AND falta_id={p} AND colegio_id={p}",
+        (aid, fid, tenant_id),
         fetch="one",
     )
-    if not f:
+    if not row:
         conn.close()
-        return jsonify({"ok": False, "error": "No encontrada"}), 404
-    if not _puede_editar_acta_descargos(u, f):
+        return jsonify({"ok": False, "error": "No encontrado"}), 404
+    puede = u["rol"] in ("Superadmin", "Coordinador") or (
+        row.get("subido_por_id") is not None and int(row.get("subido_por_id") or 0) == int(u.get("id") or 0)
+    )
+    if not puede:
         conn.close()
         return jsonify({"ok": False, "error": "Sin permisos"}), 403
-    datos_norm = normalize_acta_datos(d.get("datos") if isinstance(d.get("datos"), dict) else {})
-    cid = int(f.get("colegio_id") or tenant_id)
-    sk = current_app.secret_key
-    ch = compute_content_hash(fid, cid, datos_norm)
-    fir = compute_firma(sk, ch)
-    jtxt = json.dumps(datos_norm, ensure_ascii=False)
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    uid = u.get("id")
-    unom = (u.get("nombre") or "")[:200]
-    ex = execute(conn, f"SELECT id, verificacion_token FROM acta_descargos WHERE falta_id={p}", (fid,), fetch="one")
-    if ex:
-        execute(
-            conn,
-            f"UPDATE acta_descargos SET datos_json={p}, content_hash={p}, firma_hmac={p}, actualizado_en={p}, "
-            f"registrado_por_id={p}, registrado_por_nombre={p} WHERE falta_id={p}",
-            (jtxt, ch, fir, now, uid, unom, fid),
-        )
-    else:
-        tok = new_verification_token()
-        execute(
-            conn,
-            f"INSERT INTO acta_descargos (falta_id,colegio_id,datos_json,content_hash,firma_hmac,verificacion_token,"
-            f"registrado_en,actualizado_en,registrado_por_id,registrado_por_nombre) "
-            f"VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
-            (fid, cid, jtxt, ch, fir, tok, now, now, uid, unom),
-        )
+    abs_path = os.path.join(_PKG_ROOT, "static", "uploads", row["stored_path"])
+    execute(conn, f"DELETE FROM falta_adjuntos WHERE id={p}", (aid,))
     commit(conn)
-    f2 = execute(conn, f"SELECT * FROM faltas WHERE id={p}", (fid,), fetch="one")
-    _attach_acta_descargos(conn, f2, fid)
     conn.close()
-    return jsonify({"ok": True, "acta_descargos": f2.get("acta_descargos")})
+    try:
+        if os.path.isfile(abs_path):
+            os.remove(abs_path)
+    except OSError:
+        pass
+    return jsonify({"ok": True})
+
+
+@bp.route("/api/faltas/<int:fid>/adjuntos/<int:aid>")
+@login_required
+def api_falta_adjunto_archivo(fid, aid):
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    conn = get_db()
+    p = ph()
+    f = execute(conn, f"SELECT * FROM faltas WHERE id={p} AND colegio_id={p}", (fid, tenant_id), fetch="one")
+    if not f:
+        conn.close()
+        return jsonify({"error": "No encontrada"}), 404
+    if not _puede_ver_adjuntos(u, f):
+        conn.close()
+        return jsonify({"error": "Sin permisos"}), 403
+    row = execute(
+        conn,
+        f"SELECT * FROM falta_adjuntos WHERE id={p} AND falta_id={p}",
+        (aid, fid),
+        fetch="one",
+    )
+    conn.close()
+    if not row:
+        return jsonify({"error": "No encontrado"}), 404
+    abs_path = os.path.join(_PKG_ROOT, "static", "uploads", row["stored_path"])
+    if not os.path.isfile(abs_path):
+        return jsonify({"error": "Archivo no disponible"}), 404
+    down_name = secure_filename(row.get("nombre_original") or "adjunto") or "adjunto"
+    return send_file(abs_path, as_attachment=True, download_name=down_name)
 
 
 @bp.route("/api/faltas/<int:fid>/anotaciones", methods=["POST"])

@@ -115,6 +115,7 @@ def _migrate_schema(conn):
             "ALTER TABLE senales_atencion ADD COLUMN IF NOT EXISTS urgencia TEXT DEFAULT ''",
             "ALTER TABLE senales_atencion ADD COLUMN IF NOT EXISTS evidencia_path TEXT DEFAULT ''",
             "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS gestion_coordinador TEXT DEFAULT NULL",
+            "DROP TABLE IF EXISTS acta_descargos CASCADE",
             """CREATE TABLE IF NOT EXISTS citas_acudiente (
                 id SERIAL PRIMARY KEY,
                 falta_id INTEGER NOT NULL REFERENCES faltas(id) ON DELETE CASCADE,
@@ -131,18 +132,17 @@ def _migrate_schema(conn):
                 creado_en TEXT NOT NULL,
                 actualizado_en TEXT NOT NULL
             )""",
-            """CREATE TABLE IF NOT EXISTS acta_descargos (
+            """CREATE TABLE IF NOT EXISTS falta_adjuntos (
                 id SERIAL PRIMARY KEY,
-                falta_id INTEGER NOT NULL UNIQUE REFERENCES faltas(id) ON DELETE CASCADE,
+                falta_id INTEGER NOT NULL REFERENCES faltas(id) ON DELETE CASCADE,
                 colegio_id INTEGER NOT NULL REFERENCES colegios(id),
-                datos_json TEXT NOT NULL,
-                content_hash TEXT NOT NULL,
-                firma_hmac TEXT NOT NULL,
-                verificacion_token TEXT NOT NULL UNIQUE,
-                registrado_en TEXT NOT NULL,
-                actualizado_en TEXT NOT NULL,
-                registrado_por_id INTEGER REFERENCES usuarios(id),
-                registrado_por_nombre TEXT DEFAULT ''
+                categoria TEXT NOT NULL,
+                stored_path TEXT NOT NULL,
+                nombre_original TEXT DEFAULT '',
+                mime TEXT DEFAULT '',
+                subido_por_id INTEGER REFERENCES usuarios(id),
+                subido_por_nombre TEXT DEFAULT '',
+                creado_en TEXT NOT NULL
             )""",
         ):
             try:
@@ -202,20 +202,23 @@ def _migrate_schema(conn):
     except Exception:
         pass
     try:
+        execute(conn, "DROP TABLE IF EXISTS acta_descargos")
+    except Exception:
+        pass
+    try:
         execute(
             conn,
-            """CREATE TABLE IF NOT EXISTS acta_descargos (
+            """CREATE TABLE IF NOT EXISTS falta_adjuntos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                falta_id INTEGER NOT NULL UNIQUE REFERENCES faltas(id) ON DELETE CASCADE,
+                falta_id INTEGER NOT NULL REFERENCES faltas(id) ON DELETE CASCADE,
                 colegio_id INTEGER NOT NULL REFERENCES colegios(id),
-                datos_json TEXT NOT NULL,
-                content_hash TEXT NOT NULL,
-                firma_hmac TEXT NOT NULL,
-                verificacion_token TEXT NOT NULL UNIQUE,
-                registrado_en TEXT NOT NULL,
-                actualizado_en TEXT NOT NULL,
-                registrado_por_id INTEGER REFERENCES usuarios(id),
-                registrado_por_nombre TEXT DEFAULT ''
+                categoria TEXT NOT NULL,
+                stored_path TEXT NOT NULL,
+                nombre_original TEXT DEFAULT '',
+                mime TEXT DEFAULT '',
+                subido_por_id INTEGER REFERENCES usuarios(id),
+                subido_por_nombre TEXT DEFAULT '',
+                creado_en TEXT NOT NULL
             )""",
         )
     except Exception:
@@ -319,18 +322,17 @@ CREATE TABLE IF NOT EXISTS asistencia_detalle (
     ausente INTEGER DEFAULT 1,
     justificada INTEGER
 );
-CREATE TABLE IF NOT EXISTS acta_descargos (
+CREATE TABLE IF NOT EXISTS falta_adjuntos (
     id SERIAL PRIMARY KEY,
-    falta_id INTEGER NOT NULL UNIQUE REFERENCES faltas(id) ON DELETE CASCADE,
+    falta_id INTEGER NOT NULL REFERENCES faltas(id) ON DELETE CASCADE,
     colegio_id INTEGER NOT NULL REFERENCES colegios(id),
-    datos_json TEXT NOT NULL,
-    content_hash TEXT NOT NULL,
-    firma_hmac TEXT NOT NULL,
-    verificacion_token TEXT NOT NULL UNIQUE,
-    registrado_en TEXT NOT NULL,
-    actualizado_en TEXT NOT NULL,
-    registrado_por_id INTEGER REFERENCES usuarios(id),
-    registrado_por_nombre TEXT DEFAULT ''
+    categoria TEXT NOT NULL,
+    stored_path TEXT NOT NULL,
+    nombre_original TEXT DEFAULT '',
+    mime TEXT DEFAULT '',
+    subido_por_id INTEGER REFERENCES usuarios(id),
+    subido_por_nombre TEXT DEFAULT '',
+    creado_en TEXT NOT NULL
 );
 """
 
@@ -431,18 +433,17 @@ CREATE TABLE IF NOT EXISTS asistencia_detalle (
     ausente INTEGER DEFAULT 1,
     justificada INTEGER
 );
-CREATE TABLE IF NOT EXISTS acta_descargos (
+CREATE TABLE IF NOT EXISTS falta_adjuntos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    falta_id INTEGER NOT NULL UNIQUE REFERENCES faltas(id) ON DELETE CASCADE,
+    falta_id INTEGER NOT NULL REFERENCES faltas(id) ON DELETE CASCADE,
     colegio_id INTEGER NOT NULL REFERENCES colegios(id),
-    datos_json TEXT NOT NULL,
-    content_hash TEXT NOT NULL,
-    firma_hmac TEXT NOT NULL,
-    verificacion_token TEXT NOT NULL UNIQUE,
-    registrado_en TEXT NOT NULL,
-    actualizado_en TEXT NOT NULL,
-    registrado_por_id INTEGER REFERENCES usuarios(id),
-    registrado_por_nombre TEXT DEFAULT ''
+    categoria TEXT NOT NULL,
+    stored_path TEXT NOT NULL,
+    nombre_original TEXT DEFAULT '',
+    mime TEXT DEFAULT '',
+    subido_por_id INTEGER REFERENCES usuarios(id),
+    subido_por_nombre TEXT DEFAULT '',
+    creado_en TEXT NOT NULL
 );
 """
 
@@ -482,6 +483,7 @@ def init_db():
         # citas
         "CREATE INDEX IF NOT EXISTS idx_citas_colegio_estado ON citas_acudiente(colegio_id, estado)",
         "CREATE INDEX IF NOT EXISTS idx_citas_falta ON citas_acudiente(falta_id)",
+        "CREATE INDEX IF NOT EXISTS idx_falta_adjuntos_falta ON falta_adjuntos(falta_id)",
     ):
         try:
             execute(conn, stmt)

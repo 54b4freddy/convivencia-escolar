@@ -1068,6 +1068,16 @@ async function renderReportes(tab){
           <a href="/api/exportar-csv?anio=${getAnio()}" class="btn btn-xs" style="text-decoration:none">CSV completo</a>
         </div>
       </div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Formatos convivencia (plantillas vacías)</h3></div>
+      <div style="padding:14px;font-size:12px;color:var(--mut)">
+        <p style="margin:0 0 10px;line-height:1.45">PDF generado con nombre, municipio y NIT del colegio. Imprima o complete y firme a mano; luego adjunte al registro de la falta.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-p btn-xs" onclick="window.open('/api/pdf/plantilla/acta-descargos','_blank')">Acta de descargos</button>
+          <button type="button" class="btn btn-p btn-xs" onclick="window.open('/api/pdf/plantilla/acta-sesion','_blank')">Acta de sesión (comité / acudientes)</button>
+        </div>
+      </div>
     </div>`;
   setTimeout(()=>{document.querySelectorAll('.bfil').forEach(b=>{const w=b.style.width;b.style.width='0';setTimeout(()=>b.style.width=w,80);});},50);
   if(['Director','Coordinador','Orientador','Superadmin'].includes(CU.rol)){
@@ -1287,7 +1297,7 @@ async function verFalta(id){
   const as2=document.getElementById('verAnotSec');const sb=document.getElementById('verSaveBtn');
   if(puedeAnotar){as2.style.display='block';sb.style.display='block';document.getElementById('verAnotLbl').textContent=TLBLS[CU.rol]||'Observación';document.getElementById('vAnotTxt').value='';}
   else{as2.style.display='none';sb.style.display='none';}
-  syncActaDescargosUI(f);
+  syncAdjuntosUI(f);
   openOv('ov-ver');
 }
 
@@ -1412,76 +1422,68 @@ function descargarActaFalta(){
   window.open(`/api/pdf/acta/${verFId}`,'_blank');
 }
 
-function collectActaDescargosDatos(){
-  const tri=(id)=>{const v=document.getElementById(id)?.value;if(v==='si')return true;if(v==='no')return false;return null;};
-  return{
-    informedado_hechos_si:tri('adInf'),
-    desea_version_si:tri('adDesea'),
-    version_estudiante:document.getElementById('adVersion')?.value||'',
-    actitud:document.getElementById('adActitud')?.value||'',
-    consideracion_si:(document.getElementById('adCons')?.value)==='si',
-    consideracion_cual:document.getElementById('adConsTxt')?.value||'',
-    estudiante_se_nego_firmar:(document.getElementById('adNegFir')?.value)==='si',
-    constancia_negativa_firma:document.getElementById('adNegConst')?.value||'',
-    estud_nombre:document.getElementById('adEstNom')?.value||'',
-    estud_doc:document.getElementById('adEstDoc')?.value||'',
-    docente_nombre:document.getElementById('adDocNom')?.value||'',
-    docente_doc:document.getElementById('adDocDoc')?.value||'',
-    fecha_acta:document.getElementById('adFecha')?.value||'',
-    hora_acta:document.getElementById('adHora')?.value||''
-  };
+function catAdjLbl(c){
+  if(c==='descargos_inicial')return'Acta de descargos (inicial)';
+  if(c==='sesion_instancias')return'Acta de sesión';
+  return c;
 }
-function fillActaDescargosForm(f,acta){
-  document.getElementById('adFaltaId').value=String(f.id);
-  const d=(acta&&acta.datos)||{};
-  const setTri=(id,v)=>{const el=document.getElementById(id);if(!el)return;if(v===true)el.value='si';else if(v===false)el.value='no';else el.value='';};
-  setTri('adInf',d.informedado_hechos_si);setTri('adDesea',d.desea_version_si);
-  document.getElementById('adVersion').value=d.version_estudiante||'';
-  document.getElementById('adActitud').value=d.actitud||'';
-  document.getElementById('adCons').value=d.consideracion_si?'si':'no';
-  document.getElementById('adConsTxt').value=d.consideracion_cual||'';
-  document.getElementById('adNegFir').value=d.estudiante_se_nego_firmar?'si':'no';
-  document.getElementById('adNegConst').value=d.constancia_negativa_firma||'';
-  document.getElementById('adEstNom').value=d.estud_nombre||f.estudiante||'';
-  document.getElementById('adEstDoc').value=d.estud_doc||f.documento_identidad||'';
-  document.getElementById('adDocNom').value=d.docente_nombre||CU.nombre||'';
-  document.getElementById('adDocDoc').value=d.docente_doc||CU.documento_personal||'';
-  const today=new Date().toISOString().slice(0,10);
-  document.getElementById('adFecha').value=d.fecha_acta||today;
-  const hm=new Date();const pad=n=>String(n).padStart(2,'0');
-  document.getElementById('adHora').value=(d.hora_acta&&String(d.hora_acta).slice(0,5))||(pad(hm.getHours())+':'+pad(hm.getMinutes()));
-}
-function puedeEditarActaDescargos(f){
+function puedeSubirAdjDesc(f){
   if(['Coordinador','Superadmin','Orientador'].includes(CU.rol))return true;
   if(CU.rol==='Docente'&&f.docente===CU.nombre)return true;
   if(CU.rol==='Director'&&(f.curso===CU.curso||f.docente===CU.nombre))return true;
   return false;
 }
-function syncActaDescargosUI(f){
-  fillActaDescargosForm(f,f.acta_descargos);
-  const can=puedeEditarActaDescargos(f);
-  document.querySelectorAll('#vDescSec input, #vDescSec textarea, #vDescSec select').forEach(el=>{
-    if(el.id==='adFaltaId')return;
-    el.disabled=!can;
-  });
-  const sb=document.getElementById('adSaveBtn');
-  if(sb)sb.style.display=can?'inline-block':'none';
-  const acta=f.acta_descargos;
-  const mr=document.getElementById('adMetaRow'),mt=document.getElementById('adMetaTxt'),pb=document.getElementById('adPdfBtn');
-  if(acta&&acta.verificacion_url){mr.style.display='block';mt.textContent=acta.verificacion_url+(acta.huella_integridad?' · Huella: '+acta.huella_integridad:'');}
-  else if(mr){mr.style.display='none';}
-  if(pb)pb.style.display=(acta&&acta.verificacion_token)?'inline-block':'none';
+function puedeSubirAdjSes(f){
+  if(['Coordinador','Superadmin'].includes(CU.rol))return true;
+  if(CU.rol==='Director'&&(f.curso===CU.curso||f.docente===CU.nombre))return true;
+  return false;
 }
-async function guardarActaDescargos(){
-  if(!verFId)return;
-  const datos=collectActaDescargosDatos();
-  const r=await api(`/api/faltas/${verFId}/acta-descargos`,{method:'PUT',body:JSON.stringify({datos})});
-  if(r&&r.ok){window.verFObj.acta_descargos=r.acta_descargos;syncActaDescargosUI(window.verFObj);toast('Acta de descargos guardada');}
-  else toast((r&&r.error)||'Error','e');
+function puedeBorrarAdj(a){
+  if(['Coordinador','Superadmin'].includes(CU.rol))return true;
+  if(CU.id!=null&&a.subido_por_id!=null&&Number(a.subido_por_id)===Number(CU.id))return true;
+  return false;
 }
-function descargarPdfActaDescargos(){
+function syncAdjuntosUI(f){
+  const ud=document.getElementById('vAdjUpDesc');
+  const us=document.getElementById('vAdjUpSes');
+  if(ud)ud.style.display=puedeSubirAdjDesc(f)?'block':'none';
+  if(us)us.style.display=puedeSubirAdjSes(f)?'block':'none';
+  const box=document.getElementById('vAdjBody');
+  if(!box)return;
+  const adj=f.adjuntos||[];
+  if(!adj.length){
+    box.innerHTML='<div class="empty" style="font-size:12px;padding:6px 0">Sin archivos adjuntos aún.</div>';
+    return;
+  }
+  box.innerHTML=adj.map(a=>`<div class="adj-row" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--brd)">
+    <div><span class="bdg bg">${escHtml(catAdjLbl(a.categoria))}</span> <strong>${escHtml(a.nombre_original||'archivo')}</strong>
+    <div style="font-size:10px;color:var(--mut);margin-top:3px">${escHtml(a.subido_por_nombre||'')} · ${escHtml(a.creado_en||'')}</div></div>
+    <div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap">
+      <a class="btn btn-xs btn-g" href="/api/faltas/${f.id}/adjuntos/${a.id}" target="_blank" rel="noopener">Descargar</a>
+      ${puedeBorrarAdj(a)?`<button type="button" class="btn btn-xs btn-d" onclick="borrarAdjunto(${f.id},${a.id})">Eliminar</button>`:''}
+    </div></div>`).join('');
+}
+async function uploadFaltaAdjunto(fid,categoria,fileInput){
+  if(!fileInput||!fileInput.files||!fileInput.files[0]){toast('Seleccione un archivo','e');return null;}
+  const fd=new FormData();
+  fd.append('categoria',categoria);
+  fd.append('archivo',fileInput.files[0]);
+  const r=await fetch(`/api/faltas/${fid}/adjuntos`,{method:'POST',body:fd,credentials:'same-origin'});
+  return r.json();
+}
+async function subirAdjuntoFalta(cat){
   if(!verFId)return;
-  window.open(`/api/pdf/acta-descargos/${verFId}`,'_blank');
+  const inp=document.getElementById(cat==='descargos_inicial'?'vFileDesc':'vFileSes');
+  const j=await uploadFaltaAdjunto(verFId,cat,inp);
+  if(j&&j.ok){if(inp)inp.value='';toast('Archivo adjuntado');await verFalta(verFId);}
+  else toast((j&&j.error)||'Error','e');
+}
+async function borrarAdjunto(fid,aid){
+  if(!confirm('¿Eliminar este adjunto del expediente?'))return;
+  const r=await fetch(`/api/faltas/${fid}/adjuntos/${aid}`,{method:'DELETE',credentials:'same-origin',headers:{'Content-Type':'application/json'}});
+  const j=await r.json();
+  if(j&&j.ok){toast('Adjunto eliminado');await verFalta(fid);}
+  else toast((j&&j.error)||'Error','e');
 }
 
 async function guardarFalta(){
@@ -1498,7 +1500,19 @@ async function guardarFalta(){
   const body={anio:getAnio(),curso,estudiante_id:Number(eid),estudiante:est,tipo_falta:tipo,falta_especifica:esp,descripcion:desc,proceso_inicial:proc};
   if(citar&&citaDt)body.cita_acudiente={activar:true,fecha_hora:citaDt};
   const r=await api('/api/faltas',{method:'POST',body:JSON.stringify(body)});
-  if(r.ok){closeOv('ov-falta');toast(citar?'Falta registrada con citación al acudiente':'Falta registrada');['rCurso','rEst','rTipo','rFaltaEsp','rDesc','rProc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const rc=document.getElementById('rCitarAcu');if(rc){rc.checked=false;toggleRCita();}const rd=document.getElementById('rCitaDt');if(rd)rd.value='';document.getElementById('rAlerta').style.display='none';const cr=document.getElementById('rCatRef');if(cr)cr.style.display='none';const cm=document.getElementById('rCatRefMini');if(cm)cm.style.display='none';window._rCatList=[];await refreshCitasPendientes();renderCurrentTab();}
+  if(r.ok){
+    const fid=r.id;
+    const rAct=document.getElementById('rActaDesc');
+    if(fid&&rAct&&rAct.files&&rAct.files[0]){
+      const up=await uploadFaltaAdjunto(fid,'descargos_inicial',rAct);
+      if(!up||!up.ok)toast(up.error||'Falta guardada; no se pudo adjuntar el acta','e');
+    }
+    closeOv('ov-falta');
+    toast(citar?'Falta registrada con citación al acudiente':'Falta registrada');
+    ['rCurso','rEst','rTipo','rFaltaEsp','rDesc','rProc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    const rAct2=document.getElementById('rActaDesc');if(rAct2)rAct2.value='';
+    const rc=document.getElementById('rCitarAcu');if(rc){rc.checked=false;toggleRCita();}const rd=document.getElementById('rCitaDt');if(rd)rd.value='';document.getElementById('rAlerta').style.display='none';const cr=document.getElementById('rCatRef');if(cr)cr.style.display='none';const cm=document.getElementById('rCatRefMini');if(cm)cm.style.display='none';window._rCatList=[];await refreshCitasPendientes();renderCurrentTab();
+  }
   else toast(r.error||'Error','e');
 }
 
