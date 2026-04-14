@@ -188,24 +188,27 @@
           <textarea id="vAnotTxt" rows="3" placeholder="Escriba su observación, seguimiento o acción tomada..."></textarea>
         </div>
         <div id="vAdjSec" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--brd)">
-          <button type="button" id="vAdjToggle" class="v-adj-toggle" onclick="toggleAdjuntosPanel()" aria-expanded="false"
-            style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--brd);background:var(--t2g);font:inherit;cursor:pointer;color:var(--ink)">
-            <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong>Actas y archivos</strong><span id="vAdjChip" class="bdg bg" style="display:none;font-size:10px;font-weight:600"></span></span>
-            <span id="vAdjChevron" style="font-size:11px;color:var(--mut);flex-shrink:0">▶</span>
-          </button>
-          <div id="vAdjPanel" style="display:none;margin-top:8px;padding:10px;background:#f0f7fb;border-radius:var(--r);border:1px solid #c5dbe8">
-            <div id="vAdjUpDesc" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
-              <label class="fl" style="margin-bottom:4px">Descargos (reporte inicial)</label>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                <input type="file" id="vFileDesc" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
-                <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('descargos_inicial')">Subir</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:0">ACTAS Y ARCHIVOS</div>
+            <span id="vAdjChip" class="bdg bg" style="display:none;font-size:10px;font-weight:600"></span>
+          </div>
+          <div id="vAdjPanel" style="margin-top:8px;padding:10px;background:#f0f7fb;border-radius:var(--r);border:1px solid #c5dbe8">
+            <div id="vAdjUp" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
+              <div class="fr" style="margin-bottom:0">
+                <div>
+                  <label class="fl">Tipo de documento</label>
+                  <select id="vAdjCat">
+                    <option value="descargos_inicial">Acta de descargos</option>
+                    <option value="sesion_instancias">Acta de sesión</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="fl">Archivo</label>
+                  <input type="file" id="vAdjFile" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
+                </div>
               </div>
-            </div>
-            <div id="vAdjUpSes" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
-              <label class="fl" style="margin-bottom:4px">Sesión (comité / acudientes), si aplica</label>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                <input type="file" id="vFileSes" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
-                <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('sesion_instancias')">Subir</button>
+              <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta()">Subir</button>
               </div>
             </div>
             <div id="vAdjBody" style="font-size:12px"></div>

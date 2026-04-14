@@ -1312,14 +1312,6 @@ async function verFalta(id){
   const as2=document.getElementById('verAnotSec');const sb=document.getElementById('verSaveBtn');
   if(puedeAnotar){as2.style.display='block';sb.style.display='block';document.getElementById('verAnotLbl').textContent=TLBLS[CU.rol]||'Observación';document.getElementById('vAnotTxt').value='';}
   else{as2.style.display='none';sb.style.display='none';}
-  if(prevId!==id){
-    const ap=document.getElementById('vAdjPanel');
-    const ach=document.getElementById('vAdjChevron');
-    const abt=document.getElementById('vAdjToggle');
-    if(ap)ap.style.display='none';
-    if(ach)ach.textContent='▶';
-    if(abt)abt.setAttribute('aria-expanded','false');
-  }
   syncAdjuntosUI(f);
   openOv('ov-ver');
 }
@@ -1446,14 +1438,11 @@ function descargarActaFalta(){
 }
 
 function toggleAdjuntosPanel(){
+  // Compat: el panel ya no es desplegable en el detalle, pero mantenemos la función
+  // para no romper llamados antiguos.
   const p=document.getElementById('vAdjPanel');
-  const ch=document.getElementById('vAdjChevron');
-  const bt=document.getElementById('vAdjToggle');
   if(!p)return;
-  const open=p.style.display==='block';
-  p.style.display=open?'none':'block';
-  if(ch)ch.textContent=open?'▶':'▼';
-  if(bt)bt.setAttribute('aria-expanded',open?'false':'true');
+  p.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
 
 function catAdjLbl(c){
@@ -1474,11 +1463,26 @@ function puedeBorrarAdj(a){
   if(CU.id!=null&&a.subido_por_id!=null&&Number(a.subido_por_id)===Number(CU.id))return true;
   return false;
 }
+
+function _syncAdjUploader(f){
+  const wrap=document.getElementById('vAdjUp');
+  const sel=document.getElementById('vAdjCat');
+  const canDesc=puedeSubirAdjDesc(f);
+  const canSes=puedeSubirAdjSes(f);
+  const canAny=canDesc||canSes;
+  if(!wrap||!sel)return;
+  wrap.style.display=canAny?'block':'none';
+  if(!canAny)return;
+  const prev=sel.value||'';
+  sel.innerHTML='';
+  if(canDesc){const o=document.createElement('option');o.value='descargos_inicial';o.textContent='Acta de descargos';sel.appendChild(o);}
+  if(canSes){const o=document.createElement('option');o.value='sesion_instancias';o.textContent='Acta de sesión';sel.appendChild(o);}
+  // mantener selección si sigue disponible
+  if(prev && Array.from(sel.options).some(o=>o.value===prev)) sel.value=prev;
+}
+
 function syncAdjuntosUI(f){
-  const ud=document.getElementById('vAdjUpDesc');
-  const us=document.getElementById('vAdjUpSes');
-  if(ud)ud.style.display=puedeSubirAdjDesc(f)?'block':'none';
-  if(us)us.style.display=puedeSubirAdjSes(f)?'block':'none';
+  _syncAdjUploader(f);
   const chip=document.getElementById('vAdjChip');
   const n=(f.adjuntos||[]).length;
   if(chip){
@@ -1508,17 +1512,16 @@ async function uploadFaltaAdjunto(fid,categoria,fileInput){
   const r=await fetch(`/api/faltas/${fid}/adjuntos`,{method:'POST',body:fd,credentials:'same-origin'});
   return r.json();
 }
-async function subirAdjuntoFalta(cat){
+async function subirAdjuntoFalta(){
   if(!verFId)return;
-  const inp=document.getElementById(cat==='descargos_inicial'?'vFileDesc':'vFileSes');
+  const sel=document.getElementById('vAdjCat');
+  const inp=document.getElementById('vAdjFile');
+  const cat=(sel&&sel.value)||'';
+  if(!cat){toast('Seleccione el tipo de documento','e');return;}
   const j=await uploadFaltaAdjunto(verFId,cat,inp);
   if(j&&j.ok){
     if(inp)inp.value='';
     toast('Archivo adjuntado');
-    const ap=document.getElementById('vAdjPanel');
-    const ach=document.getElementById('vAdjChevron');
-    const abt=document.getElementById('vAdjToggle');
-    if(ap){ap.style.display='block';if(ach)ach.textContent='▼';if(abt)abt.setAttribute('aria-expanded','true');}
     await verFalta(verFId);
   }
   else toast((j&&j.error)||'Error','e');
