@@ -34,7 +34,7 @@
 <!-- OVERLAY: Registrar falta -->
 <div class="ov" id="ov-falta">
 <div class="modal modal-lg" style="margin-top:14px">
-  <div class="mh"><div class="mh-l"><h3>Registrar falta</h3><small>Complete los 4 pasos</small></div><button onclick="closeOv('ov-falta')">×</button></div>
+  <div class="mh"><div class="mh-l"><h3>Registrar falta</h3><small>Complete los 5 pasos</small></div><button onclick="closeOv('ov-falta')">×</button></div>
   <div class="mb">
     <div class="step">
       <div class="sn">1</div>
@@ -88,12 +88,6 @@
           <div style="margin-top:6px"><span class="plbl" style="font-size:9px">Sanción / medida</span><div id="rSancSugMini" style="white-space:pre-wrap;color:var(--ink);margin-top:2px"></div></div>
         </div>
         <div class="fr fr1"><div><label class="fl">Proceso disciplinar inicial</label><textarea id="rProc" rows="3" placeholder="Diálogo, llamado verbal, retención de objeto, remisión..."></textarea></div></div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--brd)">
-          <div class="fsec" style="margin-bottom:6px">ACTA DE DESCARGOS (opcional)</div>
-          <p style="font-size:11px;color:var(--mut);margin:0 0 8px;line-height:1.45">Si cuenta con el acta de descargos ya cumplimentada, adjúntela aquí o más tarde desde el detalle de la falta. Formatos: PDF, imagen o Word.</p>
-          <label class="fl">Adjuntar acta</label>
-          <input type="file" id="rActaDesc" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
-        </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--brd)">
           <label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
             <input type="checkbox" id="rCitarAcu" onchange="toggleRCita()"> Citar a acudiente (fecha y hora propuestas; el acudiente confirma en su portal)
@@ -105,6 +99,25 @@
             </div>
             <label class="fl">Fecha y hora de la cita</label>
             <input type="datetime-local" id="rCitaDt" style="max-width:280px;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="sn">5</div>
+      <div class="sb2">
+        <div class="st">Adjuntar acta</div>
+        <div class="fr">
+          <div>
+            <label class="fl">Tipo de documento</label>
+            <select id="rAdjCat">
+              <option value="descargos_inicial">Acta de descargos</option>
+              <option value="sesion_instancias">Acta de sesión</option>
+            </select>
+          </div>
+          <div>
+            <label class="fl">Archivo</label>
+            <input type="file" id="rAdjFile" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
           </div>
         </div>
       </div>

@@ -66,3 +66,18 @@ def test_coordinador_adjunto_sesion(client):
     }
     rv2 = client.post(f"/api/faltas/{fid}/adjuntos", data=data, content_type="multipart/form-data")
     assert rv2.status_code == 200, rv2.get_json()
+
+
+def test_coordinador_no_puede_subir_descargos(client):
+    _login(client, "admin", "admin123")
+    from datetime import datetime
+
+    y = datetime.now().year
+    rv = client.get(f"/api/faltas?anio={y}")
+    fid = rv.get_json()[0]["id"]
+    data = {
+        "categoria": "descargos_inicial",
+        "archivo": (BytesIO(b"%PDF-1.4\n1 0 obj<<>>endobj trailer<<>>"), "prueba_acta.pdf"),
+    }
+    rv2 = client.post(f"/api/faltas/{fid}/adjuntos", data=data, content_type="multipart/form-data")
+    assert rv2.status_code == 403, rv2.get_json()

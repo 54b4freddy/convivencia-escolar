@@ -23,17 +23,9 @@ _VALID_CAT = frozenset({CAT_DESCARGOS, CAT_SESION})
 
 
 def _puede_subir_adjunto_descargos(u, f):
-    if u["rol"] == "Superadmin":
-        return True
     if int(f.get("colegio_id") or 0) != int(u.get("colegio_id") or 0):
         return False
-    if u["rol"] == "Docente":
-        return f.get("docente") == u["nombre"]
-    if u["rol"] == "Director":
-        return f.get("curso") == u.get("curso") or f.get("docente") == u.get("nombre")
-    if u["rol"] in ("Coordinador", "Orientador"):
-        return True
-    return False
+    return u["rol"] == "Docente" and f.get("docente") == u["nombre"]
 
 
 def _puede_subir_adjunto_sesion(u, f):

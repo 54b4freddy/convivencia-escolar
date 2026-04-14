@@ -1462,10 +1462,7 @@ function catAdjLbl(c){
   return c;
 }
 function puedeSubirAdjDesc(f){
-  if(['Coordinador','Superadmin','Orientador'].includes(CU.rol))return true;
-  if(CU.rol==='Docente'&&f.docente===CU.nombre)return true;
-  if(CU.rol==='Director'&&(f.curso===CU.curso||f.docente===CU.nombre))return true;
-  return false;
+  return CU.rol==='Docente'&&f.docente===CU.nombre;
 }
 function puedeSubirAdjSes(f){
   if(['Coordinador','Superadmin'].includes(CU.rol))return true;
@@ -1550,15 +1547,18 @@ async function guardarFalta(){
   const r=await api('/api/faltas',{method:'POST',body:JSON.stringify(body)});
   if(r.ok){
     const fid=r.id;
-    const rAct=document.getElementById('rActaDesc');
-    if(fid&&rAct&&rAct.files&&rAct.files[0]){
-      const up=await uploadFaltaAdjunto(fid,'descargos_inicial',rAct);
+    const rCat=document.getElementById('rAdjCat');
+    const rFile=document.getElementById('rAdjFile');
+    const cat=(rCat&&rCat.value)||'';
+    if(fid&&rFile&&rFile.files&&rFile.files[0]&&cat){
+      const up=await uploadFaltaAdjunto(fid,cat,rFile);
       if(!up||!up.ok)toast(up.error||'Falta guardada; no se pudo adjuntar el acta','e');
     }
     closeOv('ov-falta');
     toast(citar?'Falta registrada con citación al acudiente':'Falta registrada');
     ['rCurso','rEst','rTipo','rFaltaEsp','rDesc','rProc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-    const rAct2=document.getElementById('rActaDesc');if(rAct2)rAct2.value='';
+    const rFile2=document.getElementById('rAdjFile');if(rFile2)rFile2.value='';
+    const rCat2=document.getElementById('rAdjCat');if(rCat2)rCat2.value='descargos_inicial';
     const rc=document.getElementById('rCitarAcu');if(rc){rc.checked=false;toggleRCita();}const rd=document.getElementById('rCitaDt');if(rd)rd.value='';document.getElementById('rAlerta').style.display='none';const cr=document.getElementById('rCatRef');if(cr)cr.style.display='none';const cm=document.getElementById('rCatRefMini');if(cm)cm.style.display='none';window._rCatList=[];await refreshCitasPendientes();renderCurrentTab();
   }
   else toast(r.error||'Error','e');
