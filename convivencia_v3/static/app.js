@@ -1287,6 +1287,7 @@ async function verFalta(id){
   const as2=document.getElementById('verAnotSec');const sb=document.getElementById('verSaveBtn');
   if(puedeAnotar){as2.style.display='block';sb.style.display='block';document.getElementById('verAnotLbl').textContent=TLBLS[CU.rol]||'Observación';document.getElementById('vAnotTxt').value='';}
   else{as2.style.display='none';sb.style.display='none';}
+  syncActaDescargosUI(f);
   openOv('ov-ver');
 }
 
@@ -1411,6 +1412,78 @@ function descargarActaFalta(){
   window.open(`/api/pdf/acta/${verFId}`,'_blank');
 }
 
+function collectActaDescargosDatos(){
+  const tri=(id)=>{const v=document.getElementById(id)?.value;if(v==='si')return true;if(v==='no')return false;return null;};
+  return{
+    informedado_hechos_si:tri('adInf'),
+    desea_version_si:tri('adDesea'),
+    version_estudiante:document.getElementById('adVersion')?.value||'',
+    actitud:document.getElementById('adActitud')?.value||'',
+    consideracion_si:(document.getElementById('adCons')?.value)==='si',
+    consideracion_cual:document.getElementById('adConsTxt')?.value||'',
+    estudiante_se_nego_firmar:(document.getElementById('adNegFir')?.value)==='si',
+    constancia_negativa_firma:document.getElementById('adNegConst')?.value||'',
+    estud_nombre:document.getElementById('adEstNom')?.value||'',
+    estud_doc:document.getElementById('adEstDoc')?.value||'',
+    docente_nombre:document.getElementById('adDocNom')?.value||'',
+    docente_doc:document.getElementById('adDocDoc')?.value||'',
+    fecha_acta:document.getElementById('adFecha')?.value||'',
+    hora_acta:document.getElementById('adHora')?.value||''
+  };
+}
+function fillActaDescargosForm(f,acta){
+  document.getElementById('adFaltaId').value=String(f.id);
+  const d=(acta&&acta.datos)||{};
+  const setTri=(id,v)=>{const el=document.getElementById(id);if(!el)return;if(v===true)el.value='si';else if(v===false)el.value='no';else el.value='';};
+  setTri('adInf',d.informedado_hechos_si);setTri('adDesea',d.desea_version_si);
+  document.getElementById('adVersion').value=d.version_estudiante||'';
+  document.getElementById('adActitud').value=d.actitud||'';
+  document.getElementById('adCons').value=d.consideracion_si?'si':'no';
+  document.getElementById('adConsTxt').value=d.consideracion_cual||'';
+  document.getElementById('adNegFir').value=d.estudiante_se_nego_firmar?'si':'no';
+  document.getElementById('adNegConst').value=d.constancia_negativa_firma||'';
+  document.getElementById('adEstNom').value=d.estud_nombre||f.estudiante||'';
+  document.getElementById('adEstDoc').value=d.estud_doc||f.documento_identidad||'';
+  document.getElementById('adDocNom').value=d.docente_nombre||CU.nombre||'';
+  document.getElementById('adDocDoc').value=d.docente_doc||CU.documento_personal||'';
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('adFecha').value=d.fecha_acta||today;
+  const hm=new Date();const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('adHora').value=(d.hora_acta&&String(d.hora_acta).slice(0,5))||(pad(hm.getHours())+':'+pad(hm.getMinutes()));
+}
+function puedeEditarActaDescargos(f){
+  if(['Coordinador','Superadmin','Orientador'].includes(CU.rol))return true;
+  if(CU.rol==='Docente'&&f.docente===CU.nombre)return true;
+  if(CU.rol==='Director'&&(f.curso===CU.curso||f.docente===CU.nombre))return true;
+  return false;
+}
+function syncActaDescargosUI(f){
+  fillActaDescargosForm(f,f.acta_descargos);
+  const can=puedeEditarActaDescargos(f);
+  document.querySelectorAll('#vDescSec input, #vDescSec textarea, #vDescSec select').forEach(el=>{
+    if(el.id==='adFaltaId')return;
+    el.disabled=!can;
+  });
+  const sb=document.getElementById('adSaveBtn');
+  if(sb)sb.style.display=can?'inline-block':'none';
+  const acta=f.acta_descargos;
+  const mr=document.getElementById('adMetaRow'),mt=document.getElementById('adMetaTxt'),pb=document.getElementById('adPdfBtn');
+  if(acta&&acta.verificacion_url){mr.style.display='block';mt.textContent=acta.verificacion_url+(acta.huella_integridad?' · Huella: '+acta.huella_integridad:'');}
+  else if(mr){mr.style.display='none';}
+  if(pb)pb.style.display=(acta&&acta.verificacion_token)?'inline-block':'none';
+}
+async function guardarActaDescargos(){
+  if(!verFId)return;
+  const datos=collectActaDescargosDatos();
+  const r=await api(`/api/faltas/${verFId}/acta-descargos`,{method:'PUT',body:JSON.stringify({datos})});
+  if(r&&r.ok){window.verFObj.acta_descargos=r.acta_descargos;syncActaDescargosUI(window.verFObj);toast('Acta de descargos guardada');}
+  else toast((r&&r.error)||'Error','e');
+}
+function descargarPdfActaDescargos(){
+  if(!verFId)return;
+  window.open(`/api/pdf/acta-descargos/${verFId}`,'_blank');
+}
+
 async function guardarFalta(){
   const curso=document.getElementById('rCurso').value;
   const sel=document.getElementById('rEst');
@@ -1504,11 +1577,24 @@ async function borrarEst(id){if(!confirm('¿Eliminar este estudiante?'))return;c
 
 // ── Usuarios CRUD ─────────────────────────────────────────────────────────────
 const _IDS_USR=['uTipoDoc','uDocPer','uAp1','uAp2','uNom1','uNom2','uUsr','uPas','uAsig','uTel'];
-function openNuevoUsr(){
+async function openNuevoUsr(){
   editUsrId=null;document.getElementById('usrTit').textContent='Nuevo usuario';
   _IDS_USR.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('uRol').value='';document.getElementById('uCurso').value='';
   document.getElementById('uCursoRow').style.display='none';document.getElementById('uAsigRow').style.display='none';
+  const colRow=document.getElementById('uColegioRow');
+  const colSel=document.getElementById('uColegioId');
+  colRow.style.display='none';
+  colSel.innerHTML='<option value="">Seleccionar institución</option>';
+  if(CU&&CU.rol==='Superadmin'){
+    const cols=await api('/api/colegios');
+    if(Array.isArray(cols)){
+      cols.forEach(c=>{const o=document.createElement('option');o.value=String(c.id);o.textContent=c.nombre||('Institución '+c.id);colSel.appendChild(o);});
+      const needPick=cols.length>1||!CU.colegio_id;
+      colRow.style.display=needPick?'block':'none';
+      if(CU.colegio_id)colSel.value=String(CU.colegio_id);
+    }
+  }
   document.getElementById('uErr').textContent='';openOv('ov-usr');toggleUsrF();
 }
 async function editarUsr(id){
@@ -1525,6 +1611,7 @@ async function editarUsr(id){
   document.getElementById('uRol').value=u.rol;document.getElementById('uCurso').value=u.curso||'';
   document.getElementById('uAsig').value=u.asignatura||'';
   document.getElementById('uTel').value=u.telefono||'';
+  document.getElementById('uColegioRow').style.display='none';
   document.getElementById('uCursoRow').style.display=u.rol==='Director'?'block':'none';
   document.getElementById('uAsigRow').style.display=_usrMuestraAsignatura(u.rol)?'block':'none';
   document.getElementById('uErr').textContent='';openOv('ov-usr');
@@ -1553,6 +1640,21 @@ async function guardarUsuario(){
     nombre1:n1,nombre2:document.getElementById('uNom2').value.trim(),
     telefono:document.getElementById('uTel').value.trim(),
   };
+  if(!editUsrId&&CU&&CU.rol==='Superadmin'){
+    const colRow=document.getElementById('uColegioRow');
+    const colSel=document.getElementById('uColegioId');
+    let colId=CU.colegio_id;
+    if(colRow.style.display!=='none'){
+      const v=parseInt(colSel.value,10);
+      if(!v){err.textContent='Seleccione la institución.';return;}
+      colId=v;
+    }else if(!colId){
+      const cols=await api('/api/colegios');
+      if(Array.isArray(cols)&&cols.length===1)colId=cols[0].id;
+    }
+    if(!colId){err.textContent='No se pudo determinar la institución del usuario.';return;}
+    body.colegio_id=colId;
+  }
   const r=await api(url,{method:editUsrId?'PATCH':'POST',body:JSON.stringify(body)});
   if(r.ok){closeOv('ov-usr');toast('Usuario guardado');editUsrId=null;renderCurrentTab();}else err.textContent=r.error||'Error al guardar';
 }

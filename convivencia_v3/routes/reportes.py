@@ -1,4 +1,5 @@
 """Reportes, exportación y PDFs. Datos siempre acotados por colegio_id y rol (multi-institución)."""
+import json
 import re
 from collections import Counter
 from datetime import datetime
@@ -7,10 +8,10 @@ from flask import Blueprint, jsonify, request, Response
 
 from ce_db import commit, execute, get_db, ph
 from ce_export import csv_response
-from ce_pdf import generar_pdf_acta_proceso, generar_pdf_curso, generar_pdf_estudiante
+from ce_pdf import generar_pdf_acta_descargos, generar_pdf_acta_proceso, generar_pdf_curso, generar_pdf_estudiante
 from ce_queries import col_nom, fq, faltas_con_notas
 from ce_sugerencias import generar_sugerencias
-from routes.authz import cu, login_required, roles
+from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("reportes", __name__)
 
@@ -34,8 +35,12 @@ def _puede_descargar_acta(u, f):
 def api_reportes():
     u = cu()
     anio = request.args.get("anio", str(datetime.now().year))
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    u_sc = {**u, "colegio_id": tenant_id}
     conn = get_db()
-    q, p = fq(u, anio)
+    q, p = fq(u_sc, anio)
     faltas = execute(conn, q, p, fetch="all")
     conn.close()
     ests_t1 = Counter(f["estudiante"] for f in faltas if f["tipo_falta"] == "Tipo I")
@@ -70,8 +75,12 @@ def api_reportes():
 def api_exportar_csv():
     u = cu()
     anio = request.args.get("anio", str(datetime.now().year))
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    u_sc = {**u, "colegio_id": tenant_id}
     conn = get_db()
-    q, params = fq(u, anio)
+    q, params = fq(u_sc, anio)
     faltas = execute(conn, q, params, fetch="all")
     conn.close()
     header = [
@@ -128,8 +137,13 @@ def api_reporte_estudiante():
             return jsonify({"error": "Sin estudiante asociado"}), 400
         estudiante = est["nombre"]
 
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        conn.close()
+        return jsonify({"error": terr}), 400
+
     where = f"f.colegio_id={p} AND f.estudiante={p}"
-    params = [u["colegio_id"] or 1, estudiante]
+    params = [tenant_id, estudiante]
     if anio != "todos":
         where += f" AND f.anio={p}"
         params.append(anio)
@@ -184,8 +198,12 @@ def api_mejoramiento():
     if u["rol"] not in ("Director", "Coordinador", "Orientador", "Superadmin"):
         return jsonify({"error": "Sin permisos"}), 403
     anio = request.args.get("anio", str(datetime.now().year))
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    u_sc = {**u, "colegio_id": tenant_id}
     conn = get_db()
-    q, p = fq(u, anio)
+    q, p = fq(u_sc, anio)
     faltas = execute(conn, q, p, fetch="all")
     conn.close()
     por_curso = {}
@@ -219,6 +237,9 @@ def api_pdf_curso():
         return jsonify({"error": "Sin permisos"}), 403
     curso = request.args.get("curso", "")
     anio = request.args.get("anio", str(datetime.now().year))
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     if not curso:
         return jsonify({"error": "Curso requerido"}), 400
     if u["rol"] == "Director" and u.get("curso") and curso != u["curso"]:
@@ -226,7 +247,6 @@ def api_pdf_curso():
 
     conn = get_db()
     p = ph()
-    cid = u["colegio_id"] or 1
     where = f"f.colegio_id={p} AND f.anio={p} AND f.curso={p}"
     params = [cid, anio, curso]
     if u["rol"] == "Docente":
@@ -235,7 +255,7 @@ def api_pdf_curso():
 
     faltas = faltas_con_notas(conn, where, params)
     conn.close()
-    buf = generar_pdf_curso(col_nom(u["colegio_id"]), curso, anio, faltas)
+    buf = generar_pdf_curso(col_nom(cid), curso, anio, faltas)
     return Response(
         buf.read(),
         mimetype="application/pdf",
@@ -250,9 +270,11 @@ def api_pdf_estudiante():
     est_id = request.args.get("est_id")
     nombre_est = request.args.get("estudiante", "")
     anio = request.args.get("anio", "todos")
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
-    cid = u["colegio_id"] or 1
     est_info = None
 
     if u["rol"] == "Acudiente":
@@ -263,12 +285,12 @@ def api_pdf_estudiante():
         nombre_est = est["nombre"]
         est_info = est
     elif est_id:
-        q = f"SELECT * FROM estudiantes WHERE id={p}"
-        prm = [est_id]
-        if u.get("colegio_id") is not None:
-            q += f" AND colegio_id={p}"
-            prm.append(cid)
-        est_info = execute(conn, q, tuple(prm), fetch="one")
+        est_info = execute(
+            conn,
+            f"SELECT * FROM estudiantes WHERE id={p} AND colegio_id={p}",
+            (est_id, cid),
+            fetch="one",
+        )
         if est_info:
             nombre_est = est_info["nombre"]
     elif nombre_est:
@@ -301,7 +323,7 @@ def api_pdf_estudiante():
 
     faltas = faltas_con_notas(conn, where, params)
     conn.close()
-    buf = generar_pdf_estudiante(col_nom(u["colegio_id"]), nombre_est, faltas, est_info)
+    buf = generar_pdf_estudiante(col_nom(cid), nombre_est, faltas, est_info)
     return Response(
         buf.read(),
         mimetype="application/pdf",
@@ -316,10 +338,13 @@ def api_pdf_general():
     if u["rol"] == "Acudiente":
         return jsonify({"error": "Sin permisos"}), 403
     anio = request.args.get("anio", str(datetime.now().year))
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     ph_ = ph()
     where = f"f.colegio_id={ph_} AND f.anio={ph_}"
-    params = [u["colegio_id"] or 1, anio]
+    params = [cid, anio]
     if u["rol"] == "Director":
         where += f" AND (f.curso={ph_} OR f.docente={ph_})"
         params += [u["curso"], u["nombre"]]
@@ -329,7 +354,7 @@ def api_pdf_general():
 
     faltas = faltas_con_notas(conn, where, params)
     conn.close()
-    buf = generar_pdf_curso(col_nom(u["colegio_id"]), "Todos los cursos", anio, faltas)
+    buf = generar_pdf_curso(col_nom(cid), "Todos los cursos", anio, faltas)
     return Response(
         buf.read(),
         mimetype="application/pdf",
@@ -337,22 +362,75 @@ def api_pdf_general():
     )
 
 
+@bp.route("/api/pdf/acta-descargos/<int:fid>")
+@login_required
+def api_pdf_acta_descargos(fid):
+    u = cu()
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    conn = get_db()
+    p = ph()
+    f = execute(
+        conn,
+        f"SELECT f.*, e.documento_identidad FROM faltas f "
+        f"LEFT JOIN estudiantes e ON e.id=f.estudiante_id WHERE f.id={p}",
+        (fid,),
+        fetch="one",
+    )
+    if not f:
+        conn.close()
+        return jsonify({"error": "No encontrada"}), 404
+    if int(f.get("colegio_id") or 0) != int(cid):
+        conn.close()
+        return jsonify({"error": "Sin permisos"}), 403
+    if not _puede_descargar_acta(u, f):
+        conn.close()
+        return jsonify({"error": "Sin permisos"}), 403
+    acta = execute(conn, f"SELECT * FROM acta_descargos WHERE falta_id={p}", (fid,), fetch="one")
+    if not acta:
+        conn.close()
+        return jsonify({"error": "No hay acta de descargos registrada para esta falta"}), 404
+    try:
+        datos = json.loads(acta.get("datos_json") or "{}")
+    except json.JSONDecodeError:
+        datos = {}
+    col = execute(conn, f"SELECT nombre,nit,municipio FROM colegios WHERE id={p}", (cid,), fetch="one") or {}
+    tok = acta.get("verificacion_token") or ""
+    base = request.url_root.rstrip("/")
+    vurl = f"{base}/api/verificar-descargos/{tok}" if tok else ""
+    conn.close()
+    buf = generar_pdf_acta_descargos(col, f, datos, vurl)
+    safe = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(f.get("estudiante", "descargos"))).strip("_") or "descargos"
+    return Response(
+        buf.read(),
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment;filename=acta_descargos_{fid}_{safe}.pdf"},
+    )
+
+
 @bp.route("/api/pdf/acta/<int:fid>")
 @login_required
 def api_pdf_acta(fid):
     u = cu()
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
     f = execute(conn, f"SELECT * FROM faltas WHERE id={p}", (fid,), fetch="one")
     if not f:
         conn.close()
         return jsonify({"error": "No encontrada"}), 404
+    if int(f.get("colegio_id") or 0) != int(cid):
+        conn.close()
+        return jsonify({"error": "Sin permisos"}), 403
     if not _puede_descargar_acta(u, f):
         conn.close()
         return jsonify({"error": "Sin permisos"}), 403
     anots = execute(conn, f"SELECT * FROM anotaciones WHERE falta_id={p} ORDER BY id", (fid,), fetch="all")
     conn.close()
-    buf = generar_pdf_acta_proceso(col_nom(u["colegio_id"]), f, anots or [])
+    buf = generar_pdf_acta_proceso(col_nom(cid), f, anots or [])
     safe = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(f.get("estudiante", "acta"))).strip("_") or "acta"
     return Response(
         buf.read(),
@@ -369,10 +447,10 @@ def api_cerrar_anio():
     conn = get_db()
     p = ph()
     if d.get("limpiar_estudiantes"):
-        cid = u.get("colegio_id")
-        if not cid:
+        cid, cerr = resolve_colegio_id(u)
+        if cerr:
             conn.close()
-            return jsonify({"ok": False, "error": "Asigne un colegio al usuario para esta operación."}), 400
+            return jsonify({"ok": False, "error": cerr}), 400
         execute(conn, f"DELETE FROM estudiantes WHERE colegio_id={p}", (cid,))
     commit(conn)
     conn.close()

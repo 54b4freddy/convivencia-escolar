@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 
 from ce_db import commit, execute, get_db, ph
 from ce_utils import hpwd, nombre_desde_partes, solo_letras, solo_numeros
-from routes.authz import cu, login_required, roles
+from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("institucion", __name__)
 
@@ -11,9 +11,17 @@ bp = Blueprint("institucion", __name__)
 @bp.route("/api/colegios")
 @login_required
 def api_colegios():
+    u = cu()
     conn = get_db()
     p = ph()
-    rows = execute(conn, "SELECT * FROM colegios ORDER BY nombre", fetch="all")
+    if u["rol"] == "Superadmin":
+        rows = execute(conn, "SELECT * FROM colegios ORDER BY nombre", fetch="all")
+    else:
+        cid = u.get("colegio_id")
+        if not cid:
+            conn.close()
+            return jsonify({"error": "Sin colegio asignado"}), 403
+        rows = execute(conn, f"SELECT * FROM colegios WHERE id={p}", (cid,), fetch="all") or []
     result = []
     for c in rows:
         c["num_usuarios"] = execute(
@@ -98,10 +106,14 @@ def api_usuarios():
             fetch="all",
         )
     else:
+        tenant_id, terr = resolve_colegio_id(u)
+        if terr:
+            conn.close()
+            return jsonify({"error": terr}), 400
         rows = execute(
             conn,
             f"SELECT u.*,c.nombre as col_nom FROM usuarios u LEFT JOIN colegios c ON c.id=u.colegio_id WHERE u.colegio_id={p} AND u.rol NOT IN ('Acudiente') ORDER BY u.rol,u.nombre",
-            (u["colegio_id"],),
+            (tenant_id,),
             fetch="all",
         )
     conn.close()
@@ -115,7 +127,20 @@ def api_usuario_crear():
     u = cu()
     conn = get_db()
     p = ph()
-    cid = d.get("colegio_id") if u["rol"] == "Superadmin" else u["colegio_id"]
+    if u["rol"] == "Superadmin":
+        try:
+            cid = int(d.get("colegio_id"))
+        except (TypeError, ValueError):
+            conn.close()
+            return jsonify({"ok": False, "error": "Indique colegio_id (entero) para el nuevo usuario."}), 400
+        if cid <= 0:
+            conn.close()
+            return jsonify({"ok": False, "error": "colegio_id no válido."}), 400
+    else:
+        cid, cerr = resolve_colegio_id(u)
+        if cerr:
+            conn.close()
+            return jsonify({"ok": False, "error": cerr}), 400
     try:
         nom = (d.get("nombre") or "").strip() or nombre_desde_partes(
             d.get("apellido1", ""), d.get("apellido2", ""), d.get("nombre1", ""), d.get("nombre2", "")
@@ -155,8 +180,24 @@ def api_usuario_crear():
 @roles("Superadmin", "Coordinador")
 def api_usuario_editar(uid):
     d = request.json or {}
+    u = cu()
     conn = get_db()
     p = ph()
+    target = execute(conn, f"SELECT id, colegio_id, rol FROM usuarios WHERE id={p}", (uid,), fetch="one")
+    if not target:
+        conn.close()
+        return jsonify({"ok": False, "error": "No encontrado"}), 404
+    if u["rol"] == "Coordinador":
+        tenant_id, terr = resolve_colegio_id(u)
+        if terr:
+            conn.close()
+            return jsonify({"ok": False, "error": terr}), 400
+        if int(target.get("colegio_id") or 0) != int(tenant_id):
+            conn.close()
+            return jsonify({"ok": False, "error": "Sin permisos"}), 403
+        if target.get("rol") == "Superadmin" or d.get("rol") == "Superadmin":
+            conn.close()
+            return jsonify({"ok": False, "error": "Sin permisos"}), 403
     asig = d.get("asignatura", "")
     nom = (d.get("nombre") or "").strip() or nombre_desde_partes(
         d.get("apellido1", ""), d.get("apellido2", ""), d.get("nombre1", ""), d.get("nombre2", "")
@@ -193,10 +234,26 @@ def api_usuario_editar(uid):
 @bp.route("/api/usuarios/<int:uid>", methods=["DELETE"])
 @roles("Superadmin", "Coordinador")
 def api_usuario_borrar(uid):
-    if uid == cu()["id"]:
+    u = cu()
+    if uid == u["id"]:
         return jsonify({"ok": False, "error": "No puedes eliminarte"}), 400
     conn = get_db()
     p = ph()
+    target = execute(conn, f"SELECT id, colegio_id, rol FROM usuarios WHERE id={p}", (uid,), fetch="one")
+    if not target:
+        conn.close()
+        return jsonify({"ok": False, "error": "No encontrado"}), 404
+    if u["rol"] == "Coordinador":
+        tenant_id, terr = resolve_colegio_id(u)
+        if terr:
+            conn.close()
+            return jsonify({"ok": False, "error": terr}), 400
+        if int(target.get("colegio_id") or 0) != int(tenant_id):
+            conn.close()
+            return jsonify({"ok": False, "error": "Sin permisos"}), 403
+        if target.get("rol") == "Superadmin":
+            conn.close()
+            return jsonify({"ok": False, "error": "Sin permisos"}), 403
     execute(conn, f"DELETE FROM usuarios WHERE id={p}", (uid,))
     commit(conn)
     conn.close()

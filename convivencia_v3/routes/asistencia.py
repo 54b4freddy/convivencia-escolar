@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, session
 
 from ce_db import USE_PG, commit, execute, get_db, ph
-from routes.authz import cu, login_required, roles
+from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("asistencia", __name__)
 
@@ -15,9 +15,11 @@ def api_asistencia_tomas():
     u = cu()
     if u["rol"] == "Acudiente":
         return jsonify({"error": "Sin permisos"}), 403
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
-    cid = u["colegio_id"] or 1
     q = f"SELECT t.* FROM asistencia_toma t WHERE t.colegio_id={p}"
     prm = [cid]
     if u["rol"] == "Director" and u.get("curso"):
@@ -56,6 +58,9 @@ def api_asistencia_tomas():
 def api_asistencia_crear_toma():
     d = request.json or {}
     u = cu()
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     fecha = (d.get("fecha") or "").strip()
     curso = (d.get("curso") or "").strip()
     asignatura = (d.get("asignatura") or "").strip() or (u.get("asignatura") or "")
@@ -66,7 +71,6 @@ def api_asistencia_crear_toma():
         return jsonify({"ok": False, "error": "Solo su curso asignado"}), 403
     conn = get_db()
     p = ph()
-    cid = u["colegio_id"] or 1
     creado = datetime.now().strftime("%Y-%m-%d %H:%M")
     execute(
         conn,
@@ -101,6 +105,9 @@ def api_asistencia_crear_toma():
 def api_asistencia_linea_justificar(lid):
     d = request.json or {}
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     jus = d.get("justificada")
     if jus not in (True, False):
         return jsonify({"error": "justificada debe ser true o false"}), 400
@@ -112,7 +119,7 @@ def api_asistencia_linea_justificar(lid):
         (lid,),
         fetch="one",
     )
-    if not row or row["colegio_id"] != (u.get("colegio_id") or 1):
+    if not row or int(row["colegio_id"] or 0) != int(tenant_id):
         conn.close()
         return jsonify({"error": "No encontrada"}), 404
     if u["rol"] == "Director" and u.get("curso") and row["curso"] != u["curso"]:

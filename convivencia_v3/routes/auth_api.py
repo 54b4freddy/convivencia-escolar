@@ -10,6 +10,17 @@ from routes.authz import cu, login_required
 bp = Blueprint("auth_api", __name__)
 
 
+def _norm_colegio_id(v):
+    """Entero o None (JSON estable para multi-colegio)."""
+    if v is None or v == "":
+        return None
+    try:
+        i = int(v)
+        return i if i > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
 @bp.route("/api/login", methods=["POST"])
 def api_login():
     d = request.json or {}
@@ -30,7 +41,7 @@ def api_login():
         "rol": u["rol"],
         "nombre": u["nombre"],
         "curso": u.get("curso", ""),
-        "colegio_id": u["colegio_id"],
+        "colegio_id": _norm_colegio_id(u.get("colegio_id")),
         "colegio_nombre": u.get("col_nom", "") or "",
         "estudiante_id": u.get("estudiante_id"),
         "asignatura": u.get("asignatura") or "",
@@ -87,4 +98,6 @@ def api_registrar_usuario():
 @bp.route("/api/me")
 @login_required
 def api_me():
-    return jsonify(cu())
+    u = dict(cu())
+    u["colegio_id"] = _norm_colegio_id(u.get("colegio_id"))
+    return jsonify(u)

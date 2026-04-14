@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, request, send_file
 from werkzeug.utils import secure_filename
 
 from ce_db import USE_PG, commit, execute, get_db, ph
-from routes.authz import cu, login_required, roles
+from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 _PKG_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 UPLOAD_FOLDER = os.path.join(_PKG_ROOT, "static", "uploads")
@@ -57,21 +57,21 @@ def api_senales_listar():
     u = cu()
     if u["rol"] == "Acudiente":
         return jsonify({"error": "Sin permisos"}), 403
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
-    if u["rol"] == "Superadmin" and not u.get("colegio_id"):
-        rows = execute(conn, "SELECT s.* FROM senales_atencion s ORDER BY s.fecha_registro DESC LIMIT 200", fetch="all")
-    else:
-        q = f"SELECT s.* FROM senales_atencion s WHERE s.colegio_id={p}"
-        prm = [u["colegio_id"] or 1]
-        if u["rol"] == "Docente":
-            q += f" AND s.registrado_por_id={p}"
-            prm.append(u["id"])
-        elif u["rol"] == "Director" and u.get("curso"):
-            q += f" AND s.curso={p}"
-            prm.append(u["curso"])
-        q += " ORDER BY s.fecha_registro DESC LIMIT 200"
-        rows = execute(conn, q, prm, fetch="all")
+    q = f"SELECT s.* FROM senales_atencion s WHERE s.colegio_id={p}"
+    prm = [tenant_id]
+    if u["rol"] == "Docente":
+        q += f" AND s.registrado_por_id={p}"
+        prm.append(u["id"])
+    elif u["rol"] == "Director" and u.get("curso"):
+        q += f" AND s.curso={p}"
+        prm.append(u["curso"])
+    q += " ORDER BY s.fecha_registro DESC LIMIT 200"
+    rows = execute(conn, q, prm, fetch="all")
     conn.close()
     return jsonify(rows)
 
@@ -86,9 +86,11 @@ def api_senales_crear():
         file_storage = request.files.get("evidencia")
     else:
         d = request.json or {}
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
     p = ph()
-    cid = u["colegio_id"] or 1
     fe = datetime.now().strftime("%Y-%m-%d")
 
     tipo_con = (d.get("tipo_conducta") or "").strip()
@@ -203,10 +205,13 @@ def api_senales_crear():
 def api_senales_actualizar(sid):
     d = request.json or {}
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
     s = execute(conn, f"SELECT * FROM senales_atencion WHERE id={p}", (sid,), fetch="one")
-    if not s or (s["colegio_id"] != (u.get("colegio_id") or 1) and u["rol"] != "Superadmin"):
+    if not s or int(s.get("colegio_id") or 0) != int(tenant_id):
         conn.close()
         return jsonify({"error": "No encontrada"}), 404
     estado = d.get("estado")
@@ -229,13 +234,16 @@ def api_senales_evidencia(sid):
     u = cu()
     if u["rol"] == "Acudiente":
         return jsonify({"error": "Sin permisos"}), 403
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
     s = execute(conn, f"SELECT * FROM senales_atencion WHERE id={p}", (sid,), fetch="one")
     conn.close()
     if not s:
         return jsonify({"error": "No encontrada"}), 404
-    if s.get("colegio_id") != (u.get("colegio_id") or 1) and u["rol"] != "Superadmin":
+    if int(s.get("colegio_id") or 0) != int(tenant_id):
         return jsonify({"error": "No autorizado"}), 403
     if u["rol"] == "Docente" and s.get("registrado_por_id") != u.get("id"):
         return jsonify({"error": "No autorizado"}), 403

@@ -143,6 +143,48 @@
       <p id="vGestionTxt" style="font-size:12px;margin:6px 0 10px;line-height:1.55"></p>
       <button type="button" class="btn btn-p btn-xs" id="vGestionBtn" onclick="openOvGestion()" style="display:none">Definir cierre (coordinación)</button>
     </div>
+    <div id="vDescSec" class="adesc" style="margin-bottom:13px;padding:12px;background:#f0f7fb;border-radius:var(--r);border:1px solid #c5dbe8">
+      <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">ACTA DE DESCARGOS (Art. 29 C.P. · Ley 1620/2013)</div>
+      <p style="font-size:11px;color:var(--mut);margin:0 0 10px;line-height:1.45">Versión del estudiante. Derecho al debido proceso: conoce los hechos atribuidos, puede expresarse y sus descargos serán valorados antes de cualquier sanción.</p>
+      <div class="fr fr3" style="margin-bottom:8px">
+        <div><label class="fl">N.° Registro (falta)</label><input id="adFaltaId" readonly></div>
+        <div><label class="fl">Fecha acta</label><input id="adFecha" type="date"></div>
+        <div><label class="fl">Hora</label><input id="adHora" type="time"></div>
+      </div>
+      <div class="fsec" style="font-size:11px;margin-bottom:6px">1. Conocimiento de los hechos</div>
+      <div class="fr fr2" style="margin-bottom:8px">
+        <div><label class="fl">¿Informado de los hechos en el sistema?</label><select id="adInf"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div>
+        <div><label class="fl">¿Desea expresar su versión?</label><select id="adDesea"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div>
+      </div>
+      <div class="fsec" style="font-size:11px;margin-bottom:6px">2. Versión libre del estudiante</div>
+      <textarea id="adVersion" rows="4" placeholder="Texto con las propias palabras del estudiante; no editar ni resumir."></textarea>
+      <div class="fsec" style="font-size:11px;margin-top:10px;margin-bottom:6px">3. Actitud frente a los hechos</div>
+      <div><label class="fl">Actitud</label><select id="adActitud"><option value="">—</option><option value="reconoce">Reconoce los hechos</option><option value="niega">Los niega</option><option value="parcial">Los reconoce parcialmente</option><option value="no_pronuncia">No desea pronunciarse</option></select></div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div><label class="fl">¿Consideración especial?</label><select id="adCons"><option value="no">No</option><option value="si">Sí</option></select></div>
+        <div><label class="fl">Cuál</label><input id="adConsTxt" placeholder="Si aplica"></div>
+      </div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div><label class="fl">¿Se negó a firmar?</label><select id="adNegFir"><option value="no">No</option><option value="si">Sí</option></select></div>
+        <div><label class="fl">Constancia</label><input id="adNegConst" placeholder="Si se negó a firmar"></div>
+      </div>
+      <div class="fsec" style="font-size:11px;margin-top:10px;margin-bottom:6px">Firmas (identificación en soporte)</div>
+      <div class="fr fr2">
+        <div><label class="fl">Estudiante — nombre</label><input id="adEstNom"></div>
+        <div><label class="fl">C.C. / T.I.</label><input id="adEstDoc"></div>
+      </div>
+      <div class="fr fr2" style="margin-top:6px">
+        <div><label class="fl">Docente / directivo — nombre</label><input id="adDocNom"></div>
+        <div><label class="fl">C.C. / T.I.</label><input id="adDocDoc"></div>
+      </div>
+      <div id="adMetaRow" style="margin-top:10px;font-size:10px;color:var(--mut);word-break:break-all;display:none">
+        <strong>Verificación de autenticidad:</strong> <span id="adMetaTxt"></span>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button type="button" class="btn btn-p btn-xs" id="adSaveBtn" onclick="guardarActaDescargos()">Guardar acta de descargos</button>
+        <button type="button" class="btn btn-g btn-xs" id="adPdfBtn" onclick="descargarPdfActaDescargos()" style="display:none">PDF acta de descargos</button>
+      </div>
+    </div>
     <div id="vAcuSec" style="display:none;margin-bottom:13px">
       <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">INFORMACIÓN DEL ACUDIENTE</div>
       <div class="fr fr3">
@@ -159,7 +201,7 @@
     </div>
   </div>
   <div class="mf">
-    <button type="button" class="btn btn-g" onclick="descargarActaFalta()" title="PDF para archivo físico y firmas">📄 Descargar acta (PDF)</button>
+    <button type="button" class="btn btn-g" onclick="descargarActaFalta()" title="PDF proceso disciplinario">📄 Acta proceso (PDF)</button>
     <button class="btn" onclick="closeOv('ov-ver')">Cerrar</button>
     <button class="btn btn-p" id="verSaveBtn" onclick="guardarAnotacion()" style="display:none">Guardar observación</button>
   </div>
@@ -173,7 +215,7 @@
   <div class="mb">
     <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:9px">DATOS DEL ESTUDIANTE</div>
     <div class="fr">
-      <div><label class="fl">Tipo de documento</label><select id="eTipoDocEst"><option value="">Seleccionar</option><option>Tarjeta de identidad (TI)</option><option>Cédula de ciudadanía (CC)</option><option>Cédula de extranjería (CE)</option><option>Pasaporte (PP)</option><option>Registro civil (RC)</option><option>Permiso por protección temporal (PPT)</option><option>Sin documento / pendiente (SD)</option></select></div>
+      <div><label class="fl">Tipo de documento</label><select id="eTipoDocEst"><option value="">Seleccionar</option>{% for t in tipos_documento %}<option>{{ t }}</option>{% endfor %}</select></div>
       <div><label class="fl">Documento</label><input id="eDocId" placeholder="Número" oninput="this.value=this.value.replace(/[^0-9A-Za-z-]/g,'')" maxlength="20"></div>
       <div><label class="fl">Curso *</label><select id="eCurso"><option value="">Seleccionar</option></select></div>
     </div>
@@ -184,20 +226,11 @@
       <div><label class="fl">Nombre 2</label><input id="eNom2Est" maxlength="50" oninput="valNom(this)"></div>
     </div>
     <div class="fr fr1" style="margin-top:8px"><div><label class="fl">Barreras para el aprendizaje y la participación</label>
-      <select id="eBarreras">
-        <option>Ninguna identificada</option>
-        <option>Discapacidad sensorial</option>
-        <option>Discapacidad física (motora)</option>
-        <option>Discapacidad cognitiva (intelectual)</option>
-        <option>Trastornos del desarrollo</option>
-        <option>Trastornos específicos del aprendizaje</option>
-        <option>Trastornos emocionales y del comportamiento</option>
-        <option>Discapacidad múltiple</option>
-      </select>
+      <select id="eBarreras">{% for b in barreras_opciones %}<option>{{ b }}</option>{% endfor %}</select>
     </div></div>
     <div class="fsec">DATOS DEL ACUDIENTE</div>
     <div class="fr">
-      <div><label class="fl">Tipo de documento</label><select id="eTipoDocAcu"><option value="">Seleccionar</option><option>Tarjeta de identidad (TI)</option><option>Cédula de ciudadanía (CC)</option><option>Cédula de extranjería (CE)</option><option>Pasaporte (PP)</option><option>Registro civil (RC)</option><option>Permiso por protección temporal (PPT)</option><option>Sin documento / pendiente (SD)</option></select></div>
+      <div><label class="fl">Tipo de documento</label><select id="eTipoDocAcu"><option value="">Seleccionar</option>{% for t in tipos_documento %}<option>{{ t }}</option>{% endfor %}</select></div>
       <div><label class="fl">Documento *</label><input id="eCed" placeholder="Número" oninput="valCed(this)" maxlength="15"><div class="ferr" id="eCedErr"></div></div>
     </div>
     <div class="fr" style="margin-top:8px">
@@ -223,7 +256,7 @@
   <div class="mh"><div class="mh-l"><h3 id="usrTit">Nuevo usuario</h3></div><button onclick="closeOv('ov-usr')">×</button></div>
   <div class="mb">
     <div class="fr">
-      <div><label class="fl">Tipo de documento</label><select id="uTipoDoc"><option value="">Seleccionar</option><option>Tarjeta de identidad (TI)</option><option>Cédula de ciudadanía (CC)</option><option>Cédula de extranjería (CE)</option><option>Pasaporte (PP)</option><option>Registro civil (RC)</option><option>Permiso por protección temporal (PPT)</option><option>Sin documento / pendiente (SD)</option></select></div>
+      <div><label class="fl">Tipo de documento</label><select id="uTipoDoc"><option value="">Seleccionar</option>{% for t in tipos_documento %}<option>{{ t }}</option>{% endfor %}</select></div>
       <div><label class="fl">Documento</label><input id="uDocPer" placeholder="Número" maxlength="20" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
     </div>
     <div class="fr" style="margin-top:8px">
@@ -237,6 +270,7 @@
       <div><label class="fl">Contraseña</label><input id="uPas" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></div>
       <div><label class="fl">Rol</label><select id="uRol" onchange="toggleUsrF()"><option value="">Seleccionar</option><option>Coordinador</option><option>Director</option><option>Orientador</option><option>Docente</option></select></div>
     </div>
+    <div id="uColegioRow" style="display:none;margin-bottom:11px"><label class="fl">Institución *</label><select id="uColegioId"><option value="">Seleccionar institución</option></select></div>
     <div id="uCursoRow" style="display:none;margin-bottom:11px"><label class="fl">Curso a cargo</label><select id="uCurso"><option value="">Seleccionar</option></select></div>
     <div id="uAsigRow" style="display:none;margin-bottom:11px"><label class="fl">Asignatura(s) que imparte</label><input id="uAsig" placeholder="Ej: Matemáticas — 6A" maxlength="120"></div>
     <div style="margin-bottom:11px"><label class="fl">Teléfono</label><input id="uTel" maxlength="15" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>

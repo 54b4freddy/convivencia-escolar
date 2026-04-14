@@ -5,10 +5,16 @@ API por dominio: routes/* (blueprints). Auxiliares: ce_db, ce_queries, ce_pdf, e
 import os
 from flask import Flask, jsonify, redirect, render_template, session, url_for
 
+from ce_constants import BARRERAS_OPCIONES, TIPOS_DOCUMENTO
 from ce_db import USE_PG, init_db
 from routes import register_blueprints
 
 app = Flask(__name__)
+
+
+@app.context_processor
+def _inject_form_constants():
+    return {"tipos_documento": TIPOS_DOCUMENTO, "barreras_opciones": BARRERAS_OPCIONES}
 
 # ── Config / seguridad base ────────────────────────────────────────────────────
 APP_ENV = (os.environ.get('APP_ENV') or os.environ.get('FLASK_ENV') or 'development').lower()
@@ -28,27 +34,6 @@ app.config.update(
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
 PORT = int(os.environ.get('PORT', 5000))
-
-TIPOS_DOCUMENTO = (
-    'Tarjeta de identidad (TI)',
-    'Cédula de ciudadanía (CC)',
-    'Cédula de extranjería (CE)',
-    'Pasaporte (PP)',
-    'Registro civil (RC)',
-    'Permiso por protección temporal (PPT)',
-    'Sin documento / pendiente (SD)',
-)
-
-BARRERAS_OPCIONES = (
-    'Ninguna identificada',
-    'Discapacidad sensorial',
-    'Discapacidad física (motora)',
-    'Discapacidad cognitiva (intelectual)',
-    'Trastornos del desarrollo',
-    'Trastornos específicos del aprendizaje',
-    'Trastornos emocionales y del comportamiento',
-    'Discapacidad múltiple',
-)
 
 # ── Páginas ───────────────────────────────────────────────────────────────────
 @app.route('/')

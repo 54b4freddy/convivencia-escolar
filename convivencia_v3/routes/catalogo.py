@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, request
 
 from ce_db import commit, execute, get_db, ph
-from routes.authz import cu, login_required, roles
+from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("catalogo", __name__)
 
@@ -11,11 +11,14 @@ bp = Blueprint("catalogo", __name__)
 @login_required
 def api_catalogo():
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
     tipo = request.args.get("tipo", "")
     q = f"SELECT * FROM catalogo_faltas WHERE colegio_id={p}"
-    params = [u["colegio_id"] or 1]
+    params = [tenant_id]
     if tipo:
         q += f" AND tipo={p}"
         params.append(tipo)
@@ -29,12 +32,15 @@ def api_catalogo():
 def api_catalogo_crear():
     d = request.json or {}
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
     execute(
         conn,
         f"INSERT INTO catalogo_faltas (tipo,descripcion,protocolo,sancion,colegio_id) VALUES ({p},{p},{p},{p},{p})",
-        (d["tipo"], d["descripcion"], d.get("protocolo", ""), d.get("sancion", ""), u["colegio_id"] or 1),
+        (d["tipo"], d["descripcion"], d.get("protocolo", ""), d.get("sancion", ""), tenant_id),
     )
     commit(conn)
     conn.close()
@@ -45,8 +51,16 @@ def api_catalogo_crear():
 @roles("Superadmin", "Coordinador")
 def api_catalogo_editar(cid):
     d = request.json or {}
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
+    row = execute(conn, f"SELECT id, colegio_id FROM catalogo_faltas WHERE id={p}", (cid,), fetch="one")
+    if not row or int(row.get("colegio_id") or 0) != int(tenant_id):
+        conn.close()
+        return jsonify({"error": "No encontrada"}), 404
     execute(
         conn,
         f"UPDATE catalogo_faltas SET protocolo={p},sancion={p} WHERE id={p}",
@@ -60,8 +74,16 @@ def api_catalogo_editar(cid):
 @bp.route("/api/catalogo/<int:cid>", methods=["DELETE"])
 @roles("Superadmin", "Coordinador")
 def api_catalogo_borrar(cid):
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
+    row = execute(conn, f"SELECT id, colegio_id FROM catalogo_faltas WHERE id={p}", (cid,), fetch="one")
+    if not row or int(row.get("colegio_id") or 0) != int(tenant_id):
+        conn.close()
+        return jsonify({"error": "No encontrada"}), 404
     execute(conn, f"DELETE FROM catalogo_faltas WHERE id={p}", (cid,))
     commit(conn)
     conn.close()
@@ -73,7 +95,9 @@ def api_catalogo_borrar(cid):
 def api_catalogo_importar():
     d = request.json or {}
     u = cu()
-    cid = u["colegio_id"] or 1
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     items = d.get("items")
     if not items and d.get("texto"):
         items = []

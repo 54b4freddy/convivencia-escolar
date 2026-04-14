@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request
 
 from ce_db import USE_PG, commit, execute, get_db, ph
 from ce_utils import hpwd, nombre_desde_partes, solo_letras, solo_numeros
-from routes.authz import cu, login_required, roles
+from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("estudiantes", __name__)
 
@@ -119,11 +119,14 @@ def _import_insert_estudiante(
 @login_required
 def api_estudiantes():
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
     curso = request.args.get("curso", "")
     q = f"SELECT * FROM estudiantes WHERE colegio_id={p}"
-    params = [u["colegio_id"] or 1]
+    params = [tenant_id]
     if u["rol"] == "Director" and u["curso"] and not curso:
         q += f" AND curso={p}"
         params.append(u["curso"])
@@ -140,9 +143,11 @@ def api_estudiantes():
 def api_estudiante_crear():
     d = request.json or {}
     u = cu()
+    col_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
     p = ph()
-    col_id = u["colegio_id"] or 1
     nombre = _nombre_estudiante_payload(d)
     acudiente = _nombre_acudiente_payload(d)
     cedula = solo_numeros(d.get("cedula_acudiente", "") or d.get("documento_acudiente", ""))
@@ -199,6 +204,10 @@ def api_estudiante_crear():
 @roles("Superadmin", "Coordinador", "Director")
 def api_estudiante_editar(eid):
     d = request.json or {}
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
     p = ph()
     nombre = _nombre_estudiante_payload(d)
@@ -206,6 +215,9 @@ def api_estudiante_editar(eid):
     cedula = solo_numeros(d.get("cedula_acudiente", "") or d.get("documento_acudiente", ""))
     doc_id = solo_numeros(d.get("documento_identidad", ""))
     est = execute(conn, f"SELECT * FROM estudiantes WHERE id={p}", (eid,), fetch="one")
+    if not est or int(est.get("colegio_id") or 0) != int(tenant_id):
+        conn.close()
+        return jsonify({"ok": False, "error": "No encontrado"}), 404
     barr = (d.get("barreras") or d.get("discapacidad") or "").strip()[:200]
     if not barr:
         barr = est.get("barreras") or est.get("discapacidad") or "Ninguna identificada"
@@ -253,8 +265,16 @@ def api_estudiante_editar(eid):
 @bp.route("/api/estudiantes/<int:eid>", methods=["DELETE"])
 @roles("Superadmin", "Coordinador")
 def api_estudiante_borrar(eid):
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
     p = ph()
+    est = execute(conn, f"SELECT id, colegio_id FROM estudiantes WHERE id={p}", (eid,), fetch="one")
+    if not est or int(est.get("colegio_id") or 0) != int(tenant_id):
+        conn.close()
+        return jsonify({"ok": False, "error": "No encontrado"}), 404
     execute(conn, f"DELETE FROM estudiantes WHERE id={p}", (eid,))
     commit(conn)
     conn.close()
@@ -266,8 +286,10 @@ def api_estudiante_borrar(eid):
 def api_importar_estudiantes():
     d = request.json or {}
     u = cu()
+    col_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
-    col_id = u["colegio_id"] or 1
     curso_def = (d.get("curso_default") or "").strip()
     count = 0
     errores = []

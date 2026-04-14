@@ -15,7 +15,8 @@ def fq(usuario, anio, filtros=None):
         anio = datetime.now().year
     filtros = filtros or {}
     p = ph()
-    params = [usuario["colegio_id"] or 1, anio]
+    colegio_id = usuario.get("colegio_id") or 1
+    params = [colegio_id, anio]
     q = f"SELECT f.* FROM faltas f WHERE f.colegio_id={p} AND f.anio={p}"
     if usuario["rol"] == "Director":
         q += f" AND (f.curso={p} OR f.docente={p})"

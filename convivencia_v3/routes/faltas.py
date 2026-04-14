@@ -1,21 +1,76 @@
 """Rutas HTTP: faltas disciplinarias y citas con acudientes."""
+import json
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
+from ce_acta_descargos import (
+    compute_content_hash,
+    compute_firma,
+    new_verification_token,
+    normalize_acta_datos,
+)
 from ce_citas import CITA_ROLES_DESTINO, cancelar_citas_abiertas_por_falta, insert_cita_escuela
 from ce_db import USE_PG, commit, execute, get_db, ph
 from ce_faltas_service import attach_cita_falta, listar_faltas_enriquecidas, parse_filtros_faltas_args
 from ce_gestion import enriquecer_falta_gestion
-from routes.authz import cu, login_required, roles
+from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("faltas_citas", __name__)
+
+
+def _puede_editar_acta_descargos(u, f):
+    if u["rol"] == "Superadmin":
+        return True
+    if int(f.get("colegio_id") or 0) != int(u.get("colegio_id") or 0):
+        return False
+    if u["rol"] == "Docente":
+        return f.get("docente") == u["nombre"]
+    if u["rol"] == "Director":
+        return f.get("curso") == u.get("curso") or f.get("docente") == u.get("nombre")
+    if u["rol"] in ("Coordinador", "Orientador"):
+        return True
+    return False
+
+
+def _attach_acta_descargos(conn, f, fid):
+    p = ph()
+    row = execute(
+        conn,
+        f"SELECT id, datos_json, content_hash, verificacion_token, registrado_en, actualizado_en, registrado_por_nombre "
+        f"FROM acta_descargos WHERE falta_id={p}",
+        (fid,),
+        fetch="one",
+    )
+    if not row:
+        f["acta_descargos"] = None
+        return
+    try:
+        datos = json.loads(row.get("datos_json") or "{}")
+    except json.JSONDecodeError:
+        datos = {}
+    base = request.url_root.rstrip("/") if request else ""
+    tok = row.get("verificacion_token") or ""
+    f["acta_descargos"] = {
+        "id": row.get("id"),
+        "datos": datos,
+        "registrado_en": row.get("registrado_en"),
+        "actualizado_en": row.get("actualizado_en"),
+        "registrado_por_nombre": row.get("registrado_por_nombre") or "",
+        "verificacion_token": tok,
+        "verificacion_url": f"{base}/api/verificar-descargos/{tok}" if tok else "",
+        "huella_integridad": (row.get("content_hash") or "")[:16] + "…",
+    }
 
 
 @bp.route("/api/faltas")
 @login_required
 def api_faltas():
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    u_sc = {**u, "colegio_id": tenant_id}
     anio = request.args.get("anio", str(datetime.now().year))
     filt_sql = parse_filtros_faltas_args(request.args)
     estado_g = (request.args.get("estado_gestion") or "").strip()
@@ -23,7 +78,7 @@ def api_faltas():
         estado_g = None
     conn = get_db()
     try:
-        faltas = listar_faltas_enriquecidas(conn, u, anio, filt_sql, estado_g)
+        faltas = listar_faltas_enriquecidas(conn, u_sc, anio, filt_sql, estado_g)
         return jsonify(faltas)
     finally:
         conn.close()
@@ -33,6 +88,9 @@ def api_faltas():
 @login_required
 def api_falta_detalle(fid):
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
     f = execute(
@@ -45,12 +103,16 @@ def api_falta_detalle(fid):
     if not f:
         conn.close()
         return jsonify({"error": "No encontrada"}), 404
+    if int(f.get("colegio_id") or 0) != int(tenant_id):
+        conn.close()
+        return jsonify({"error": "Sin permisos"}), 403
     if u["rol"] == "Acudiente" and f.get("estudiante_id") != u.get("estudiante_id"):
         conn.close()
         return jsonify({"error": "Sin permisos"}), 403
     f["anotaciones"] = execute(conn, f"SELECT * FROM anotaciones WHERE falta_id={p} ORDER BY id", (fid,), fetch="all")
     attach_cita_falta(conn, f)
     enriquecer_falta_gestion(f)
+    _attach_acta_descargos(conn, f, fid)
     conn.close()
     return jsonify(f)
 
@@ -69,13 +131,16 @@ def api_falta_gestion(fid):
     else:
         return jsonify({"ok": False, "error": "decision debe ser cerrada, en_revision o null"}), 400
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
     p = ph()
     f = execute(conn, f"SELECT * FROM faltas WHERE id={p}", (fid,), fetch="one")
     if not f:
         conn.close()
         return jsonify({"ok": False, "error": "No encontrada"}), 404
-    if u["rol"] != "Superadmin" and f.get("colegio_id") != (u.get("colegio_id") or 1):
+    if int(f.get("colegio_id") or 0) != int(tenant_id):
         conn.close()
         return jsonify({"ok": False, "error": "Sin permisos"}), 403
     execute(conn, f"UPDATE faltas SET gestion_coordinador={p} WHERE id={p}", (val, fid))
@@ -89,9 +154,11 @@ def api_falta_gestion(fid):
 def api_falta_crear():
     d = request.json or {}
     u = cu()
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
     p = ph()
-    cid = u["colegio_id"] or 1
     try:
         anio = int(d.get("anio", datetime.now().year))
     except (TypeError, ValueError):
@@ -166,11 +233,69 @@ def api_falta_crear():
     return jsonify({"ok": True, "id": fid})
 
 
+@bp.route("/api/faltas/<int:fid>/acta-descargos", methods=["PUT"])
+@roles("Superadmin", "Coordinador", "Director", "Orientador", "Docente")
+def api_acta_descargos_put(fid):
+    d = request.json or {}
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
+    conn = get_db()
+    p = ph()
+    f = execute(
+        conn,
+        f"SELECT * FROM faltas WHERE id={p} AND colegio_id={p}",
+        (fid, tenant_id),
+        fetch="one",
+    )
+    if not f:
+        conn.close()
+        return jsonify({"ok": False, "error": "No encontrada"}), 404
+    if not _puede_editar_acta_descargos(u, f):
+        conn.close()
+        return jsonify({"ok": False, "error": "Sin permisos"}), 403
+    datos_norm = normalize_acta_datos(d.get("datos") if isinstance(d.get("datos"), dict) else {})
+    cid = int(f.get("colegio_id") or tenant_id)
+    sk = current_app.secret_key
+    ch = compute_content_hash(fid, cid, datos_norm)
+    fir = compute_firma(sk, ch)
+    jtxt = json.dumps(datos_norm, ensure_ascii=False)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    uid = u.get("id")
+    unom = (u.get("nombre") or "")[:200]
+    ex = execute(conn, f"SELECT id, verificacion_token FROM acta_descargos WHERE falta_id={p}", (fid,), fetch="one")
+    if ex:
+        execute(
+            conn,
+            f"UPDATE acta_descargos SET datos_json={p}, content_hash={p}, firma_hmac={p}, actualizado_en={p}, "
+            f"registrado_por_id={p}, registrado_por_nombre={p} WHERE falta_id={p}",
+            (jtxt, ch, fir, now, uid, unom, fid),
+        )
+    else:
+        tok = new_verification_token()
+        execute(
+            conn,
+            f"INSERT INTO acta_descargos (falta_id,colegio_id,datos_json,content_hash,firma_hmac,verificacion_token,"
+            f"registrado_en,actualizado_en,registrado_por_id,registrado_por_nombre) "
+            f"VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
+            (fid, cid, jtxt, ch, fir, tok, now, now, uid, unom),
+        )
+    commit(conn)
+    f2 = execute(conn, f"SELECT * FROM faltas WHERE id={p}", (fid,), fetch="one")
+    _attach_acta_descargos(conn, f2, fid)
+    conn.close()
+    return jsonify({"ok": True, "acta_descargos": f2.get("acta_descargos")})
+
+
 @bp.route("/api/faltas/<int:fid>/anotaciones", methods=["POST"])
 @roles("Superadmin", "Coordinador", "Director", "Orientador", "Docente")
 def api_anotacion(fid):
     d = request.json or {}
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     txt = d.get("texto", "").strip()
     if not txt:
         return jsonify({"error": "Texto vacío"}), 400
@@ -180,6 +305,9 @@ def api_anotacion(fid):
     if not f:
         conn.close()
         return jsonify({"error": "No encontrada"}), 404
+    if int(f.get("colegio_id") or 0) != int(tenant_id):
+        conn.close()
+        return jsonify({"error": "Sin permisos"}), 403
     if u["rol"] == "Docente" and f.get("docente") != u["nombre"]:
         conn.close()
         return jsonify({"error": "Sin permisos"}), 403
@@ -197,7 +325,9 @@ def api_anotacion(fid):
 @login_required
 def api_me_citas_pendientes():
     u = cu()
-    cid = u.get("colegio_id") or 1
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
     por_confirmar = []
@@ -243,9 +373,11 @@ def api_cita_solicitud(fid):
     eid = u.get("estudiante_id")
     if not eid:
         return jsonify({"ok": False, "error": "Sin estudiante asociado"}), 400
+    cid, cerr = resolve_colegio_id(u)
+    if cerr:
+        return jsonify({"ok": False, "error": cerr}), 400
     conn = get_db()
     p = ph()
-    cid = u.get("colegio_id") or 1
     f = execute(conn, f"SELECT * FROM faltas WHERE id={p} AND colegio_id={p}", (fid, cid), fetch="one")
     if not f or int(f.get("estudiante_id") or 0) != int(eid):
         conn.close()
@@ -278,18 +410,21 @@ def api_cita_solicitud(fid):
     return jsonify({"ok": True})
 
 
-@bp.route("/api/citas/<int:cid>", methods=["PATCH"])
+@bp.route("/api/citas/<int:cita_id>", methods=["PATCH"])
 @login_required
-def api_cita_patch(cid):
+def api_cita_patch(cita_id):
     d = request.json or {}
     u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
     conn = get_db()
     p = ph()
-    c = execute(conn, f"SELECT * FROM citas_acudiente WHERE id={p}", (cid,), fetch="one")
+    c = execute(conn, f"SELECT * FROM citas_acudiente WHERE id={p}", (cita_id,), fetch="one")
     if not c:
         conn.close()
         return jsonify({"ok": False, "error": "No encontrada"}), 404
-    if c.get("colegio_id") != (u.get("colegio_id") or 1) and u["rol"] != "Superadmin":
+    if int(c.get("colegio_id") or 0) != int(tenant_id):
         conn.close()
         return jsonify({"ok": False, "error": "Sin permisos"}), 403
 
@@ -306,9 +441,17 @@ def api_cita_patch(cid):
             conn.close()
             return jsonify({"ok": False, "error": "Estado de cita no permite esta acción"}), 400
         if acc == "confirmar":
-            execute(conn, f"UPDATE citas_acudiente SET estado='confirmada', actualizado_en={p} WHERE id={p}", (now, cid))
+            execute(
+                conn,
+                f"UPDATE citas_acudiente SET estado='confirmada', actualizado_en={p} WHERE id={p}",
+                (now, cita_id),
+            )
         elif acc == "rechazar":
-            execute(conn, f"UPDATE citas_acudiente SET estado='rechazada', actualizado_en={p} WHERE id={p}", (now, cid))
+            execute(
+                conn,
+                f"UPDATE citas_acudiente SET estado='rechazada', actualizado_en={p} WHERE id={p}",
+                (now, cita_id),
+            )
         else:
             conn.close()
             return jsonify({"ok": False, "error": "Use accion: confirmar o rechazar"}), 400
@@ -329,7 +472,7 @@ def api_cita_patch(cid):
             conn,
             f"UPDATE citas_acudiente SET fecha_hora={p}, estado='pendiente_confirmacion_acudiente', "
             f"agenda_por_id={p}, agenda_por_nombre={p}, actualizado_en={p} WHERE id={p}",
-            (fh, u.get("id"), (u.get("nombre") or "")[:200], now, cid),
+            (fh, u.get("id"), (u.get("nombre") or "")[:200], now, cita_id),
         )
         commit(conn)
         conn.close()

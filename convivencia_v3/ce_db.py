@@ -131,6 +131,19 @@ def _migrate_schema(conn):
                 creado_en TEXT NOT NULL,
                 actualizado_en TEXT NOT NULL
             )""",
+            """CREATE TABLE IF NOT EXISTS acta_descargos (
+                id SERIAL PRIMARY KEY,
+                falta_id INTEGER NOT NULL UNIQUE REFERENCES faltas(id) ON DELETE CASCADE,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                datos_json TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                firma_hmac TEXT NOT NULL,
+                verificacion_token TEXT NOT NULL UNIQUE,
+                registrado_en TEXT NOT NULL,
+                actualizado_en TEXT NOT NULL,
+                registrado_por_id INTEGER REFERENCES usuarios(id),
+                registrado_por_nombre TEXT DEFAULT ''
+            )""",
         ):
             try:
                 execute(conn, stmt)
@@ -184,6 +197,25 @@ def _migrate_schema(conn):
                 agenda_por_nombre TEXT DEFAULT '',
                 creado_en TEXT NOT NULL,
                 actualizado_en TEXT NOT NULL
+            )""",
+        )
+    except Exception:
+        pass
+    try:
+        execute(
+            conn,
+            """CREATE TABLE IF NOT EXISTS acta_descargos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                falta_id INTEGER NOT NULL UNIQUE REFERENCES faltas(id) ON DELETE CASCADE,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                datos_json TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                firma_hmac TEXT NOT NULL,
+                verificacion_token TEXT NOT NULL UNIQUE,
+                registrado_en TEXT NOT NULL,
+                actualizado_en TEXT NOT NULL,
+                registrado_por_id INTEGER REFERENCES usuarios(id),
+                registrado_por_nombre TEXT DEFAULT ''
             )""",
         )
     except Exception:
@@ -287,6 +319,19 @@ CREATE TABLE IF NOT EXISTS asistencia_detalle (
     ausente INTEGER DEFAULT 1,
     justificada INTEGER
 );
+CREATE TABLE IF NOT EXISTS acta_descargos (
+    id SERIAL PRIMARY KEY,
+    falta_id INTEGER NOT NULL UNIQUE REFERENCES faltas(id) ON DELETE CASCADE,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    datos_json TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    firma_hmac TEXT NOT NULL,
+    verificacion_token TEXT NOT NULL UNIQUE,
+    registrado_en TEXT NOT NULL,
+    actualizado_en TEXT NOT NULL,
+    registrado_por_id INTEGER REFERENCES usuarios(id),
+    registrado_por_nombre TEXT DEFAULT ''
+);
 """
 
 DDL_SQLITE = """
@@ -386,6 +431,19 @@ CREATE TABLE IF NOT EXISTS asistencia_detalle (
     ausente INTEGER DEFAULT 1,
     justificada INTEGER
 );
+CREATE TABLE IF NOT EXISTS acta_descargos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    falta_id INTEGER NOT NULL UNIQUE REFERENCES faltas(id) ON DELETE CASCADE,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    datos_json TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    firma_hmac TEXT NOT NULL,
+    verificacion_token TEXT NOT NULL UNIQUE,
+    registrado_en TEXT NOT NULL,
+    actualizado_en TEXT NOT NULL,
+    registrado_por_id INTEGER REFERENCES usuarios(id),
+    registrado_por_nombre TEXT DEFAULT ''
+);
 """
 
 
@@ -400,6 +458,35 @@ def init_db():
         conn.executescript(ddl)
 
     _migrate_schema(conn)
+
+    # Índices para escalar (multi-colegio + filtros frecuentes).
+    # Se crean de forma idempotente; si fallan (p.ej. por esquema viejo), se ignoran.
+    for stmt in (
+        # faltas
+        "CREATE INDEX IF NOT EXISTS idx_faltas_colegio_anio_fecha ON faltas(colegio_id, anio, fecha)",
+        "CREATE INDEX IF NOT EXISTS idx_faltas_colegio_curso ON faltas(colegio_id, curso)",
+        "CREATE INDEX IF NOT EXISTS idx_faltas_colegio_docente ON faltas(colegio_id, docente)",
+        "CREATE INDEX IF NOT EXISTS idx_faltas_estudiante_id ON faltas(estudiante_id)",
+        # estudiantes
+        "CREATE INDEX IF NOT EXISTS idx_estudiantes_colegio_curso ON estudiantes(colegio_id, curso)",
+        "CREATE INDEX IF NOT EXISTS idx_estudiantes_colegio_nombre ON estudiantes(colegio_id, nombre)",
+        # catálogo
+        "CREATE INDEX IF NOT EXISTS idx_catalogo_colegio_tipo ON catalogo_faltas(colegio_id, tipo)",
+        # señales
+        "CREATE INDEX IF NOT EXISTS idx_senales_colegio_fecha ON senales_atencion(colegio_id, fecha_registro)",
+        "CREATE INDEX IF NOT EXISTS idx_senales_colegio_est ON senales_atencion(colegio_id, estudiante_id)",
+        # asistencia
+        "CREATE INDEX IF NOT EXISTS idx_asist_toma_colegio_fecha ON asistencia_toma(colegio_id, fecha)",
+        "CREATE INDEX IF NOT EXISTS idx_asist_toma_colegio_curso ON asistencia_toma(colegio_id, curso)",
+        "CREATE INDEX IF NOT EXISTS idx_asist_det_toma ON asistencia_detalle(toma_id)",
+        # citas
+        "CREATE INDEX IF NOT EXISTS idx_citas_colegio_estado ON citas_acudiente(colegio_id, estado)",
+        "CREATE INDEX IF NOT EXISTS idx_citas_falta ON citas_acudiente(falta_id)",
+    ):
+        try:
+            execute(conn, stmt)
+        except Exception:
+            pass
 
     p = ph()
 
