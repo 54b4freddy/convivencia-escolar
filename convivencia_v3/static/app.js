@@ -546,6 +546,19 @@ function faltasTabResetFilt(){
 }
 async function renderFaltas(tab){
   const canReg=['Coordinador','Director','Docente','Superadmin'].includes(CU.rol);
+  const plantillasFaltasBar=['Docente','Director','Orientador'].includes(CU.rol)
+    ?`<div class="card" style="margin-bottom:12px;padding:10px 14px;background:var(--ibg);border:1px solid var(--brd)">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px">
+        <div style="font-size:12px;color:var(--mut);line-height:1.45;flex:1;min-width:200px">
+          <strong style="color:var(--ink)">Formatos en blanco</strong> — PDF con datos del colegio para imprimir o completar a mano; luego adjúntelo al registro de la falta.
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
+          <button type="button" class="btn btn-xs btn-p" onclick="window.open('/api/pdf/plantilla/acta-descargos','_blank')">Acta de descargos</button>
+          <button type="button" class="btn btn-xs" onclick="window.open('/api/pdf/plantilla/acta-sesion','_blank')">Acta de sesión</button>
+        </div>
+      </div>
+    </div>`
+    :'';
   const acuAgenda=CU.rol==='Acudiente'?`
     <div class="card" style="margin-bottom:12px">
       <div class="ch" style="align-items:flex-start;flex-wrap:wrap;gap:12px">
@@ -559,6 +572,7 @@ async function renderFaltas(tab){
   const optsCurso=`<option value="">Curso</option>${CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('')}`;
   tab.innerHTML=`
     ${acuAgenda}
+    ${plantillasFaltasBar}
     <div class="card">
       <div class="ch"><h3 id="fcCountTit">Cargando…</h3>
         <div class="ch-r">
@@ -1072,7 +1086,7 @@ async function renderReportes(tab){
     <div class="card">
       <div class="ch"><h3>Formatos convivencia (plantillas vacías)</h3></div>
       <div style="padding:14px;font-size:12px;color:var(--mut)">
-        <p style="margin:0 0 10px;line-height:1.45">PDF generado con nombre, municipio y NIT del colegio. Imprima o complete y firme a mano; luego adjunte al registro de la falta.</p>
+        <p style="margin:0 0 10px;line-height:1.45">PDF con nombre, municipio y NIT del colegio. Descargue, imprima o complete y firme a mano; luego adjunte el archivo al registro de la falta (desde el detalle o al crearla).</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn btn-p btn-xs" onclick="window.open('/api/pdf/plantilla/acta-descargos','_blank')">Acta de descargos</button>
           <button type="button" class="btn btn-p btn-xs" onclick="window.open('/api/pdf/plantilla/acta-sesion','_blank')">Acta de sesión (comité / acudientes)</button>
