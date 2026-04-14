@@ -131,79 +131,90 @@
 <div class="ov" id="ov-ver">
 <div class="modal modal-lg" style="margin-top:14px">
   <div class="mh">
-    <div class="mh-l"><h3 id="verTitle">Detalle de falta</h3><div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap" id="verBdgs"></div></div>
+    <div class="mh-l"><h3 id="verTitle">Detalle de falta</h3></div>
     <button onclick="closeOv('ov-ver')">×</button>
   </div>
   <div class="mb">
-    <div class="fr fr3" style="margin-bottom:11px">
-      <div><label class="fl">Fecha</label><input id="vFecha" readonly></div>
-      <div><label class="fl">Estudiante</label><input id="vEst" readonly></div>
-      <div><label class="fl">Curso</label><input id="vCurso" readonly></div>
-    </div>
-    <div class="fr" style="margin-bottom:11px">
-      <div><label class="fl">Tipo</label><input id="vTipo" readonly></div>
-      <div><label class="fl">Falta específica</label><input id="vEsp" readonly></div>
-    </div>
-    <div class="fr fr1" style="margin-bottom:11px">
-      <div><label class="fl">Descripción</label><textarea id="vDesc" readonly rows="2"></textarea></div>
-    </div>
-    <div id="vProtoSec" style="display:none;margin-bottom:13px">
-      <div class="fr">
-        <div><div class="plbl">PROTOCOLO APLICADO</div><div class="pbox t1" id="vProto"></div></div>
-        <div><div class="plbl">SANCIÓN APLICADA</div><div class="pbox t1" id="vSancion"></div></div>
+    <div class="ver-sum">
+      <div class="ver-sum-row">
+        <div id="verBdgs" class="ver-bdgs"></div>
+        <div class="ver-actions">
+          <button type="button" class="btn btn-g btn-xs" onclick="descargarActaFalta()" title="PDF proceso disciplinario">📄 Acta proceso (PDF)</button>
+          <button type="button" class="btn btn-xs" onclick="document.getElementById('vAnotTxt')?.focus()">✍️ Anotar</button>
+          <button type="button" class="btn btn-xs" onclick="if(document.getElementById('vAdjPanel')?.style.display!=='block')toggleAdjuntosPanel()">📎 Adjuntos</button>
+        </div>
+      </div>
+      <div class="ver-sum-grid">
+        <div><label class="fl">Fecha</label><input id="vFecha" readonly></div>
+        <div><label class="fl">Estudiante</label><input id="vEst" readonly></div>
+        <div><label class="fl">Curso</label><input id="vCurso" readonly></div>
+        <div><label class="fl">Tipo</label><input id="vTipo" readonly></div>
+        <div style="grid-column:span 2"><label class="fl">Falta específica</label><input id="vEsp" readonly></div>
+        <div style="grid-column:1 / -1"><label class="fl">Descripción</label><textarea id="vDesc" readonly rows="2"></textarea></div>
       </div>
     </div>
-    <div id="vCitaSec" style="display:none;margin-bottom:13px;padding:12px;background:var(--t2g);border-radius:var(--r);border:1px solid #e8d4a8">
-      <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">CITA CON ACUDIENTE</div>
-      <div id="vCitaBody" style="font-size:12px;line-height:1.5"></div>
-    </div>
-    <div id="vGestionSec" style="display:none;margin-bottom:13px;padding:12px;background:#f7f5fb;border-radius:var(--r);border:1px solid #e0dce8">
-      <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">ESTADO DE GESTIÓN</div>
-      <p id="vGestionTxt" style="font-size:12px;margin:6px 0 10px;line-height:1.55"></p>
-      <button type="button" class="btn btn-p btn-xs" id="vGestionBtn" onclick="openOvGestion()" style="display:none">Definir cierre (coordinación)</button>
-    </div>
-    <div id="vAcuSec" style="display:none;margin-bottom:13px">
-      <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">INFORMACIÓN DEL ACUDIENTE</div>
-      <div class="fr fr3">
-        <div><label class="fl">Nombre</label><input id="vAcu" readonly></div>
-        <div><label class="fl">Cédula</label><input id="vCed" readonly></div>
-        <div><label class="fl">Teléfono</label><input id="vTel" readonly></div>
+
+    <div class="ver-grid">
+      <div class="ver-left">
+        <div class="ver-panel-title">Línea de tiempo</div>
+        <div class="tl" id="verTL"></div>
       </div>
-    </div>
-    <div class="fsec" style="padding-top:12px;margin-bottom:12px">LÍNEA DE TIEMPO DEL PROCESO</div>
-    <div class="tl" id="verTL"></div>
-    <div id="verAnotSec" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)">
-      <label class="fl" id="verAnotLbl">Agregar observación</label>
-      <textarea id="vAnotTxt" rows="3" placeholder="Escriba su observación, seguimiento o acción tomada..."></textarea>
-    </div>
-    <div id="vAdjSec" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--brd)">
-      <button type="button" id="vAdjToggle" class="v-adj-toggle" onclick="toggleAdjuntosPanel()" aria-expanded="false"
-        style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--brd);background:var(--t2g);font:inherit;cursor:pointer;color:var(--ink)">
-        <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong>Actas y archivos</strong><span id="vAdjChip" class="bdg bg" style="display:none;font-size:10px;font-weight:600"></span></span>
-        <span id="vAdjChevron" style="font-size:11px;color:var(--mut);flex-shrink:0">▶</span>
-      </button>
-      <div id="vAdjPanel" style="display:none;margin-top:8px;padding:10px;background:#f0f7fb;border-radius:var(--r);border:1px solid #c5dbe8">
-        <p style="font-size:11px;color:var(--mut);margin:0 0 10px;line-height:1.45">Adjunte el acta de descargos o el de sesión ya cumplimentados (PDF, imagen o Word).</p>
-        <div id="vAdjUpDesc" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
-          <label class="fl" style="margin-bottom:4px">Descargos (reporte inicial)</label>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            <input type="file" id="vFileDesc" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
-            <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('descargos_inicial')">Subir</button>
+      <div class="ver-right">
+        <div id="vProtoSec" style="display:none;margin-bottom:13px">
+          <div class="fr">
+            <div><div class="plbl">PROTOCOLO APLICADO</div><div class="pbox t1" id="vProto"></div></div>
+            <div><div class="plbl">SANCIÓN APLICADA</div><div class="pbox t1" id="vSancion"></div></div>
           </div>
         </div>
-        <div id="vAdjUpSes" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
-          <label class="fl" style="margin-bottom:4px">Sesión (comité / acudientes), si aplica</label>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            <input type="file" id="vFileSes" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
-            <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('sesion_instancias')">Subir</button>
+        <div id="vCitaSec" style="display:none;margin-bottom:13px;padding:12px;background:var(--t2g);border-radius:var(--r);border:1px solid #e8d4a8">
+          <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">CITA CON ACUDIENTE</div>
+          <div id="vCitaBody" style="font-size:12px;line-height:1.5"></div>
+        </div>
+        <div id="vGestionSec" style="display:none;margin-bottom:13px;padding:12px;background:#f7f5fb;border-radius:var(--r);border:1px solid #e0dce8">
+          <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">ESTADO DE GESTIÓN</div>
+          <p id="vGestionTxt" style="font-size:12px;margin:6px 0 10px;line-height:1.55"></p>
+          <button type="button" class="btn btn-p btn-xs" id="vGestionBtn" onclick="openOvGestion()" style="display:none">Definir cierre (coordinación)</button>
+        </div>
+        <div id="vAcuSec" style="display:none;margin-bottom:13px">
+          <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">INFORMACIÓN DEL ACUDIENTE</div>
+          <div class="fr fr3">
+            <div><label class="fl">Nombre</label><input id="vAcu" readonly></div>
+            <div><label class="fl">Cédula</label><input id="vCed" readonly></div>
+            <div><label class="fl">Teléfono</label><input id="vTel" readonly></div>
           </div>
         </div>
-        <div id="vAdjBody" style="font-size:12px"></div>
+        <div id="verAnotSec" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)">
+          <label class="fl" id="verAnotLbl">Agregar observación</label>
+          <textarea id="vAnotTxt" rows="3" placeholder="Escriba su observación, seguimiento o acción tomada..."></textarea>
+        </div>
+        <div id="vAdjSec" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--brd)">
+          <button type="button" id="vAdjToggle" class="v-adj-toggle" onclick="toggleAdjuntosPanel()" aria-expanded="false"
+            style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--brd);background:var(--t2g);font:inherit;cursor:pointer;color:var(--ink)">
+            <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong>Actas y archivos</strong><span id="vAdjChip" class="bdg bg" style="display:none;font-size:10px;font-weight:600"></span></span>
+            <span id="vAdjChevron" style="font-size:11px;color:var(--mut);flex-shrink:0">▶</span>
+          </button>
+          <div id="vAdjPanel" style="display:none;margin-top:8px;padding:10px;background:#f0f7fb;border-radius:var(--r);border:1px solid #c5dbe8">
+            <div id="vAdjUpDesc" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
+              <label class="fl" style="margin-bottom:4px">Descargos (reporte inicial)</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <input type="file" id="vFileDesc" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
+                <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('descargos_inicial')">Subir</button>
+              </div>
+            </div>
+            <div id="vAdjUpSes" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
+              <label class="fl" style="margin-bottom:4px">Sesión (comité / acudientes), si aplica</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <input type="file" id="vFileSes" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="font-size:12px;max-width:100%">
+                <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta('sesion_instancias')">Subir</button>
+              </div>
+            </div>
+            <div id="vAdjBody" style="font-size:12px"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
   <div class="mf">
-    <button type="button" class="btn btn-g" onclick="descargarActaFalta()" title="PDF proceso disciplinario">📄 Acta proceso (PDF)</button>
     <button class="btn" onclick="closeOv('ov-ver')">Cerrar</button>
     <button class="btn btn-p" id="verSaveBtn" onclick="guardarAnotacion()" style="display:none">Guardar observación</button>
   </div>
