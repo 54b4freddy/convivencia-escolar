@@ -951,19 +951,19 @@ async function refreshPrevencionReiteracion(){
   const j=await api(`/api/prevencion/reiteracion?desde=${encodeURIComponent(r.desde)}&hasta=${encodeURIComponent(r.hasta)}`);
   if(j&&j.error){box.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;return;}
   const aus=(j.rank_ausencias||[]).map(x=>[
-    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('estudiante',${Number(x.estudiante_id||0)},'${String((x.estudiante||'').replace(/'/g,\"&#39;\"))}')">${escHtml(x.estudiante||'—')}</button><div class="mut">${escHtml(x.curso||'—')}</div>`,
+    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('estudiante',${Number(x.estudiante_id||0)},'${String((x.estudiante||'').replace(/'/g,"&#39;"))}')">${escHtml(x.estudiante||'—')}</button><div class="mut">${escHtml(x.curso||'—')}</div>`,
     `<span class="reit-bdg crit">≥3</span> <strong>${Number(x.ausencias||0)}</strong>`
   ]);
   const t1=(j.rank_tipoI||[]).map(x=>[
-    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('estudiante',${Number(x.estudiante_id||0)},'${String((x.estudiante||'').replace(/'/g,\"&#39;\"))}')">${escHtml(x.estudiante||'—')}</button><div class="mut">${escHtml(x.curso||'—')}</div>`,
+    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('estudiante',${Number(x.estudiante_id||0)},'${String((x.estudiante||'').replace(/'/g,"&#39;"))}')">${escHtml(x.estudiante||'—')}</button><div class="mut">${escHtml(x.curso||'—')}</div>`,
     `<span class="reit-bdg crit">≥3</span> <strong>${Number(x.tipoI||0)}</strong>`
   ]);
   const lug=(j.rank_lugares||[]).map(x=>[
-    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('lugar','${String((x.lugar||'').replace(/'/g,\"&#39;\"))}')">${escHtml(x.lugar||'—')}</button>`,
+    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('lugar','${String((x.lugar||'').replace(/'/g,"&#39;"))}')">${escHtml(x.lugar||'—')}</button>`,
     `<span class="reit-bdg crit">≥3</span> <strong>${Number(x.faltas||0)}</strong>`
   ]);
   const vic=(j.rank_victimas||[]).map(x=>[
-    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('victima','${String((x.victima||'').replace(/'/g,\"&#39;\"))}')">${escHtml(x.victima||'—')}</button>`,
+    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('victima','${String((x.victima||'').replace(/'/g,"&#39;"))}')">${escHtml(x.victima||'—')}</button>`,
     `<span class="reit-bdg warn">≥2</span> <strong>${Number(x.menciones||0)}</strong>`
   ]);
   const scope=j.scope&&j.scope.curso?`<span class="bdg bg">Curso: ${escHtml(j.scope.curso)}</span>`:'<span class="bdg bg">Todos los cursos</span>';
