@@ -873,8 +873,23 @@ async function renderSenales(tab){
   const rows=Array.isArray(raw)?raw:[];
   const canNew=['Coordinador','Director','Orientador','Docente','Superadmin'].includes(CU.rol);
   const canSeg=['Coordinador','Orientador','Superadmin'].includes(CU.rol);
+  const canPrev=['Coordinador','Director','Orientador','Superadmin'].includes(CU.rol);
   tab.innerHTML=`
     <div class="abanner ab-i" style="font-size:11px;line-height:1.45">Registro institucional de <strong>conductas de riesgo</strong> y registros históricos de bienestar. Confidencialidad según política del colegio.</div>
+    ${canPrev?`
+    <div class="card" style="margin-bottom:12px">
+      <div class="ch">
+        <h3>Prevención — Reiteración y focos</h3>
+        <div class="ch-r" style="gap:8px">
+          <select id="prevRango" style="font-size:12px;padding:5px 9px" onchange="refreshPrevencionReiteracion()">
+            <option value="30d">Últimos 30 días</option>
+            <option value="anio">Año académico (según selector superior)</option>
+          </select>
+          <button type="button" class="btn btn-xs" onclick="refreshPrevencionReiteracion()">Actualizar</button>
+        </div>
+      </div>
+      <div id="prevBody" style="padding:10px"></div>
+    </div>`:''}
     <div class="card">
       <div class="ch"><h3>${rows.length} registro(s)</h3>${canNew?`<button class="btn btn-p btn-xs" onclick="openOvSenal()">+ Nueva conducta</button>`:''}</div>
       <div style="padding:9px;overflow:auto">${rows.length?`<table class="tbl"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Curso</th><th>Tipo / detalle</th><th>Urgencia</th><th>Descripción</th><th>Evid.</th><th>Estado</th><th>Registró</th>${canSeg?'<th>Seguimiento</th>':''}</tr></thead><tbody>
@@ -906,6 +921,105 @@ async function renderSenales(tab){
         }).join('')}
       </tbody></table>`:'<div class="empty">Sin registros</div>'}</div>
     </div>`;
+  if(canPrev) refreshPrevencionReiteracion();
+}
+
+function _hoyIso(){return new Date().toISOString().slice(0,10);}
+function _rangoPrev(){
+  const r=document.getElementById('prevRango')?.value||'30d';
+  if(r==='anio'){
+    const y=getAnio();
+    return {desde:`${y}-01-01`,hasta:`${y}-12-31`,lbl:`Año ${y}`};
+  }
+  const hasta=_hoyIso();
+  const desde=_isoDateNDaysAgo(30);
+  return {desde,hasta,lbl:'Últimos 30 días'};
+}
+function _tblRank(title,cols,rows,empty){
+  const head=cols.map(c=>`<th>${c}</th>`).join('');
+  const body=rows.length?rows.map(r=>`<tr>${r.map(td=>`<td>${td}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${cols.length}" class="mut">${empty}</td></tr>`;
+  return `<div class="card" style="margin:0">
+    <div class="ch" style="padding:9px 12px"><h3 style="font-size:12px">${title}</h3></div>
+    <div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+  </div>`;
+}
+async function refreshPrevencionReiteracion(){
+  const box=document.getElementById('prevBody');
+  if(!box)return;
+  const r=_rangoPrev();
+  box.innerHTML=`<div class="mut">Cargando informe (${escHtml(r.lbl)})…</div>`;
+  const j=await api(`/api/prevencion/reiteracion?desde=${encodeURIComponent(r.desde)}&hasta=${encodeURIComponent(r.hasta)}`);
+  if(j&&j.error){box.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;return;}
+  const aus=(j.rank_ausencias||[]).map(x=>[
+    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('estudiante',${Number(x.estudiante_id||0)},'${String((x.estudiante||'').replace(/'/g,\"&#39;\"))}')">${escHtml(x.estudiante||'—')}</button><div class="mut">${escHtml(x.curso||'—')}</div>`,
+    `<span class="reit-bdg crit">≥3</span> <strong>${Number(x.ausencias||0)}</strong>`
+  ]);
+  const t1=(j.rank_tipoI||[]).map(x=>[
+    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('estudiante',${Number(x.estudiante_id||0)},'${String((x.estudiante||'').replace(/'/g,\"&#39;\"))}')">${escHtml(x.estudiante||'—')}</button><div class="mut">${escHtml(x.curso||'—')}</div>`,
+    `<span class="reit-bdg crit">≥3</span> <strong>${Number(x.tipoI||0)}</strong>`
+  ]);
+  const lug=(j.rank_lugares||[]).map(x=>[
+    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('lugar','${String((x.lugar||'').replace(/'/g,\"&#39;\"))}')">${escHtml(x.lugar||'—')}</button>`,
+    `<span class="reit-bdg crit">≥3</span> <strong>${Number(x.faltas||0)}</strong>`
+  ]);
+  const vic=(j.rank_victimas||[]).map(x=>[
+    `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('victima','${String((x.victima||'').replace(/'/g,\"&#39;\"))}')">${escHtml(x.victima||'—')}</button>`,
+    `<span class="reit-bdg warn">≥2</span> <strong>${Number(x.menciones||0)}</strong>`
+  ]);
+  const scope=j.scope&&j.scope.curso?`<span class="bdg bg">Curso: ${escHtml(j.scope.curso)}</span>`:'<span class="bdg bg">Todos los cursos</span>';
+  box.innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      ${scope}
+      <span class="bdg bg">Rango: ${escHtml(j.desde||r.desde)} → ${escHtml(j.hasta||r.hasta)}</span>
+      <span class="bdg bg">Asistencia: ≥3/mes · Tipo I: ≥3 · Lugar: ≥3 · Víctima: ≥2</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      ${_tblRank('Top estudiantes — Ausencias (≥3)', ['Estudiante','Ausencias'], aus, 'Sin estudiantes que superen el umbral')}
+      ${_tblRank('Top estudiantes — Faltas Tipo I (≥3)', ['Estudiante','Tipo I'], t1, 'Sin estudiantes que superen el umbral')}
+      ${_tblRank('Ranking de lugares — Focos (≥3)', ['Lugar','Faltas'], lug, 'Sin lugares que superen el umbral')}
+      ${_tblRank('Ranking de víctimas — Posible acoso (≥2)', ['Víctima','Menciones'], vic, 'Sin víctimas con menciones repetidas')}
+    </div>`;
+}
+
+async function openPrevDet(kind,val,label){
+  const r=_rangoPrev();
+  const tit=document.getElementById('prevDetTit');
+  const sub=document.getElementById('prevDetSub');
+  const body=document.getElementById('prevDetBody');
+  if(tit)tit.textContent=kind==='lugar'?'Faltas por lugar':kind==='victima'?'Faltas por víctima':'Faltas del estudiante';
+  if(sub)sub.textContent=`${label||val||''} · ${r.desde} → ${r.hasta}`;
+  if(body)body.innerHTML='<div class="mut">Cargando…</div>';
+  let url=`/api/prevencion/reiteracion/detalle?desde=${encodeURIComponent(r.desde)}&hasta=${encodeURIComponent(r.hasta)}&kind=${encodeURIComponent(kind)}`;
+  if(kind==='estudiante') url+=`&estudiante_id=${encodeURIComponent(String(val||''))}`;
+  else if(kind==='lugar') url+=`&lugar=${encodeURIComponent(String(val||''))}`;
+  else url+=`&victima=${encodeURIComponent(String(val||''))}`;
+  const j=await api(url);
+  if(j&&j.error){if(body)body.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;openOv('ov-prev-det');return;}
+  const items=Array.isArray(j.items)?j.items:[];
+  if(!items.length){
+    if(body)body.innerHTML='<div class="empty">Sin faltas en el rango seleccionado.</div>';
+    openOv('ov-prev-det');return;
+  }
+  if(body){
+    body.innerHTML=`
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:92px">Fecha</th><th>Estudiante</th><th style="width:70px">Curso</th><th style="width:70px">Tipo</th><th>Falta</th><th style="width:120px">Lugar</th><th style="width:90px"></th></tr></thead>
+          <tbody>
+            ${items.map(f=>`<tr>
+              <td>${escHtml(f.fecha||'—')}</td>
+              <td>${escHtml(f.estudiante||'—')}</td>
+              <td>${escHtml(f.curso||'—')}</td>
+              <td>${escHtml(f.tipo_falta||'—')}</td>
+              <td title="${escHtml(f.falta_especifica||'')}">${escHtml(f.falta_especifica||'—')}</td>
+              <td>${escHtml(f.lugar||'—')}</td>
+              <td><button type="button" class="btn btn-xs btn-p" onclick="closeOv('ov-prev-det');verFalta(${Number(f.id||0)})">Abrir</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+  openOv('ov-prev-det');
 }
 
 // ── Asistencia ────────────────────────────────────────────────────────────────

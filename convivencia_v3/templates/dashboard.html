@@ -472,6 +472,20 @@
 </div>
 </div>
 
+<!-- OVERLAY: Prevención — detalle -->
+<div class="ov" id="ov-prev-det">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh">
+    <div class="mh-l"><h3 id="prevDetTit">Detalle</h3><small id="prevDetSub">—</small></div>
+    <button onclick="closeOv('ov-prev-det')">×</button>
+  </div>
+  <div class="mb">
+    <div id="prevDetBody"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeOv('ov-prev-det')">Cerrar</button></div>
+</div>
+</div>
+
 <div id="toast"></div>
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>
