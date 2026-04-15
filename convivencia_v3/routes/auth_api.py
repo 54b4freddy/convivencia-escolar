@@ -4,10 +4,42 @@ import os
 from flask import Blueprint, jsonify, request, session
 
 from ce_db import commit, execute, get_db, ph
-from ce_utils import hpwd
+from ce_utils import hpwd, solo_numeros
 from routes.authz import cu, login_required
 
 bp = Blueprint("auth_api", __name__)
+
+
+def _login_estudiante_por_documento(conn, d):
+    """Usuario = documento del estudiante + contraseña definida por el colegio + institución."""
+    doc = solo_numeros((d.get("usuario") or "").strip())
+    if len(doc) < 5:
+        return None
+    pwd = d.get("contrasena") or ""
+    raw_c = d.get("colegio_id")
+    cid = None
+    if raw_c is not None and str(raw_c).strip() != "":
+        try:
+            cid = int(raw_c)
+        except (TypeError, ValueError):
+            cid = None
+    if not cid or cid <= 0:
+        cnt = execute(conn, "SELECT COUNT(*) as c FROM colegios", fetch="one")
+        if (cnt or {}).get("c", 0) == 1:
+            one = execute(conn, "SELECT id FROM colegios ORDER BY id LIMIT 1", fetch="one")
+            cid = int(one["id"]) if one else 0
+    if not cid or cid <= 0:
+        return None
+    p = ph()
+    return execute(
+        conn,
+        f"SELECT u.*, c.nombre AS col_nom FROM usuarios u "
+        f"JOIN estudiantes e ON e.id = u.estudiante_id "
+        f"LEFT JOIN colegios c ON c.id = u.colegio_id "
+        f"WHERE u.rol = 'Estudiante' AND e.colegio_id = {p} AND e.documento_identidad = {p} AND u.contrasena = {p}",
+        (cid, doc, hpwd(pwd)),
+        fetch="one",
+    )
 
 
 def _norm_colegio_id(v):
@@ -26,12 +58,15 @@ def api_login():
     d = request.json or {}
     conn = get_db()
     p = ph()
+    usuario_in = (d.get("usuario") or "").strip()
     u = execute(
         conn,
         f"SELECT u.*,c.nombre as col_nom FROM usuarios u LEFT JOIN colegios c ON c.id=u.colegio_id WHERE u.usuario={p} AND u.contrasena={p}",
-        (d.get("usuario", "").strip(), hpwd(d.get("contrasena", ""))),
+        (usuario_in, hpwd(d.get("contrasena", ""))),
         fetch="one",
     )
+    if not u:
+        u = _login_estudiante_por_documento(conn, d)
     conn.close()
     if not u:
         return jsonify({"ok": False, "error": "Usuario o contraseña incorrectos"}), 401
@@ -67,7 +102,7 @@ def api_registrar_usuario():
         return jsonify({"ok": False, "error": "El registro público está desactivado."}), 403
     d = request.json or {}
     rol = (d.get("rol") or "").strip()
-    if rol in ("Superadmin", "Acudiente", ""):
+    if rol in ("Superadmin", "Acudiente", "Estudiante", ""):
         return jsonify({"ok": False, "error": "Rol no permitido para este registro."}), 400
     nombre = (d.get("nombre") or "").strip()
     usuario = (d.get("usuario") or "").strip()

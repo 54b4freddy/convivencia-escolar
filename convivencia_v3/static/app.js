@@ -88,6 +88,7 @@ async function init(){
   const me=await api('/api/me');
   if(me.error){window.location.href='/login';return;}
   CU=me;
+  if(CU.rol==='Estudiante'){window.location.href='/estudiante/reportar';return;}
   document.getElementById('sbSchool').textContent=CU.colegio_nombre||(CU.rol==='Superadmin'?'Multi-institución':'—');
   document.getElementById('sbNombre').textContent=CU.nombre;
   document.getElementById('sbRol').textContent=CU.rol+(CU.curso?' · '+CU.curso:'');
@@ -1376,9 +1377,9 @@ async function renderReportesEst(tab) {
     <div class="card">
       <div class="ch"><h3>Cómo entra el estudiante</h3></div>
       <div class="mb" style="padding:12px 14px;font-size:13px;line-height:1.55;color:var(--mut)">
-        <p style="margin:0 0 8px"><strong>1) Enlace + QR personal</strong> — cada matrícula tiene un token único. En «Estudiantes» verá el campo <code>reporte_token</code>: el enlace es<br>
-        <code style="font-size:11px;word-break:break-all">${base}/t/<em>token</em></code></p>
-        <p style="margin:0 0 8px"><strong>2) PIN</strong> — pág. pública <code>${base}</code> + documento del estudiante + PIN de 4–8 dígitos que usted define al editar el estudiante (API: <code>reporte_pin</code> en PATCH).</p>
+        <p style="margin:0 0 8px"><strong>1) Recomendado: documento + clave</strong> — en «Estudiantes» defina la <strong>clave del portal estudiante</strong> (mín. 6 caracteres). El estudiante entra en la misma página de login, marca <strong>«Soy estudiante»</strong>, pone su <strong>documento</strong> como usuario, la clave y el <strong>código de institución</strong> (${cid}).</p>
+        <p style="margin:0 0 8px"><strong>2) QR / enlace con token</strong> — enlace <code style="font-size:11px;word-break:break-all">${base}/t/<em>token</em></code> (token en datos del estudiante).</p>
+        <p style="margin:0 0 8px"><strong>3) PIN en página pública</strong> — <code>${base}</code> + documento + PIN de 4–8 dígitos (campo opcional al editar).</p>
         <p style="margin:0">Las alertas <strong>no crean falta</strong> solas: quedan pendientes hasta que usted elija abrir caso, orientación o descartar.</p>
       </div>
     </div>
@@ -2012,6 +2013,7 @@ function openNuevoEst(){
   document.getElementById('eCurso').value='';
   document.getElementById('eErr').textContent='';
   const erp=document.getElementById('eRepPin');if(erp)erp.value='';
+  const ecl=document.getElementById('eClaveEst');if(ecl)ecl.value='';
   const rlr=document.getElementById('eRepLnkRow');if(rlr)rlr.style.display='none';
   ['eCedErr','eTelErr'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   openOv('ov-est');
@@ -2039,8 +2041,9 @@ function editarEst(id){
   document.getElementById('eCed').value=e.cedula_acudiente||'';
   document.getElementById('eTel').value=e.telefono||'';
   document.getElementById('eDir').value=e.direccion||'';
-  const rlr=document.getElementById('eRepLnkRow');const rla=document.getElementById('eRepLnk');const erp=document.getElementById('eRepPin');
+  const rlr=document.getElementById('eRepLnkRow');const rla=document.getElementById('eRepLnk');const erp=document.getElementById('eRepPin');const ecl=document.getElementById('eClaveEst');
   if(erp)erp.value='';
+  if(ecl)ecl.value='';
   if(rlr&&rla&&(e.reporte_token||'').trim()){
     rlr.style.display='block';
     const cid=e.colegio_id||CU.colegio_id||1;
@@ -2085,6 +2088,8 @@ async function guardarEstudiante(){
     if(pn&&(pn.length<4||pn.length>8)){err.textContent='PIN de reporte: entre 4 y 8 dígitos, o vacío';return;}
     if(pn)body.reporte_pin=pn;
   }
+  const ecl=document.getElementById('eClaveEst');
+  if(ecl&&ecl.value.trim())body.clave_estudiante=ecl.value.trim();
   const url=editEstId?`/api/estudiantes/${editEstId}`:'/api/estudiantes';
   const r=await api(url,{method:editEstId?'PATCH':'POST',body:JSON.stringify(body)});
   if(r.ok){closeOv('ov-est');toast(editEstId?'Estudiante actualizado':'Estudiante agregado. Usuario acudiente creado.');editEstId=null;renderCurrentTab();}

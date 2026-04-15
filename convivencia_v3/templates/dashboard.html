@@ -273,15 +273,18 @@
     <div class="fr fr1" style="margin-top:8px"><div><label class="fl">Barreras para el aprendizaje y la participación</label>
       <select id="eBarreras">{% for b in barreras_opciones %}<option>{{ b }}</option>{% endfor %}</select>
     </div></div>
-    <div class="fsec">REPORTE CONFIDENCIAL DEL ESTUDIANTE</div>
+    <div class="fsec">PORTAL DEL ESTUDIANTE (documento + clave)</div>
     <div class="fr fr1" style="margin-top:8px">
-      <div id="eRepLnkRow" class="mut" style="display:none;font-size:11px;line-height:1.45;margin-bottom:6px">
-        Enlace para QR / compartir (no es la contraseña del acudiente):<br>
+      <div id="eRepLnkRow" class="mut" style="display:none;font-size:11px;line-height:1.45;margin-bottom:8px">
+        Enlace opcional (QR / sin clave del portal):<br>
         <a id="eRepLnk" href="#" target="_blank" rel="noopener" style="word-break:break-all"></a>
       </div>
-      <div><label class="fl">PIN para la página «reportar» (4–8 dígitos, opcional)</label>
-        <input id="eRepPin" maxlength="8" inputmode="numeric" placeholder="Solo números; vacío = no cambiar al guardar">
-        <div class="fhint">El estudiante puede usar <code>/reporte/…</code> con documento + este PIN, además del enlace.</div>
+      <div><label class="fl">Clave del portal estudiante (mín. 6 caracteres)</label>
+        <input id="eClaveEst" type="password" maxlength="80" autocomplete="new-password" placeholder="Solo al crear o cambiar; vacío = no cambiar">
+        <div class="fhint">En <strong>login</strong> el estudiante marca «Soy estudiante», pone <strong>este documento</strong> como usuario y esta clave. Opcional: acceso por QR/PIN abajo.</div>
+      </div>
+      <div><label class="fl">PIN solo para página pública /reporte (4–8 dígitos, opcional)</label>
+        <input id="eRepPin" maxlength="8" inputmode="numeric" placeholder="Vacío = no cambiar">
       </div>
     </div>
     <div class="fsec">DATOS DEL ACUDIENTE</div>

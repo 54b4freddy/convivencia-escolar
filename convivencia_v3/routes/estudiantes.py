@@ -12,6 +12,35 @@ from routes.authz import cu, login_required, resolve_colegio_id, roles
 bp = Blueprint("estudiantes", __name__)
 
 
+def _usuario_interno_estudiante(est_id: int) -> str:
+    """Login por documento usa JOIN; este valor solo cumple UNIQUE en usuarios."""
+    return f"est_{int(est_id)}"
+
+
+def _sync_usuario_estudiante(conn, est_id: int, col_id: int, nombre: str, curso: str, clave: str):
+    """Crea o actualiza usuario con rol Estudiante (acceso documento + clave en /api/login)."""
+    clave = (clave or "").strip()
+    if len(clave) < 6:
+        return False, "La clave del portal estudiante debe tener al menos 6 caracteres."
+    p = ph()
+    uinterno = _usuario_interno_estudiante(est_id)
+    ex = execute(conn, f"SELECT id FROM usuarios WHERE estudiante_id={p} AND rol='Estudiante'", (est_id,), fetch="one")
+    h = hpwd(clave)
+    if ex:
+        execute(
+            conn,
+            f"UPDATE usuarios SET contrasena={p}, nombre={p}, curso={p}, colegio_id={p} WHERE id={p}",
+            (h, nombre[:120], (curso or "")[:80], col_id, ex["id"]),
+        )
+    else:
+        execute(
+            conn,
+            f"INSERT INTO usuarios (usuario,contrasena,rol,nombre,curso,colegio_id,estudiante_id) VALUES ({p},{p},{p},{p},{p},{p},{p})",
+            (uinterno, h, "Estudiante", nombre[:120], (curso or "")[:80], col_id, est_id),
+        )
+    return True, None
+
+
 def _crear_acudiente(conn, cedula, nombre_acu, curso, col_id, est_id):
     cedula = solo_numeros(cedula)
     if not cedula:
@@ -205,6 +234,20 @@ def api_estudiante_crear():
     pin = solo_numeros(str(d.get("reporte_pin") or ""))
     if pin and 4 <= len(pin) <= 8:
         execute(conn, f"UPDATE estudiantes SET reporte_pin_hash={p} WHERE id={p}", (hpwd(pin), eid))
+    clave_est = (d.get("clave_estudiante") or "").strip()
+    if clave_est:
+        est_row = execute(conn, f"SELECT nombre, curso, documento_identidad FROM estudiantes WHERE id={p}", (eid,), fetch="one")
+        ok_m, err_m = _sync_usuario_estudiante(
+            conn,
+            eid,
+            col_id,
+            (est_row or {}).get("nombre") or nombre,
+            (est_row or {}).get("curso") or d["curso"],
+            clave_est,
+        )
+        if not ok_m:
+            conn.close()
+            return jsonify({"ok": False, "error": err_m}), 400
     commit(conn)
     conn.close()
     return jsonify({"ok": True, "id": eid})
@@ -278,6 +321,19 @@ def api_estudiante_editar(eid):
             execute(conn, f"UPDATE estudiantes SET reporte_pin_hash={p} WHERE id={p}", (hpwd(pin), eid))
     if d.get("regenerar_reporte_token"):
         execute(conn, f"UPDATE estudiantes SET reporte_token={p} WHERE id={p}", (secrets.token_urlsafe(24), eid))
+    clave_est = (d.get("clave_estudiante") or "").strip()
+    if clave_est:
+        ok_m, err_m = _sync_usuario_estudiante(
+            conn,
+            eid,
+            int(est.get("colegio_id") or tenant_id),
+            nombre,
+            d["curso"],
+            clave_est,
+        )
+        if not ok_m:
+            conn.close()
+            return jsonify({"ok": False, "error": err_m}), 400
     commit(conn)
     conn.close()
     return jsonify({"ok": True})
@@ -296,6 +352,7 @@ def api_estudiante_borrar(eid):
     if not est or int(est.get("colegio_id") or 0) != int(tenant_id):
         conn.close()
         return jsonify({"ok": False, "error": "No encontrado"}), 404
+    execute(conn, f"DELETE FROM usuarios WHERE estudiante_id={p} AND rol='Estudiante'", (eid,))
     execute(conn, f"DELETE FROM estudiantes WHERE id={p}", (eid,))
     commit(conn)
     conn.close()

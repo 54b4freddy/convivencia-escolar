@@ -86,10 +86,13 @@
     <div class="school" id="nomColegio">…</div>
   </div>
   <div class="bar"><i id="progBar" style="width:12%"></i></div>
+  {% if sesion_estudiante %}
+  <p style="text-align:right;margin:-4px 0 10px"><button type="button" class="back" style="border:none;background:none;cursor:pointer;font:inherit;padding:0" onclick="cerrarSesionEst()">Cerrar sesión</button></p>
+  {% endif %}
 
   <div id="vIdent" class="card" style="display:none">
     <p class="step-h">Antes de empezar</p>
-    <p class="muted" style="margin-top:0">Si tienes tu <strong>enlace personal</strong> (QR del colegio), úsalo: no necesitas esto.</p>
+    <p class="muted" style="margin-top:0">Si ya ingresaste con <strong>documento y clave</strong> en la página principal del colegio, vuelve allí. Aquí puedes usar <strong>enlace personal</strong> (QR) o documento + PIN si el colegio lo configuró.</p>
     <div class="row">
       <label class="lbl" for="docId">Tu documento (sin puntos)</label>
       <input class="inp" id="docId" inputmode="numeric" autocomplete="username" placeholder="Ej. 1001234567">
@@ -172,7 +175,13 @@
     <p class="muted" style="margin-top:16px">Puedes cerrar esta página. Si necesitas ayuda urgente en persona, acércate a orientación.</p>
   </div>
 
-  <p style="text-align:center;margin-top:16px"><a class="back" href="/login">Volver al inicio de sesión (personal)</a></p>
+  <p style="text-align:center;margin-top:16px">
+    {% if sesion_estudiante %}
+    <a class="back" href="#" onclick="cerrarSesionEst();return false">Salir del reporte</a>
+    {% else %}
+    <a class="back" href="/login">Volver al inicio de sesión (personal)</a>
+    {% endif %}
+  </p>
   <footer>
     Lo que envías lo revisa el equipo de convivencia de tu colegio. No es una calificación ni una falta automática: es una alerta para cuidarte mejor.
   </footer>
@@ -181,11 +190,16 @@
 <script>
 (function(){
   const CID = {{ colegio_id|int }};
+  const SESION = {{ sesion_estudiante|default(false)|tojson }};
   let TOKEN = {{ (reporte_token or '')|tojson }};
   let cat = '', quien = '', lugar = '', urgencia = '';
 
   const $ = id => document.getElementById(id);
   const prog = n => { $('progBar').style.width = Math.min(100, Math.max(8, n)) + '%'; };
+  window.cerrarSesionEst = function(){
+    fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function(){ window.location.href = '/login'; });
+  };
 
   fetch('/api/public/colegios/' + CID).then(r => r.json()).then(j => {
     if (j.ok) $('nomColegio').textContent = j.nombre || ('Colegio #' + CID);
@@ -197,7 +211,10 @@
     $(v).style.display = 'block';
   }
 
-  if (TOKEN) {
+  if (SESION) {
+    show('vPaso1');
+    prog(22);
+  } else if (TOKEN) {
     show('vPaso1');
     prog(22);
   } else {
@@ -280,7 +297,9 @@
     if (f) fd.append('evidencia', f);
     $('btnEnviar').disabled = true;
     try {
-      const res = await fetch('/api/reportes-convivencia', { method: 'POST', body: fd });
+      const fetchOpts = { method: 'POST', body: fd };
+      if (SESION) fetchOpts.credentials = 'same-origin';
+      const res = await fetch('/api/reportes-convivencia', fetchOpts);
       const j = await res.json();
       if (!j.ok) {
         err.textContent = j.error || 'No se pudo enviar. Intenta de nuevo.';

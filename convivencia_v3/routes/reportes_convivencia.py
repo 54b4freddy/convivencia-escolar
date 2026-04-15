@@ -3,7 +3,7 @@ import os
 import secrets
 from datetime import date, datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from werkzeug.utils import secure_filename
 
 from ce_db import USE_PG, commit, execute, get_db, ph
@@ -71,6 +71,21 @@ def _resolve_estudiante(conn, colegio_id: int, d: dict):
     return None, "Identifícate con tu enlace personal (QR) o con tu documento y PIN."
 
 
+def _resolve_estudiante_o_sesion(conn, colegio_id: int, d: dict):
+    """Sesión rol Estudiante (login con documento) o flujos públicos token/PIN."""
+    su = session.get("usuario")
+    if su and su.get("rol") == "Estudiante":
+        eid = su.get("estudiante_id")
+        if not eid:
+            return None, "Sesión de estudiante inválida."
+        p = ph()
+        row = execute(conn, f"SELECT * FROM estudiantes WHERE id={p}", (int(eid),), fetch="one")
+        if not row or int(row.get("colegio_id") or 0) != int(colegio_id):
+            return None, "La institución no coincide con tu sesión. Cierra sesión e ingresa de nuevo."
+        return row, None
+    return _resolve_estudiante(conn, colegio_id, d)
+
+
 def _save_evidencia(file_storage, colegio_id: int, rid: int) -> str:
     if not file_storage or not file_storage.filename:
         return ""
@@ -132,7 +147,7 @@ def api_reporte_crear():
     fecha_inc = _today_iso() if fue_hoy else (fecha_otra or _today_iso())
 
     conn = get_db()
-    est, err = _resolve_estudiante(conn, colegio_id, d)
+    est, err = _resolve_estudiante_o_sesion(conn, colegio_id, d)
     if err:
         conn.close()
         return jsonify({"ok": False, "error": err}), 400

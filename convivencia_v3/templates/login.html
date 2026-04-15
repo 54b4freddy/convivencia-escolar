@@ -256,12 +256,20 @@
       <div class="divider"><span>acceso</span></div>
 
       <div class="field">
-        <label>Usuario</label>
+        <label id="lblUsuario">Usuario</label>
         <input type="text" id="usuario" placeholder="Ingrese su usuario" autocomplete="username">
       </div>
       <div class="field">
         <label>Contraseña</label>
         <input type="password" id="contrasena" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;margin-top:4px;font-size:0.85rem;color:var(--muted);cursor:pointer">
+        <input type="checkbox" id="chkEst" onchange="toggleEstColegio()"> Soy estudiante: mi usuario es mi documento
+      </label>
+      <div class="field" id="estColWrap" style="display:none;margin-top:10px">
+        <label>Código de la institución</label>
+        <input type="number" id="estColegio" min="1" value="1" style="width:100%;padding:10px 12px;border-radius:4px;border:1px solid rgba(201,168,76,.35);background:rgba(255,252,245,.9)">
+        <span style="font-size:0.72rem;color:var(--muted);display:block;margin-top:6px">Lo indica el colegio (a veces es 1). Si hay varias sedes en el sistema, debe ser el correcto.</span>
       </div>
 
       <button class="btn-primary" id="btnLogin" onclick="iniciarSesion()">Ingresar</button>
@@ -270,9 +278,8 @@
       <p class="register-link">
         ¿Sin cuenta? <a href="#" onclick="abrirRegistro()">Regístrate aquí</a>
       </p>
-      <p class="register-link" style="margin-top:16px;font-size:0.88rem">
-        <a href="/reporte/1" style="color:var(--muted)">Soy estudiante: reportar una situación</a>
-        <span style="display:block;margin-top:6px;font-size:0.78rem;opacity:0.85">Si su colegio usa otro número de institución, el enlace lo dará orientación.</span>
+      <p class="register-link" style="margin-top:14px;font-size:0.78rem;color:var(--muted);line-height:1.45">
+        Acceso alternativo sin clave del portal: <a href="/reporte/1" style="color:var(--gold)">reporte con PIN o QR</a> (si el colegio lo activó).
       </p>
     </div>
   </div>
@@ -330,6 +337,13 @@
       if (e.key === 'Enter') iniciarSesion();
     });
 
+    function toggleEstColegio() {
+      const on = document.getElementById('chkEst').checked;
+      document.getElementById('estColWrap').style.display = on ? 'block' : 'none';
+      document.getElementById('lblUsuario').textContent = on ? 'Documento (sin puntos)' : 'Usuario';
+      document.getElementById('usuario').placeholder = on ? 'Ej. 1001234567' : 'Ingrese su usuario';
+    }
+
     async function iniciarSesion() {
       const btn = document.getElementById('btnLogin');
       const err = document.getElementById('mensajeError');
@@ -339,17 +353,25 @@
 
       const usuario = document.getElementById('usuario').value.trim();
       const contrasena = document.getElementById('contrasena').value;
+      const payload = { usuario, contrasena };
+      if (document.getElementById('chkEst').checked) {
+        const c = parseInt(String(document.getElementById('estColegio').value || ''), 10);
+        if (c > 0) payload.colegio_id = c;
+      }
 
       try {
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario, contrasena })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
 
         if (data.ok) {
-          window.location.href = '/dashboard';
+          if (data.usuario && data.usuario.rol === 'Estudiante')
+            window.location.href = '/estudiante/reportar';
+          else
+            window.location.href = '/dashboard';
         } else {
           err.textContent = data.error || 'Credenciales incorrectas';
           btn.disabled = false;

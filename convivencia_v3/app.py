@@ -36,29 +36,57 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
 PORT = int(os.environ.get('PORT', 5000))
 
 # ── Páginas ───────────────────────────────────────────────────────────────────
+def _redirect_si_estudiante():
+    if session.get('usuario', {}).get('rol') == 'Estudiante':
+        return redirect(url_for('estudiante_reportar'))
+    return None
+
+
 @app.route('/')
-def index(): return redirect(url_for('dashboard') if 'usuario' in session else url_for('login_page'))
+def index():
+    if 'usuario' not in session:
+        return redirect(url_for('login_page'))
+    r = _redirect_si_estudiante()
+    return r if r is not None else redirect(url_for('dashboard'))
+
 
 @app.route('/login')
 def login_page():
-    if 'usuario' in session: return redirect(url_for('dashboard'))
+    if 'usuario' in session:
+        r = _redirect_si_estudiante()
+        return r if r is not None else redirect(url_for('dashboard'))
     return render_template('login.html')
 
 @app.route('/dashboard')
 def dashboard():
     if 'usuario' not in session: return redirect(url_for('login_page'))
-    return render_template('dashboard.html')
+    r = _redirect_si_estudiante()
+    return r if r is not None else render_template('dashboard.html')
+
+
+@app.route('/estudiante/reportar')
+def estudiante_reportar():
+    if 'usuario' not in session or session.get('usuario', {}).get('rol') != 'Estudiante':
+        return redirect(url_for('login_page'))
+    cid = int(session['usuario'].get('colegio_id') or 0)
+    if cid <= 0:
+        return redirect(url_for('login_page'))
+    return render_template('reporte_estudiante.html', colegio_id=cid, reporte_token='', sesion_estudiante=True)
 
 
 @app.route('/reporte/<int:colegio_id>')
 def reporte_estudiante_pagina(colegio_id):
-    """Canal estudiantil: reporte sin sesión docente (PIN o enlace con token)."""
-    return render_template('reporte_estudiante.html', colegio_id=colegio_id, reporte_token='')
+    """Canal estudiantil opcional: PIN o enlace con token (sin sesión)."""
+    return render_template(
+        'reporte_estudiante.html', colegio_id=colegio_id, reporte_token='', sesion_estudiante=False
+    )
 
 
 @app.route('/reporte/<int:colegio_id>/t/<path:reporte_token>')
 def reporte_estudiante_con_token(colegio_id, reporte_token):
-    return render_template('reporte_estudiante.html', colegio_id=colegio_id, reporte_token=reporte_token or '')
+    return render_template(
+        'reporte_estudiante.html', colegio_id=colegio_id, reporte_token=reporte_token or '', sesion_estudiante=False
+    )
 
 
 @app.route('/health')
