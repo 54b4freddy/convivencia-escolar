@@ -1,13 +1,15 @@
 const CURSOS=['Preescolar A','Preescolar B','Primero A','Primero B','Segundo A','Tercero A','Cuarto A','Quinto A','6A','6B','7A','8A','9A','10A','11A'];
 const NAV={
-  Superadmin:[{id:'sa-col',l:'Instituciones'}],
-  Coordinador:[{id:'co-ini',l:'Resumen'},{sep:'GESTIÓN'},{id:'co-f',l:'Todas las faltas'},{id:'co-est',l:'Estudiantes'},{id:'co-sen',l:'Conductas de riesgo'},{id:'co-asist',l:'Asistencia'},{id:'co-usr',l:'Usuarios'},{id:'co-cat',l:'Catálogo faltas'},{id:'co-proto',l:'Protocolos'},{sep:'ANÁLISIS'},{id:'co-rep',l:'Reportes'},{id:'co-anio',l:'Cierre de año'}],
+  Superadmin:[{id:'sa-col',l:'Instituciones'},{id:'sa-rep-est',l:'Alertas estudiantiles'}],
+  Coordinador:[{id:'co-ini',l:'Resumen'},{sep:'GESTIÓN'},{id:'co-f',l:'Todas las faltas'},{id:'co-est',l:'Estudiantes'},{id:'co-rep-est',l:'Alertas estudiantiles'},{id:'co-sen',l:'Conductas de riesgo'},{id:'co-asist',l:'Asistencia'},{id:'co-usr',l:'Usuarios'},{id:'co-cat',l:'Catálogo faltas'},{id:'co-proto',l:'Protocolos'},{sep:'ANÁLISIS'},{id:'co-rep',l:'Reportes'},{id:'co-anio',l:'Cierre de año'}],
   Director:[{id:'di-ini',l:'Mi resumen'},{sep:'MI CURSO'},{id:'di-f',l:'Faltas del curso'},{id:'di-est',l:'Mis estudiantes'},{id:'di-sen',l:'Conductas de riesgo'},{id:'di-asist',l:'Asistencia'}],
-  Orientador:[{id:'or-ini',l:'Resumen'},{sep:'SEGUIMIENTO'},{id:'or-f',l:'Todas las faltas'},{id:'or-sen',l:'Conductas de riesgo'},{id:'or-perf',l:'Perfil estudiante'}],
+  Orientador:[{id:'or-ini',l:'Resumen'},{sep:'SEGUIMIENTO'},{id:'or-f',l:'Todas las faltas'},{id:'or-rep-est',l:'Alertas estudiantiles'},{id:'or-sen',l:'Conductas de riesgo'},{id:'or-perf',l:'Perfil estudiante'}],
   Docente:[{id:'doc-ini',l:'Mis registros'},{id:'doc-f',l:'Mis faltas'},{id:'doc-sen',l:'Conductas de riesgo'},{id:'doc-asist',l:'Asistencia'}],
   Acudiente:[{id:'acu-ini',l:'Inicio'},{id:'acu-f',l:'Faltas de mi hijo/a'}],
 };
-const TTLS={'sa-col':'Instituciones educativas','co-ini':'Resumen general','co-f':'Registro de faltas','co-est':'Gestión de estudiantes','co-sen':'Conductas de riesgo','co-asist':'Asistencia','co-usr':'Gestión de usuarios','co-cat':'Catálogo de faltas','co-proto':'Protocolos y procesos','co-rep':'Reportes y seguimiento','co-anio':'Cierre de año','di-ini':'Mi resumen','di-f':'Faltas de mi curso','di-est':'Mis estudiantes','di-sen':'Conductas de riesgo','di-asist':'Asistencia','or-ini':'Resumen orientación','or-f':'Consulta de faltas','or-perf':'Perfil de estudiante','doc-ini':'Mis registros','doc-f':'Mis faltas registradas','doc-sen':'Conductas de riesgo','doc-asist':'Asistencia','acu-ini':'Portal de acudiente','acu-f':'Faltas de mi hijo/a'};
+const TTLS={'sa-col':'Instituciones educativas','sa-rep-est':'Alertas estudiantiles','co-ini':'Resumen general','co-f':'Registro de faltas','co-est':'Gestión de estudiantes','co-rep-est':'Alertas estudiantiles','co-sen':'Conductas de riesgo','co-asist':'Asistencia','co-usr':'Gestión de usuarios','co-cat':'Catálogo de faltas','co-proto':'Protocolos y procesos','co-rep':'Reportes y seguimiento','co-anio':'Cierre de año','di-ini':'Mi resumen','di-f':'Faltas de mi curso','di-est':'Mis estudiantes','di-sen':'Conductas de riesgo','di-asist':'Asistencia','or-ini':'Resumen orientación','or-f':'Consulta de faltas','or-rep-est':'Alertas estudiantiles','or-perf':'Perfil de estudiante','doc-ini':'Mis registros','doc-f':'Mis faltas registradas','doc-sen':'Conductas de riesgo','doc-asist':'Asistencia','acu-ini':'Portal de acudiente','acu-f':'Faltas de mi hijo/a'};
+const REP_CAT_LBL={mal:'Me siento mal / necesito ayuda',molestan:'Me molestan',mal_colegio:'Algo malo en el colegio',peligro:'Peligro en el entorno'};
+const REP_LUG_LBL={patio:'Patio',salon:'Salón',banos:'Baños',comedor:'Comedor',entrada:'Entrada',redes:'Redes / chat',otro:'Otro'};
 const SEN_CAT_LBL={alimentacion:'Alimentación / hábitos',familia_acomp:'Acompañamiento familiar',abandono_riesgo:'Riesgo de deserción',bienestar_general:'Bienestar emocional o social',discapacidad_apoyo:'Apoyo (sin diagnóstico)',otro:'Otra'};
 const CR_TIPO_LBL={conv_i:'Tipo I (convivencia)',conv_ii:'Tipo II (riesgo moderado)',conv_iii:'Tipo III (grave/delito)'};
 const CR_SUB_LBL={conflictos_manejables:'Conflictos manejables',sin_dano:'No hay daño significativo',bullying_incipiente:'Bullying incipiente',afectacion_emocional:'Afectación emocional',conflictos_reiterados:'Conflictos reiterados',violencia_fisica:'Violencia física',abuso_sexual:'Abuso sexual',consumo_micro:'Consumo o microtráfico',intento_suicidio:'Intento de suicidio'};
@@ -127,13 +129,14 @@ function poblarSels(){
 async function renderTab(id){
   const mc=document.getElementById('mainContent');mc.innerHTML='';
   const tab=document.createElement('div');tab.className='tab on';tab.id='t-'+id;mc.appendChild(tab);
-  const mapa={'sa-col':renderSACol,'co-ini':renderInicio,'di-ini':renderInicio,'or-ini':renderInicio,'doc-ini':renderInicio,'acu-ini':renderInicio,
+  const mapa={'sa-col':renderSACol,'sa-rep-est':renderReportesEst,'co-ini':renderInicio,'di-ini':renderInicio,'or-ini':renderInicio,'doc-ini':renderInicio,'acu-ini':renderInicio,
     'co-f':renderFaltas,'di-f':renderFaltas,'or-f':renderFaltas,'doc-f':renderFaltas,'acu-f':renderFaltas,
     'co-est':renderEstudiantes,'di-est':renderEstudiantes,
     'co-sen':renderSenales,'di-sen':renderSenales,'or-sen':renderSenales,'doc-sen':renderSenales,
     'co-asist':renderAsistencia,'di-asist':renderAsistencia,'doc-asist':renderAsistencia,
     'co-usr':renderUsuarios,'co-cat':renderCatalogo,'co-proto':renderProto,
-    'co-rep':renderReportes,'co-anio':renderAnio,'or-perf':renderPerfil};
+    'co-rep':renderReportes,'co-anio':renderAnio,'or-perf':renderPerfil,
+    'co-rep-est':renderReportesEst,'or-rep-est':renderReportesEst};
   if(mapa[id])await mapa[id](tab);
   else tab.innerHTML='<div class="empty">Sección en construcción</div>';
 }
@@ -1304,6 +1307,92 @@ function showP2(id,btn){
   if(btn)btn.classList.add('on');
 }
 
+// ── Alertas ciudadanas (reporte estudiantil, Ley 1620) ───────────────────────
+async function patchRepEst(id, estado) {
+  let nota = '';
+  if (estado === 'descartado') {
+    nota = prompt('Motivo del descarte (obligatorio, queda en auditoría):') || '';
+    if (nota.trim().length < 3) {
+      toast('Indique un motivo de al menos 3 caracteres', 'e');
+      return;
+    }
+  }
+  const body = { estado, nota_comite: nota };
+  if (CU.rol === 'Superadmin' && CU.colegio_id) body.colegio_id = CU.colegio_id;
+  const r = await api(`/api/reportes-convivencia/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+  if (r.ok) {
+    toast('Estado actualizado');
+    renderCurrentTab();
+  } else toast(r.error || 'Error', 'e');
+}
+
+async function renderReportesEst(tab) {
+  if (CU.rol === 'Superadmin' && !CU.colegio_id) {
+    tab.innerHTML =
+      '<div class="abanner ab-i">Asigne o seleccione una institución en su perfil de superadmin para ver alertas de ese colegio.</div>';
+    return;
+  }
+  let url = '/api/reportes-convivencia';
+  if (CU.rol === 'Superadmin' && CU.colegio_id) url += `?colegio_id=${encodeURIComponent(String(CU.colegio_id))}`;
+  const rows = await api(url);
+  if (rows && rows.error) {
+    tab.innerHTML = `<div class="abanner ab-r">${escHtml(rows.error)}</div>`;
+    return;
+  }
+  const list = Array.isArray(rows) ? rows : [];
+  const cid = CU.colegio_id || 1;
+  const base = `${location.origin}/reporte/${cid}`;
+  const tbody = list.length
+    ? list
+        .map((r) => {
+          const urg = r.urgencia === 'urgente' ? '<span class="reit-bdg crit">Urgente</span>' : '<span class="bdg bg">Puede esperar</span>';
+          const st = escHtml(r.estado || '');
+          const cat = escHtml(REP_CAT_LBL[r.categoria_visual] || r.categoria_visual || '—');
+          const lug = escHtml(REP_LUG_LBL[r.lugar_clave] || r.lugar_clave || '—');
+          const desc = escHtml((r.descripcion || '').slice(0, 120)) + ((r.descripcion || '').length > 120 ? '…' : '');
+          const ev = r.evidencia_path
+            ? `<a href="/static/uploads/${escHtml(r.evidencia_path)}" target="_blank" rel="noopener">Archivo</a>`
+            : '—';
+          const btns =
+            r.estado === 'pendiente_validacion'
+              ? `<button type="button" class="btn btn-xs btn-p" onclick="patchRepEst(${Number(r.id)},'caso_abierto')">Abrir caso formal</button>
+                 <button type="button" class="btn btn-xs" onclick="patchRepEst(${Number(r.id)},'orientacion')">Orientación privada</button>
+                 <button type="button" class="btn btn-xs btn-d" onclick="patchRepEst(${Number(r.id)},'descartado')">Descartar</button>`
+              : '—';
+          return `<tr>
+            <td style="font-size:11px">${escHtml(r.creado_en || '—')}</td>
+            <td>${urg}</td>
+            <td><strong>${escHtml(r.estudiante_nombre || '')}</strong><div class="mut">${escHtml(r.curso || '')}</div></td>
+            <td style="font-size:11px">${cat}</td>
+            <td style="font-size:11px;max-width:200px" title="${escHtml(r.descripcion || '')}">${desc}</td>
+            <td style="font-size:11px">${lug}</td>
+            <td><span class="tag t-or">${st}</span>${r.nota_comite ? `<div class="mut" style="margin-top:4px">${escHtml(r.nota_comite)}</div>` : ''}</td>
+            <td style="font-size:11px">${ev}<div style="margin-top:6px">${btns}</div></td>
+          </tr>`;
+        })
+        .join('')
+    : '<tr><td colspan="8" class="empty">Sin alertas registradas</td></tr>';
+  tab.innerHTML = `
+    <div class="card">
+      <div class="ch"><h3>Cómo entra el estudiante</h3></div>
+      <div class="mb" style="padding:12px 14px;font-size:13px;line-height:1.55;color:var(--mut)">
+        <p style="margin:0 0 8px"><strong>1) Enlace + QR personal</strong> — cada matrícula tiene un token único. En «Estudiantes» verá el campo <code>reporte_token</code>: el enlace es<br>
+        <code style="font-size:11px;word-break:break-all">${base}/t/<em>token</em></code></p>
+        <p style="margin:0 0 8px"><strong>2) PIN</strong> — pág. pública <code>${base}</code> + documento del estudiante + PIN de 4–8 dígitos que usted define al editar el estudiante (API: <code>reporte_pin</code> en PATCH).</p>
+        <p style="margin:0">Las alertas <strong>no crean falta</strong> solas: quedan pendientes hasta que usted elija abrir caso, orientación o descartar.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Bandeja de alertas ciudadanas</h3></div>
+      <div class="table-wrap mb" style="padding:0 8px 12px">
+        <table>
+          <thead><tr><th>Recibido</th><th>Urgencia</th><th>Estudiante</th><th>Tema (lo que eligió)</th><th>Resumen</th><th>Lugar</th><th>Estado / nota</th><th>Evidencia / acciones</th></tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
 // ── Reportes ──────────────────────────────────────────────────────────────────
 async function renderReportes(tab){
   const rep=await api(`/api/reportes?anio=${getAnio()}`);
@@ -1922,6 +2011,8 @@ function openNuevoEst(){
   _IDS_EST.forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.classList.remove('ok','err-inp');}});
   document.getElementById('eCurso').value='';
   document.getElementById('eErr').textContent='';
+  const erp=document.getElementById('eRepPin');if(erp)erp.value='';
+  const rlr=document.getElementById('eRepLnkRow');if(rlr)rlr.style.display='none';
   ['eCedErr','eTelErr'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   openOv('ov-est');
 }
@@ -1948,6 +2039,14 @@ function editarEst(id){
   document.getElementById('eCed').value=e.cedula_acudiente||'';
   document.getElementById('eTel').value=e.telefono||'';
   document.getElementById('eDir').value=e.direccion||'';
+  const rlr=document.getElementById('eRepLnkRow');const rla=document.getElementById('eRepLnk');const erp=document.getElementById('eRepPin');
+  if(erp)erp.value='';
+  if(rlr&&rla&&(e.reporte_token||'').trim()){
+    rlr.style.display='block';
+    const cid=e.colegio_id||CU.colegio_id||1;
+    const u=`${location.origin}/reporte/${cid}/t/${encodeURIComponent(e.reporte_token)}`;
+    rla.href=u;rla.textContent=u;
+  }else if(rlr)rlr.style.display='none';
   openOv('ov-est');
 }
 
@@ -1980,6 +2079,12 @@ async function guardarEstudiante(){
     parentesco_acu:document.getElementById('eParentescoAcu').value.trim(),
     cedula_acudiente:cedula,telefono:tel,direccion:document.getElementById('eDir').value.trim(),
   };
+  const erp=document.getElementById('eRepPin');
+  if(erp){
+    const pn=erp.value.replace(/\D/g,'');
+    if(pn&&(pn.length<4||pn.length>8)){err.textContent='PIN de reporte: entre 4 y 8 dígitos, o vacío';return;}
+    if(pn)body.reporte_pin=pn;
+  }
   const url=editEstId?`/api/estudiantes/${editEstId}`:'/api/estudiantes';
   const r=await api(url,{method:editEstId?'PATCH':'POST',body:JSON.stringify(body)});
   if(r.ok){closeOv('ov-est');toast(editEstId?'Estudiante actualizado':'Estudiante agregado. Usuario acudiente creado.');editEstId=null;renderCurrentTab();}

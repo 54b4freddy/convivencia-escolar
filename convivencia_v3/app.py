@@ -49,6 +49,18 @@ def dashboard():
     if 'usuario' not in session: return redirect(url_for('login_page'))
     return render_template('dashboard.html')
 
+
+@app.route('/reporte/<int:colegio_id>')
+def reporte_estudiante_pagina(colegio_id):
+    """Canal estudiantil: reporte sin sesión docente (PIN o enlace con token)."""
+    return render_template('reporte_estudiante.html', colegio_id=colegio_id, reporte_token='')
+
+
+@app.route('/reporte/<int:colegio_id>/t/<path:reporte_token>')
+def reporte_estudiante_con_token(colegio_id, reporte_token):
+    return render_template('reporte_estudiante.html', colegio_id=colegio_id, reporte_token=reporte_token or '')
+
+
 @app.route('/health')
 def health(): return jsonify({'status':'ok','version':'7.0','db':'postgresql' if USE_PG else 'sqlite'})
 

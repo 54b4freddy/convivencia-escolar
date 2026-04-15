@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Reportar — convivencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f3ff;
+    --card: #fff;
+    --ink: #2d2640;
+    --mut: #6b6580;
+    --accent: #7c6cf0;
+    --accent2: #5bb89a;
+    --danger: #e85d6a;
+    --ok: #3d9e7a;
+    --radius: 18px;
+    --shadow: 0 8px 28px rgba(45, 38, 64, 0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: 'Nunito', system-ui, sans-serif;
+    background: linear-gradient(165deg, var(--bg) 0%, #eef8f4 100%);
+    color: var(--ink); padding: 16px 14px 48px;
+  }
+  .wrap { max-width: 440px; margin: 0 auto; }
+  .head { text-align: center; margin-bottom: 20px; }
+  .head h1 { font-size: 1.35rem; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .head p { margin: 0; color: var(--mut); font-size: 0.95rem; line-height: 1.45; }
+  .school { display: inline-block; margin-top: 10px; padding: 6px 14px; background: var(--card); border-radius: 999px; font-size: 0.85rem; box-shadow: var(--shadow); }
+  .step-h { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--mut); margin: 0 0 10px; font-weight: 700; }
+  .card {
+    background: var(--card); border-radius: var(--radius); padding: 18px 16px;
+    box-shadow: var(--shadow); margin-bottom: 14px;
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt {
+    border: 2px solid #e8e4f5; border-radius: 14px; padding: 14px 10px; text-align: center; cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s; background: #faf9ff; min-height: 92px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  .opt:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .opt.on { border-color: var(--accent); background: #f0edff; box-shadow: inset 0 0 0 1px var(--accent); }
+  .opt .ic { font-size: 1.6rem; line-height: 1; }
+  .opt .tx { font-size: 0.82rem; font-weight: 700; line-height: 1.25; }
+  .row { margin-bottom: 12px; }
+  label.lbl { display: block; font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; }
+  input.inp, textarea.inp, select.inp {
+    width: 100%; padding: 12px 14px; border-radius: 12px; border: 2px solid #e8e4f5;
+    font: inherit; color: var(--ink);
+  }
+  textarea.inp { min-height: 110px; resize: vertical; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 10px 14px; border-radius: 999px; border: 2px solid #e8e4f5; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    background: #fff;
+  }
+  .chip.on { border-color: var(--accent2); background: #e9f8f2; }
+  .btn {
+    width: 100%; padding: 16px; border: none; border-radius: 14px; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer;
+    margin-top: 8px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-soft { background: #e8f5ef; color: var(--ok); border: 2px solid #b8e6d0; }
+  .btn-urgent { background: #ffe8ea; color: #b4232f; border: 2px solid #ffb3bc; }
+  .muted { font-size: 0.8rem; color: var(--mut); margin-top: 8px; line-height: 1.4; }
+  .err { background: #fff0f1; color: #9b1c2e; padding: 10px 12px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 12px; }
+  .done { text-align: center; padding: 24px 12px; }
+  .done .big { font-size: 2.5rem; margin-bottom: 8px; }
+  .done h2 { margin: 0 0 10px; font-size: 1.2rem; }
+  .done p { color: var(--mut); line-height: 1.55; font-size: 0.95rem; margin: 0; }
+  .bar { height: 4px; background: #e8e4f5; border-radius: 4px; margin-bottom: 16px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.25s; }
+  footer { text-align: center; margin-top: 28px; font-size: 0.78rem; color: var(--mut); max-width: 360px; margin-left: auto; margin-right: auto; line-height: 1.45; }
+  a.back { color: var(--accent); font-weight: 700; text-decoration: none; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1 id="tituloPrincipal">Reportar una situación</h1>
+    <p id="subPrincipal">Este espacio es solo para ti. Nadie te juzga por contarlo.</p>
+    <div class="school" id="nomColegio">…</div>
+  </div>
+  <div class="bar"><i id="progBar" style="width:12%"></i></div>
+
+  <div id="vIdent" class="card" style="display:none">
+    <p class="step-h">Antes de empezar</p>
+    <p class="muted" style="margin-top:0">Si tienes tu <strong>enlace personal</strong> (QR del colegio), úsalo: no necesitas esto.</p>
+    <div class="row">
+      <label class="lbl" for="docId">Tu documento (sin puntos)</label>
+      <input class="inp" id="docId" inputmode="numeric" autocomplete="username" placeholder="Ej. 1001234567">
+    </div>
+    <div class="row">
+      <label class="lbl" for="pinRep">PIN que te dio el colegio</label>
+      <input class="inp" id="pinRep" type="password" maxlength="8" inputmode="numeric" autocomplete="current-password" placeholder="4 a 8 dígitos">
+    </div>
+    <p class="muted">Si no tienes PIN, pide en secretaría o a orientación que te activen el acceso.</p>
+    <button type="button" class="btn btn-primary" id="btnIdOk">Continuar</button>
+  </div>
+
+  <div id="vPaso1" class="card" style="display:none">
+    <p class="step-h">Paso 1 de 3 · ¿Qué está pasando?</p>
+    <div class="grid2">
+      <div class="opt" data-cat="mal"><span class="ic">💜</span><span class="tx">Me siento mal o necesito ayuda</span></div>
+      <div class="opt" data-cat="molestan"><span class="ic">🤝</span><span class="tx">Alguien me está molestando</span></div>
+      <div class="opt" data-cat="mal_colegio"><span class="ic">🏫</span><span class="tx">Algo malo pasa en el colegio</span></div>
+      <div class="opt" data-cat="peligro"><span class="ic">⚠️</span><span class="tx">Hay un peligro cerca</span></div>
+    </div>
+    <button type="button" class="btn btn-primary" id="btnP1" disabled>Siguiente</button>
+  </div>
+
+  <div id="vPaso2" class="card" style="display:none">
+    <p class="step-h">Paso 2 de 3 · Cuéntanos</p>
+    <div class="row">
+      <label class="lbl">¿A quién le pasó?</label>
+      <div class="chips" id="chQuien">
+        <span class="chip" data-q="yo">A mí</span>
+        <span class="chip" data-q="amigo">A un amigo o amiga</span>
+        <span class="chip" data-q="grupo">A varias personas / al grupo</span>
+      </div>
+    </div>
+    <div class="row">
+      <label class="lbl" for="txtDesc">¿Qué pasó? (breve)</label>
+      <textarea class="inp" id="txtDesc" maxlength="500" placeholder="Escribe con tus palabras. Máximo 500 caracteres."></textarea>
+      <p class="muted"><span id="cntDesc">0</span>/500</p>
+    </div>
+    <div class="row">
+      <label class="lbl">¿Cuándo fue?</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;margin-bottom:8px">
+        <input type="checkbox" id="chkHoy" checked> Fue hoy o ayer muy reciente
+      </label>
+      <input class="inp" type="date" id="fechaOtra" style="display:none">
+    </div>
+    <div class="row">
+      <label class="lbl">¿En qué lugar?</label>
+      <div class="chips" id="chLugar">
+        <span class="chip" data-l="patio">Patio / zonas abiertas</span>
+        <span class="chip" data-l="salon">Salón de clase</span>
+        <span class="chip" data-l="banos">Baños</span>
+        <span class="chip" data-l="comedor">Comedor</span>
+        <span class="chip" data-l="entrada">Entrada / portería</span>
+        <span class="chip" data-l="redes">Redes sociales / chat</span>
+        <span class="chip" data-l="otro">Otro</span>
+      </div>
+    </div>
+    <div class="row">
+      <label class="lbl" for="fileEv">¿Tienes una foto? (opcional)</label>
+      <input class="inp" type="file" id="fileEv" accept="image/*">
+    </div>
+    <button type="button" class="btn btn-primary" id="btnP2" disabled>Siguiente</button>
+  </div>
+
+  <div id="vPaso3" class="card" style="display:none">
+    <p class="step-h">Paso 3 de 3 · ¿Qué tan urgente es?</p>
+    <p class="muted" style="margin-top:0">Elige la opción que mejor te represente ahora.</p>
+    <button type="button" class="btn btn-soft" id="btnUrgNormal">🟢 Puedo esperar a que me llamen</button>
+    <p class="muted">Para situaciones que pueden atenderse en horas o días hábiles.</p>
+    <button type="button" class="btn btn-urgent" id="btnUrgAlta">🔴 Necesito hablar con alguien <strong>ya</strong></button>
+    <p class="muted">Si te sientes en peligro ahora, también busca a un adulto en el colegio (docente o portería).</p>
+    <div id="errFin" class="err" style="display:none"></div>
+    <button type="button" class="btn btn-primary" id="btnEnviar" style="display:none">Enviar reporte</button>
+  </div>
+
+  <div id="vListo" class="card done" style="display:none">
+    <div class="big">✓</div>
+    <h2>Listo</h2>
+    <p id="txtListo"></p>
+    <p class="muted" style="margin-top:16px">Puedes cerrar esta página. Si necesitas ayuda urgente en persona, acércate a orientación.</p>
+  </div>
+
+  <p style="text-align:center;margin-top:16px"><a class="back" href="/login">Volver al inicio de sesión (personal)</a></p>
+  <footer>
+    Lo que envías lo revisa el equipo de convivencia de tu colegio. No es una calificación ni una falta automática: es una alerta para cuidarte mejor.
+  </footer>
+</div>
+
+<script>
+(function(){
+  const CID = {{ colegio_id|int }};
+  let TOKEN = {{ (reporte_token or '')|tojson }};
+  let cat = '', quien = '', lugar = '', urgencia = '';
+
+  const $ = id => document.getElementById(id);
+  const prog = n => { $('progBar').style.width = Math.min(100, Math.max(8, n)) + '%'; };
+
+  fetch('/api/public/colegios/' + CID).then(r => r.json()).then(j => {
+    if (j.ok) $('nomColegio').textContent = j.nombre || ('Colegio #' + CID);
+    else $('nomColegio').textContent = 'Institución #' + CID;
+  }).catch(() => { $('nomColegio').textContent = 'Colegio'; });
+
+  function show(v) {
+    ['vIdent','vPaso1','vPaso2','vPaso3','vListo'].forEach(x => { const el = $(x); if (el) el.style.display = 'none'; });
+    $(v).style.display = 'block';
+  }
+
+  if (TOKEN) {
+    show('vPaso1');
+    prog(22);
+  } else {
+    show('vIdent');
+    prog(10);
+  }
+
+  $('btnIdOk').onclick = () => {
+    const doc = ($('docId').value || '').replace(/\D/g, '');
+    const pin = ($('pinRep').value || '').trim();
+    if (doc.length < 5 || pin.length < 4) { alert('Documento y PIN completos, por favor.'); return; }
+    TOKEN = ''; // usar doc+pin vía FormData sin token
+    window.__repDoc = doc;
+    window.__repPin = pin;
+    show('vPaso1');
+    prog(22);
+  };
+
+  document.querySelectorAll('#vPaso1 .opt').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('#vPaso1 .opt').forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      cat = el.getAttribute('data-cat');
+      $('btnP1').disabled = !cat;
+    };
+  });
+  $('btnP1').onclick = () => { if (!cat) return; show('vPaso2'); prog(55); };
+
+  document.querySelectorAll('#chQuien .chip').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('#chQuien .chip').forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      quien = el.getAttribute('data-q');
+      validP2();
+    };
+  });
+  document.querySelectorAll('#chLugar .chip').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('#chLugar .chip').forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      lugar = el.getAttribute('data-l');
+      validP2();
+    };
+  });
+  $('txtDesc').oninput = () => {
+    $('cntDesc').textContent = $('txtDesc').value.length;
+    validP2();
+  };
+  $('chkHoy').onchange = () => {
+    $('fechaOtra').style.display = $('chkHoy').checked ? 'none' : 'block';
+  };
+  function validP2() {
+    const d = $('txtDesc').value.trim();
+    $('btnP2').disabled = !(quien && lugar && d.length >= 8);
+  }
+
+  $('btnP2').onclick = () => { show('vPaso3'); prog(88); };
+
+  $('btnUrgNormal').onclick = () => { urgencia = 'normal'; $('btnEnviar').style.display = 'block'; };
+  $('btnUrgAlta').onclick = () => { urgencia = 'urgente'; $('btnEnviar').style.display = 'block'; };
+
+  $('btnEnviar').onclick = async () => {
+    const err = $('errFin');
+    err.style.display = 'none';
+    const fd = new FormData();
+    fd.append('colegio_id', String(CID));
+    if (TOKEN) fd.append('token', TOKEN);
+    else {
+      fd.append('documento_identidad', window.__repDoc || '');
+      fd.append('pin', window.__repPin || '');
+    }
+    fd.append('categoria_visual', cat);
+    fd.append('a_quien', quien);
+    fd.append('descripcion', $('txtDesc').value.trim().slice(0, 500));
+    fd.append('fue_hoy', $('chkHoy').checked ? '1' : '0');
+    if (!$('chkHoy').checked && $('fechaOtra').value) fd.append('fecha_incidente', $('fechaOtra').value);
+    fd.append('lugar_clave', lugar);
+    fd.append('urgencia', urgencia);
+    const f = $('fileEv').files[0];
+    if (f) fd.append('evidencia', f);
+    $('btnEnviar').disabled = true;
+    try {
+      const res = await fetch('/api/reportes-convivencia', { method: 'POST', body: fd });
+      const j = await res.json();
+      if (!j.ok) {
+        err.textContent = j.error || 'No se pudo enviar. Intenta de nuevo.';
+        err.style.display = 'block';
+        $('btnEnviar').disabled = false;
+        return;
+      }
+      $('txtListo').textContent = j.mensaje_confirmacion || 'Gracias por avisarnos.';
+      show('vListo');
+      prog(100);
+      $('tituloPrincipal').textContent = 'Gracias';
+      $('subPrincipal').textContent = 'Tu mensaje ya está en el equipo de convivencia.';
+    } catch (e) {
+      err.textContent = 'Error de conexión. Revisa tu internet e intenta otra vez.';
+      err.style.display = 'block';
+      $('btnEnviar').disabled = false;
+    }
+  };
+})();
+</script>
+</body>
+</html>

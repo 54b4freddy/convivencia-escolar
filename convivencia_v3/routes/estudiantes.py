@@ -1,5 +1,6 @@
 """CRUD e importación masiva de estudiantes."""
 import csv
+import secrets
 from io import StringIO
 
 from flask import Blueprint, jsonify, request
@@ -77,11 +78,12 @@ def _import_insert_estudiante(
     parentesco,
 ):
     p = ph()
+    rtok = secrets.token_urlsafe(24)
     execute(
         conn,
         f"INSERT INTO estudiantes (documento_identidad,nombre,curso,discapacidad,acudiente,cedula_acudiente,telefono,direccion,colegio_id,"
         f"tipo_doc_est,apellido1_est,apellido2_est,nombre1_est,nombre2_est,barreras,"
-        f"tipo_doc_acu,apellido1_acu,apellido2_acu,nombre1_acu,nombre2_acu,parentesco_acu) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
+        f"tipo_doc_acu,apellido1_acu,apellido2_acu,nombre1_acu,nombre2_acu,parentesco_acu,reporte_token,reporte_pin_hash) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
         (
             doc_id,
             nombre,
@@ -104,6 +106,8 @@ def _import_insert_estudiante(
             n1a,
             n2a,
             parentesco[:60],
+            rtok,
+            "",
         ),
     )
     if USE_PG:
@@ -161,11 +165,12 @@ def api_estudiante_crear():
     if not acudiente or not cedula or len(cedula) < 5:
         conn.close()
         return jsonify({"ok": False, "error": "Datos completos del acudiente (nombres y documento) son obligatorios"}), 400
+    rtok = secrets.token_urlsafe(24)
     execute(
         conn,
         f"INSERT INTO estudiantes (documento_identidad,nombre,curso,discapacidad,acudiente,cedula_acudiente,telefono,direccion,colegio_id,"
         f"tipo_doc_est,apellido1_est,apellido2_est,nombre1_est,nombre2_est,barreras,"
-        f"tipo_doc_acu,apellido1_acu,apellido2_acu,nombre1_acu,nombre2_acu,parentesco_acu) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
+        f"tipo_doc_acu,apellido1_acu,apellido2_acu,nombre1_acu,nombre2_acu,parentesco_acu,reporte_token,reporte_pin_hash) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
         (
             doc_id,
             nombre,
@@ -188,6 +193,8 @@ def api_estudiante_crear():
             solo_letras(d.get("nombre1_acu", "")),
             solo_letras(d.get("nombre2_acu", "")),
             solo_letras(d.get("parentesco_acu", d.get("parentesco", "")))[:60],
+            rtok,
+            "",
         ),
     )
     if USE_PG:
@@ -195,6 +202,9 @@ def api_estudiante_crear():
     else:
         eid = execute(conn, "SELECT last_insert_rowid() as lid", fetch="one")["lid"]
     _crear_acudiente(conn, cedula, acudiente, d["curso"], col_id, eid)
+    pin = solo_numeros(str(d.get("reporte_pin") or ""))
+    if pin and 4 <= len(pin) <= 8:
+        execute(conn, f"UPDATE estudiantes SET reporte_pin_hash={p} WHERE id={p}", (hpwd(pin), eid))
     commit(conn)
     conn.close()
     return jsonify({"ok": True, "id": eid})
@@ -257,6 +267,17 @@ def api_estudiante_editar(eid):
         _crear_acudiente(conn, cedula, acudiente, d["curso"], est.get("colegio_id", 1), eid)
     elif cedula:
         execute(conn, f"UPDATE usuarios SET nombre={p} WHERE usuario={p} AND rol='Acudiente'", (acudiente, cedula))
+    if "reporte_pin" in d:
+        pin = solo_numeros(str(d.get("reporte_pin") or ""))
+        if not pin:
+            execute(conn, f"UPDATE estudiantes SET reporte_pin_hash={p} WHERE id={p}", ("", eid))
+        elif len(pin) < 4 or len(pin) > 8:
+            conn.close()
+            return jsonify({"ok": False, "error": "PIN de reporte: entre 4 y 8 dígitos, o vacío para quitar."}), 400
+        else:
+            execute(conn, f"UPDATE estudiantes SET reporte_pin_hash={p} WHERE id={p}", (hpwd(pin), eid))
+    if d.get("regenerar_reporte_token"):
+        execute(conn, f"UPDATE estudiantes SET reporte_token={p} WHERE id={p}", (secrets.token_urlsafe(24), eid))
     commit(conn)
     conn.close()
     return jsonify({"ok": True})

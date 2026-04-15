@@ -273,6 +273,17 @@
     <div class="fr fr1" style="margin-top:8px"><div><label class="fl">Barreras para el aprendizaje y la participación</label>
       <select id="eBarreras">{% for b in barreras_opciones %}<option>{{ b }}</option>{% endfor %}</select>
     </div></div>
+    <div class="fsec">REPORTE CONFIDENCIAL DEL ESTUDIANTE</div>
+    <div class="fr fr1" style="margin-top:8px">
+      <div id="eRepLnkRow" class="mut" style="display:none;font-size:11px;line-height:1.45;margin-bottom:6px">
+        Enlace para QR / compartir (no es la contraseña del acudiente):<br>
+        <a id="eRepLnk" href="#" target="_blank" rel="noopener" style="word-break:break-all"></a>
+      </div>
+      <div><label class="fl">PIN para la página «reportar» (4–8 dígitos, opcional)</label>
+        <input id="eRepPin" maxlength="8" inputmode="numeric" placeholder="Solo números; vacío = no cambiar al guardar">
+        <div class="fhint">El estudiante puede usar <code>/reporte/…</code> con documento + este PIN, además del enlace.</div>
+      </div>
+    </div>
     <div class="fsec">DATOS DEL ACUDIENTE</div>
     <div class="fr">
       <div><label class="fl">Tipo de documento</label><select id="eTipoDocAcu"><option value="">Seleccionar</option>{% for t in tipos_documento %}<option>{{ t }}</option>{% endfor %}</select></div>

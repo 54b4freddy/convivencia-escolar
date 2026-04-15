@@ -2,6 +2,7 @@
 Capa de acceso a datos: PostgreSQL (DATABASE_URL) o SQLite local.
 """
 import os
+import secrets
 from datetime import datetime
 
 from ce_utils import hpwd
@@ -117,6 +118,27 @@ def _migrate_schema(conn):
             "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS gestion_coordinador TEXT DEFAULT NULL",
             "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS lugar TEXT DEFAULT ''",
             "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS afectados_json TEXT DEFAULT ''",
+            "ALTER TABLE estudiantes ADD COLUMN IF NOT EXISTS reporte_token TEXT DEFAULT ''",
+            "ALTER TABLE estudiantes ADD COLUMN IF NOT EXISTS reporte_pin_hash TEXT DEFAULT ''",
+            """CREATE TABLE IF NOT EXISTS reportes_convivencia (
+                id SERIAL PRIMARY KEY,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                estudiante_id INTEGER REFERENCES estudiantes(id) ON DELETE SET NULL,
+                estudiante_nombre TEXT NOT NULL,
+                curso TEXT DEFAULT '',
+                categoria_visual TEXT NOT NULL,
+                a_quien TEXT NOT NULL,
+                descripcion TEXT NOT NULL,
+                fue_hoy INTEGER DEFAULT 1,
+                fecha_incidente TEXT DEFAULT '',
+                lugar_clave TEXT NOT NULL,
+                urgencia TEXT NOT NULL,
+                evidencia_path TEXT DEFAULT '',
+                estado TEXT DEFAULT 'pendiente_validacion',
+                nota_comite TEXT DEFAULT '',
+                creado_en TEXT NOT NULL,
+                actualizado_en TEXT DEFAULT ''
+            )""",
             "DROP TABLE IF EXISTS acta_descargos CASCADE",
             """CREATE TABLE IF NOT EXISTS citas_acudiente (
                 id SERIAL PRIMARY KEY,
@@ -181,6 +203,8 @@ def _migrate_schema(conn):
         ("faltas", "gestion_coordinador", "TEXT DEFAULT NULL"),
         ("faltas", "lugar", "TEXT DEFAULT ''"),
         ("faltas", "afectados_json", "TEXT DEFAULT ''"),
+        ("estudiantes", "reporte_token", "TEXT DEFAULT ''"),
+        ("estudiantes", "reporte_pin_hash", "TEXT DEFAULT ''"),
     ):
         _sqlite_add_col(conn, t, name, decl)
     try:
@@ -227,6 +251,43 @@ def _migrate_schema(conn):
         )
     except Exception:
         pass
+    try:
+        execute(
+            conn,
+            """CREATE TABLE IF NOT EXISTS reportes_convivencia (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                estudiante_id INTEGER REFERENCES estudiantes(id),
+                estudiante_nombre TEXT NOT NULL,
+                curso TEXT DEFAULT '',
+                categoria_visual TEXT NOT NULL,
+                a_quien TEXT NOT NULL,
+                descripcion TEXT NOT NULL,
+                fue_hoy INTEGER DEFAULT 1,
+                fecha_incidente TEXT DEFAULT '',
+                lugar_clave TEXT NOT NULL,
+                urgencia TEXT NOT NULL,
+                evidencia_path TEXT DEFAULT '',
+                estado TEXT DEFAULT 'pendiente_validacion',
+                nota_comite TEXT DEFAULT '',
+                creado_en TEXT NOT NULL,
+                actualizado_en TEXT DEFAULT ''
+            )""",
+        )
+    except Exception:
+        pass
+
+
+def _backfill_reporte_tokens(conn):
+    """Asigna token de enlace/QR a estudiantes que aún no lo tengan."""
+    rows = execute(conn, "SELECT id, reporte_token FROM estudiantes", fetch="all") or []
+    p = ph()
+    for r in rows:
+        tok = (r.get("reporte_token") or "").strip()
+        if tok:
+            continue
+        nt = secrets.token_urlsafe(24)
+        execute(conn, f"UPDATE estudiantes SET reporte_token={p} WHERE id={p}", (nt, r["id"]))
 
 
 DDL_PG = """
@@ -253,7 +314,8 @@ CREATE TABLE IF NOT EXISTS estudiantes (
     tipo_doc_est TEXT DEFAULT '', apellido1_est TEXT DEFAULT '', apellido2_est TEXT DEFAULT '',
     nombre1_est TEXT DEFAULT '', nombre2_est TEXT DEFAULT '', barreras TEXT DEFAULT '',
     tipo_doc_acu TEXT DEFAULT '', apellido1_acu TEXT DEFAULT '', apellido2_acu TEXT DEFAULT '',
-    nombre1_acu TEXT DEFAULT '', nombre2_acu TEXT DEFAULT '', parentesco_acu TEXT DEFAULT ''
+    nombre1_acu TEXT DEFAULT '', nombre2_acu TEXT DEFAULT '', parentesco_acu TEXT DEFAULT '',
+    reporte_token TEXT DEFAULT '', reporte_pin_hash TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS catalogo_faltas (
     id SERIAL PRIMARY KEY, tipo TEXT NOT NULL, descripcion TEXT NOT NULL,
@@ -309,6 +371,25 @@ CREATE TABLE IF NOT EXISTS senales_atencion (
     nota_seguimiento TEXT DEFAULT '',
     tipo_conducta TEXT DEFAULT '', subtipo_clave TEXT DEFAULT '', accion_derivada TEXT DEFAULT '',
     urgencia TEXT DEFAULT '', evidencia_path TEXT DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS reportes_convivencia (
+    id SERIAL PRIMARY KEY,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    estudiante_id INTEGER REFERENCES estudiantes(id) ON DELETE SET NULL,
+    estudiante_nombre TEXT NOT NULL,
+    curso TEXT DEFAULT '',
+    categoria_visual TEXT NOT NULL,
+    a_quien TEXT NOT NULL,
+    descripcion TEXT NOT NULL,
+    fue_hoy INTEGER DEFAULT 1,
+    fecha_incidente TEXT DEFAULT '',
+    lugar_clave TEXT NOT NULL,
+    urgencia TEXT NOT NULL,
+    evidencia_path TEXT DEFAULT '',
+    estado TEXT DEFAULT 'pendiente_validacion',
+    nota_comite TEXT DEFAULT '',
+    creado_en TEXT NOT NULL,
+    actualizado_en TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS asistencia_toma (
     id SERIAL PRIMARY KEY,
@@ -366,7 +447,8 @@ CREATE TABLE IF NOT EXISTS estudiantes (
     tipo_doc_est TEXT DEFAULT '', apellido1_est TEXT DEFAULT '', apellido2_est TEXT DEFAULT '',
     nombre1_est TEXT DEFAULT '', nombre2_est TEXT DEFAULT '', barreras TEXT DEFAULT '',
     tipo_doc_acu TEXT DEFAULT '', apellido1_acu TEXT DEFAULT '', apellido2_acu TEXT DEFAULT '',
-    nombre1_acu TEXT DEFAULT '', nombre2_acu TEXT DEFAULT '', parentesco_acu TEXT DEFAULT ''
+    nombre1_acu TEXT DEFAULT '', nombre2_acu TEXT DEFAULT '', parentesco_acu TEXT DEFAULT '',
+    reporte_token TEXT DEFAULT '', reporte_pin_hash TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS catalogo_faltas (
     id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, descripcion TEXT NOT NULL,
@@ -423,6 +505,25 @@ CREATE TABLE IF NOT EXISTS senales_atencion (
     tipo_conducta TEXT DEFAULT '', subtipo_clave TEXT DEFAULT '', accion_derivada TEXT DEFAULT '',
     urgencia TEXT DEFAULT '', evidencia_path TEXT DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS reportes_convivencia (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    estudiante_id INTEGER REFERENCES estudiantes(id),
+    estudiante_nombre TEXT NOT NULL,
+    curso TEXT DEFAULT '',
+    categoria_visual TEXT NOT NULL,
+    a_quien TEXT NOT NULL,
+    descripcion TEXT NOT NULL,
+    fue_hoy INTEGER DEFAULT 1,
+    fecha_incidente TEXT DEFAULT '',
+    lugar_clave TEXT NOT NULL,
+    urgencia TEXT NOT NULL,
+    evidencia_path TEXT DEFAULT '',
+    estado TEXT DEFAULT 'pendiente_validacion',
+    nota_comite TEXT DEFAULT '',
+    creado_en TEXT NOT NULL,
+    actualizado_en TEXT DEFAULT ''
+);
 CREATE TABLE IF NOT EXISTS asistencia_toma (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     colegio_id INTEGER NOT NULL REFERENCES colegios(id),
@@ -467,6 +568,7 @@ def init_db():
         conn.executescript(ddl)
 
     _migrate_schema(conn)
+    _backfill_reporte_tokens(conn)
 
     # Índices para escalar (multi-colegio + filtros frecuentes).
     # Se crean de forma idempotente; si fallan (p.ej. por esquema viejo), se ignoran.
@@ -492,6 +594,7 @@ def init_db():
         "CREATE INDEX IF NOT EXISTS idx_citas_colegio_estado ON citas_acudiente(colegio_id, estado)",
         "CREATE INDEX IF NOT EXISTS idx_citas_falta ON citas_acudiente(falta_id)",
         "CREATE INDEX IF NOT EXISTS idx_falta_adjuntos_falta ON falta_adjuntos(falta_id)",
+        "CREATE INDEX IF NOT EXISTS idx_reportes_colegio_estado ON reportes_convivencia(colegio_id, estado)",
     ):
         try:
             execute(conn, stmt)
@@ -609,5 +712,6 @@ def init_db():
                     (fid, "Orientador", "Pilar Orientadora", f"{_y}-03-21", "Sesión de crisis. Remisión a psicología externa."),
                 ]:
                     execute(conn, f"INSERT INTO anotaciones (falta_id,rol,autor,fecha,texto) VALUES ({p},{p},{p},{p},{p})", a)
+    _backfill_reporte_tokens(conn)
     commit(conn)
     conn.close()
