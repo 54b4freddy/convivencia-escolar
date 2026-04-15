@@ -208,6 +208,26 @@ textarea{resize:vertical;min-height:60px}
 .t-di{background:var(--t2g);color:var(--t2c)}.t-or{background:#e1f5ee;color:#0f6e56}
 .t-doc{background:#f1efe8;color:#5f5e5a}.t-acu{background:#fbeaf0;color:#993556}
 
+/* Tarjeta alerta reiteración (conductas de riesgo) */
+.reit-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--rl);padding:12px 12px 10px;box-shadow:0 10px 25px rgba(0,0,0,.06)}
+.reit-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.reit-head h4{font-size:12px;font-weight:700;letter-spacing:.02em}
+.reit-sub{font-size:11px;color:var(--mut);margin-top:2px}
+.reit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.reit-box{border:1px solid var(--brd);border-radius:var(--r);padding:9px 10px;background:#faf8f4}
+.reit-box .t{font-size:10px;font-weight:700;letter-spacing:.07em;color:var(--mut);margin-bottom:6px}
+.reit-box .v{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.reit-kpi{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.reit-bdg{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--brd);background:#fff}
+.reit-bdg.ok{background:var(--t1g);border-color:#c0dd97;color:var(--t1c)}
+.reit-bdg.warn{background:var(--t2g);border-color:#fac775;color:var(--t2c)}
+.reit-bdg.crit{background:var(--t3g);border-color:#f09595;color:var(--t3c)}
+.reit-msg{font-size:11px;color:var(--mut);line-height:1.45;margin-top:6px}
+.reit-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.reit-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;background:#fff;border:1px solid var(--brd);font-size:11px}
+.reit-chip strong{font-weight:700}
+@media (max-width:820px){.reit-grid{grid-template-columns:1fr}}
+
 /* Empty */
 .empty{padding:32px;text-align:center;color:var(--mut);font-size:12px}
 .mut{color:var(--mut);font-size:11px}

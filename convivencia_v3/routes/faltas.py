@@ -6,6 +6,8 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, send_file
 from werkzeug.utils import secure_filename
 
+import json
+
 from ce_citas import CITA_ROLES_DESTINO, cancelar_citas_abiertas_por_falta, insert_cita_escuela
 from ce_db import USE_PG, commit, execute, get_db, ph
 from ce_faltas_service import attach_cita_falta, listar_faltas_enriquecidas, parse_filtros_faltas_args
@@ -250,6 +252,58 @@ def api_falta_crear():
     commit(conn)
     conn.close()
     return jsonify({"ok": True, "id": fid})
+
+
+def _puede_editar_analitica(u, f):
+    if u["rol"] == "Superadmin":
+        return True
+    if int(f.get("colegio_id") or 0) != int(u.get("colegio_id") or 0):
+        return False
+    if u["rol"] in ("Coordinador", "Orientador"):
+        return True
+    if u["rol"] == "Director":
+        return f.get("curso") == u.get("curso") or f.get("docente") == u.get("nombre")
+    if u["rol"] == "Docente":
+        return f.get("docente") == u.get("nombre")
+    return False
+
+
+@bp.route("/api/faltas/<int:fid>/analitica", methods=["PATCH"])
+@roles("Superadmin", "Coordinador", "Director", "Orientador", "Docente")
+def api_falta_analitica(fid):
+    d = request.json or {}
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
+    lugar = (d.get("lugar") or "").strip()[:80]
+    afectados = d.get("afectados") or []
+    if not isinstance(afectados, list):
+        return jsonify({"ok": False, "error": "afectados debe ser lista"}), 400
+    lim = []
+    for a in afectados[:20]:
+        s = str(a or "").strip()
+        if not s:
+            continue
+        lim.append(s[:60])
+    try:
+        afectados_json = json.dumps(lim, ensure_ascii=False)
+    except Exception:
+        afectados_json = "[]"
+    conn = get_db()
+    p = ph()
+    f = execute(conn, f"SELECT * FROM faltas WHERE id={p} AND colegio_id={p}", (fid, tenant_id), fetch="one")
+    if not f:
+        conn.close()
+        return jsonify({"ok": False, "error": "No encontrada"}), 404
+    if not _puede_editar_analitica(u, f):
+        conn.close()
+        return jsonify({"ok": False, "error": "Sin permisos"}), 403
+    execute(conn, f"UPDATE faltas SET lugar={p}, afectados_json={p} WHERE id={p}", (lugar, afectados_json, fid))
+    commit(conn)
+    row = execute(conn, f"SELECT lugar, afectados_json FROM faltas WHERE id={p}", (fid,), fetch="one") or {}
+    conn.close()
+    return jsonify({"ok": True, "lugar": row.get("lugar") or "", "afectados_json": row.get("afectados_json") or ""})
 
 
 @bp.route("/api/faltas/<int:fid>/adjuntos", methods=["POST"])

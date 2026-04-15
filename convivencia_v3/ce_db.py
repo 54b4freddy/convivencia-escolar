@@ -115,6 +115,8 @@ def _migrate_schema(conn):
             "ALTER TABLE senales_atencion ADD COLUMN IF NOT EXISTS urgencia TEXT DEFAULT ''",
             "ALTER TABLE senales_atencion ADD COLUMN IF NOT EXISTS evidencia_path TEXT DEFAULT ''",
             "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS gestion_coordinador TEXT DEFAULT NULL",
+            "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS lugar TEXT DEFAULT ''",
+            "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS afectados_json TEXT DEFAULT ''",
             "DROP TABLE IF EXISTS acta_descargos CASCADE",
             """CREATE TABLE IF NOT EXISTS citas_acudiente (
                 id SERIAL PRIMARY KEY,
@@ -177,6 +179,8 @@ def _migrate_schema(conn):
         ("senales_atencion", "urgencia", "TEXT DEFAULT ''"),
         ("senales_atencion", "evidencia_path", "TEXT DEFAULT ''"),
         ("faltas", "gestion_coordinador", "TEXT DEFAULT NULL"),
+        ("faltas", "lugar", "TEXT DEFAULT ''"),
+        ("faltas", "afectados_json", "TEXT DEFAULT ''"),
     ):
         _sqlite_add_col(conn, t, name, decl)
     try:
@@ -264,7 +268,9 @@ CREATE TABLE IF NOT EXISTS faltas (
     proceso_inicial TEXT NOT NULL, protocolo_aplicado TEXT DEFAULT '',
     sancion_aplicada TEXT DEFAULT '', docente TEXT NOT NULL,
     colegio_id INTEGER REFERENCES colegios(id),
-    gestion_coordinador TEXT DEFAULT NULL
+    gestion_coordinador TEXT DEFAULT NULL,
+    lugar TEXT DEFAULT '',
+    afectados_json TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS anotaciones (
     id SERIAL PRIMARY KEY, falta_id INTEGER REFERENCES faltas(id),
@@ -375,7 +381,9 @@ CREATE TABLE IF NOT EXISTS faltas (
     proceso_inicial TEXT NOT NULL, protocolo_aplicado TEXT DEFAULT '',
     sancion_aplicada TEXT DEFAULT '', docente TEXT NOT NULL,
     colegio_id INTEGER REFERENCES colegios(id),
-    gestion_coordinador TEXT DEFAULT NULL
+    gestion_coordinador TEXT DEFAULT NULL,
+    lugar TEXT DEFAULT '',
+    afectados_json TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS anotaciones (
     id INTEGER PRIMARY KEY AUTOINCREMENT, falta_id INTEGER REFERENCES faltas(id),

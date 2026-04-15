@@ -629,6 +629,171 @@ function refreshCrAccion(){
   const el=document.getElementById('crAccionText');
   if(el)el.textContent=t?CR_ACCION_TXT[t]||'—':'—';
 }
+
+// ── Tarjeta alerta reiteración (Conductas de riesgo) ───────────────────────────
+const REIT_AUS_UMBRAL = 3; // umbral configurable (ej. 3 inasistencias recientes)
+const REIT_FT1_UMBRAL = 3; // regla de 3 para Tipo I → escalar
+function _isoDateNDaysAgo(n){
+  const d=new Date();d.setDate(d.getDate()-n);
+  return d.toISOString().slice(0,10);
+}
+function _normTxt(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function extractPlacesFromText(text){
+  const t=_normTxt(text);
+  const out=new Map(); // place -> count
+  const bump=p=>out.set(p,(out.get(p)||0)+1);
+  if(!t)return out;
+  // mapeo simple de lugares comunes
+  const pats=[
+    {k:'baños',re:/\bban(?:o|os|os?)\b|\bbañ(?:o|os|os?)\b/},
+    {k:'patio',re:/\bpatio\b/},
+    {k:'cancha',re:/\bcancha\b/},
+    {k:'cafetería',re:/\bcafeteria\b|\btienda\b/},
+    {k:'pasillo',re:/\bpasillo\b/},
+    {k:'entrada/salida',re:/\bentrada\b|\bsalida\b|\bporter(?:ia|ia)\b/},
+    {k:'transporte',re:/\bruta\b|\bbus\b|\btransporte\b/},
+    {k:'aula',re:/\baula\b/},
+  ];
+  pats.forEach(p=>{if(p.re.test(t))bump(p.k);});
+  // aulas específicas: "aula 201", "salón 7", "salon 7", "201"
+  const m1=t.match(/\b(aula|salon|sal[oó]n)\s*(\d{1,4}[a-z]?)\b/g);
+  if(m1){m1.forEach(x=>{const m=x.match(/(\d{1,4}[a-z]?)/);if(m)bump(`${x.includes('aula')?'aula':'salón'} ${m[1]}`);});}
+  return out;
+}
+function extractPeopleAffected(text){
+  const s=String(text||'');
+  const out=new Map(); // name -> count
+  const bump=n=>out.set(n,(out.get(n)||0)+1);
+  // heurística: nombres tras "a", "contra", "víctima:"
+  const re=/(?:\bcontra\b|\ba\b|\bvictima\b|\bvíctima\b)\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2})/g;
+  let m;
+  while((m=re.exec(s))!==null){
+    const name=(m[1]||'').trim();
+    if(name && name.length>=3) bump(name);
+  }
+  return out;
+}
+async function _fetchFaltasAnioCached(){
+  const y=getAnio();
+  window._reitFaltasCache=window._reitFaltasCache||{};
+  if(window._reitFaltasCache[y]) return window._reitFaltasCache[y];
+  const raw=await api(`/api/faltas?anio=${encodeURIComponent(y)}`);
+  const list=Array.isArray(raw)?raw:[];
+  window._reitFaltasCache[y]=list;
+  return list;
+}
+async function _fetchAsistenciaTomasCurso(curso){
+  if(!curso) return [];
+  // 60 días por defecto para rendimiento; ajustar si se requiere más histórico.
+  const desde=_isoDateNDaysAgo(60);
+  const raw=await api(`/api/asistencia/tomas?curso=${encodeURIComponent(curso)}&desde=${encodeURIComponent(desde)}`);
+  return Array.isArray(raw)?raw:[];
+}
+function _kpiBadge(val,umbral){
+  if(val>=umbral) return 'crit';
+  if(val>=Math.max(1,Math.ceil(umbral*0.67))) return 'warn';
+  return 'ok';
+}
+function _topMap(mapObj,limit=6){
+  return Array.from(mapObj.entries()).sort((a,b)=>b[1]-a[1]).slice(0,limit);
+}
+function renderTarjetaReiteracion({faltas,asistencias,estudianteNombre,curso}){
+  const fs=Array.isArray(faltas)?faltas:[];
+  const tomas=Array.isArray(asistencias)?asistencias:[];
+  const aus=(()=>{ // ausencias totales en el rango (tomas con detalle)
+    let n=0;
+    tomas.forEach(t=>{
+      (t.detalles||[]).forEach(d=>{if(d && d.ausente) n++;});
+    });
+    return n;
+  })();
+  const ft1=fs.filter(f=>String(f.tipo_falta||'')==='Tipo I').length;
+  const ft1Cls=_kpiBadge(ft1,REIT_FT1_UMBRAL);
+  const ft1Msg=ft1>=REIT_FT1_UMBRAL
+    ?'Escalamiento a Tipo II: reiteración (regla de 3) — revisar ruta de atención y medidas pedagógicas.'
+    :'Seguimiento: aún no cumple la regla de 3 para escalamiento.';
+
+  const placesAgg=new Map();
+  const victimsAgg=new Map();
+  fs.forEach(f=>{
+    const lug=(f.lugar||'').trim();
+    if(lug) placesAgg.set(lug,(placesAgg.get(lug)||0)+1);
+    else{
+      const d=f.descripcion||'';
+      const pm=extractPlacesFromText(d);
+      pm.forEach((c,k)=>placesAgg.set(k,(placesAgg.get(k)||0)+c));
+    }
+    const aj=_parseAfectadosJson(f.afectados_json||'');
+    if(aj.length) aj.forEach(n=>victimsAgg.set(n,(victimsAgg.get(n)||0)+1));
+    else{
+      const d=f.descripcion||'';
+      const vm=extractPeopleAffected(d);
+      vm.forEach((c,k)=>victimsAgg.set(k,(victimsAgg.get(k)||0)+c));
+    }
+  });
+  const topPlaces=_topMap(placesAgg,6);
+  const topVictims=_topMap(victimsAgg,6);
+  const ausCls=_kpiBadge(aus,REIT_AUS_UMBRAL);
+
+  return `
+  <div class="reit-card">
+    <div class="reit-head">
+      <div>
+        <h4>Alerta de reiteración (ruta de atención)</h4>
+        <div class="reit-sub">${escHtml(estudianteNombre||'Estudiante')} · ${escHtml(curso||'')}</div>
+      </div>
+      <div class="reit-kpi">
+        <span class="reit-bdg ${ausCls}">Inasistencias: ${aus}</span>
+        <span class="reit-bdg ${ft1Cls}">Tipo I: ${ft1}</span>
+      </div>
+    </div>
+    <div class="reit-grid">
+      <div class="reit-box">
+        <div class="t">CONTADOR DE ASISTENCIA</div>
+        <div class="v">
+          <div class="reit-kpi"><span class="reit-bdg ${ausCls}">${aus} inasistencia(s)</span></div>
+          <span class="bdg bg">Umbral: ${REIT_AUS_UMBRAL}</span>
+        </div>
+        <div class="reit-msg">${aus>=REIT_AUS_UMBRAL?'Crítico: supera el umbral configurado para alertar reiteración/abandono.':'Ok: dentro del umbral configurado.'}</div>
+      </div>
+      <div class="reit-box">
+        <div class="t">ALERTA TIPO I (REGLA DE 3)</div>
+        <div class="v">
+          <div class="reit-kpi"><span class="reit-bdg ${ft1Cls}">${ft1} falta(s) Tipo I</span></div>
+          <span class="bdg bg">Umbral: ${REIT_FT1_UMBRAL}</span>
+        </div>
+        <div class="reit-msg">${escHtml(ft1Msg)}</div>
+      </div>
+      <div class="reit-box">
+        <div class="t">RECURRENCIA ESPACIAL</div>
+        ${topPlaces.length?`<div class="reit-list">${topPlaces.map(([k,c])=>`<span class="reit-chip">${escHtml(k)} <strong>${c}</strong></span>`).join('')}</div>`
+          :`<div class="reit-msg">Sin lugares detectables (depende de la calidad del texto en “Descripción”).</div>`}
+      </div>
+      <div class="reit-box">
+        <div class="t">MAPA DE VÍCTIMAS / AFECTADOS</div>
+        ${topVictims.length?`<div class="reit-list">${topVictims.map(([k,c])=>`<span class="reit-chip">${escHtml(k)} <strong>${c}</strong></span>`).join('')}</div>`
+          :`<div class="reit-msg">No se identificaron nombres en descripciones (heurística conservadora).</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+async function refreshCrReiteracion(){
+  const wrap=document.getElementById('crReitWrap');
+  if(!wrap)return;
+  const curso=document.getElementById('crCurso')?.value||'';
+  const sel=document.getElementById('crEst');
+  const eid=sel?.value;
+  const estNom=sel?.options?.[sel.selectedIndex]?.text?.trim()||'';
+  if(!eid){wrap.innerHTML='';return;}
+  wrap.innerHTML=`<div class="mut" style="font-size:12px;padding:10px;border:1px dashed var(--brd);border-radius:var(--r)">Cargando análisis de reiteración…</div>`;
+  const [faltasAll,tomas]=await Promise.all([_fetchFaltasAnioCached(),_fetchAsistenciaTomasCurso(curso)]);
+  const fs=faltasAll.filter(f=>Number(f.estudiante_id)===Number(eid));
+  // asistencia: contar ausencias del estudiante en el rango
+  const as=tomas.map(t=>({...t,detalles:(t.detalles||[]).filter(d=>Number(d.estudiante_id)===Number(eid))}));
+  wrap.innerHTML=renderTarjetaReiteracion({faltas:fs,asistencias:as,estudianteNombre:estNom,curso});
+}
 function openOvSenal(){
   const sc=document.getElementById('crCurso');
   if(!sc)return;
@@ -658,6 +823,7 @@ async function loadCrEstudiantes(){
   const list=await api('/api/estudiantes?curso='+encodeURIComponent(c));
   if(!Array.isArray(list))return;
   list.forEach(e=>{const o=document.createElement('option');o.value=e.id;o.textContent=e.nombre;sel.appendChild(o);});
+  refreshCrReiteracion();
 }
 async function guardarConducta(){
   const err=document.getElementById('crErr');
@@ -1241,6 +1407,7 @@ async function verFalta(id){
   document.getElementById('vFecha').value=f.fecha;document.getElementById('vEst').value=f.estudiante;
   document.getElementById('vCurso').value=f.curso;document.getElementById('vTipo').value=f.tipo_falta;
   document.getElementById('vEsp').value=f.falta_especifica;document.getElementById('vDesc').value=f.descripcion;
+  fillAnaliticaFalta(f);
   const ps=document.getElementById('vProtoSec');
   if(f.protocolo_aplicado||f.sancion_aplicada){
     ps.style.display='block';
@@ -1314,6 +1481,73 @@ async function verFalta(id){
   else{as2.style.display='none';sb.style.display='none';}
   syncAdjuntosUI(f);
   openOv('ov-ver');
+}
+
+// ── Datos analíticos (lugar / afectados) ──────────────────────────────────────
+function toggleVLugarOtro(){
+  const sel=document.getElementById('vLugar');
+  const ot=document.getElementById('vLugarOtro');
+  if(!sel||!ot)return;
+  ot.style.display=sel.value==='Otro'?'block':'none';
+}
+function _parseAfectadosJson(s){
+  try{
+    const a=JSON.parse(s||'[]');
+    return Array.isArray(a)?a:[];
+  }catch{ return []; }
+}
+function _renderVAfect(){
+  const wrap=document.getElementById('vAfectChips');
+  if(!wrap)return;
+  const arr=window._vAfectArr||[];
+  wrap.innerHTML=arr.map((n,i)=>`<span class="reit-chip" style="cursor:pointer" title="Quitar" onclick="rmVAfect(${i})">${escHtml(n)} <strong>×</strong></span>`).join('')||'<span class="mut">Sin registros</span>';
+}
+function addVAfect(){
+  const inp=document.getElementById('vAfectInp');
+  if(!inp)return;
+  const v=(inp.value||'').trim();
+  if(!v)return;
+  window._vAfectArr=window._vAfectArr||[];
+  if(window._vAfectArr.length>=20){toast('Máximo 20 afectados','e');return;}
+  if(!window._vAfectArr.some(x=>_normTxt(x)===_normTxt(v))) window._vAfectArr.push(v);
+  inp.value='';
+  _renderVAfect();
+}
+function rmVAfect(i){
+  window._vAfectArr=window._vAfectArr||[];
+  window._vAfectArr.splice(i,1);
+  _renderVAfect();
+}
+function fillAnaliticaFalta(f){
+  const l=(f&&f.lugar)||'';
+  const sel=document.getElementById('vLugar');
+  const ot=document.getElementById('vLugarOtro');
+  const inp=document.getElementById('vAfectInp');
+  if(sel){
+    const opts=Array.from(sel.options).map(o=>o.value);
+    if(l && !opts.includes(l)){sel.value='Otro'; if(ot){ot.value=l;}}
+    else{sel.value=l||''; if(ot)ot.value='';}
+  }
+  toggleVLugarOtro();
+  window._vAfectArr=_parseAfectadosJson((f&&f.afectados_json)||'');
+  _renderVAfect();
+  if(inp)inp.value='';
+}
+async function guardarAnaliticaFalta(){
+  if(!verFId)return;
+  const sel=document.getElementById('vLugar');
+  const ot=document.getElementById('vLugarOtro');
+  let lugar=(sel&&sel.value)||'';
+  if(lugar==='Otro') lugar=(ot&&ot.value||'').trim();
+  const afectados=(window._vAfectArr||[]).slice(0,20);
+  const r=await api(`/api/faltas/${verFId}/analitica`,{method:'PATCH',body:JSON.stringify({lugar,afectados})});
+  if(r.ok){
+    toast('Datos guardados');
+    if(window.verFObj){
+      window.verFObj.lugar=r.lugar||lugar;
+      window.verFObj.afectados_json=r.afectados_json||'';
+    }
+  } else toast(r.error||'Error','e');
 }
 
 function openOvGestion(){

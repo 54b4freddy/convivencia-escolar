@@ -183,6 +183,35 @@
             <div><label class="fl">Teléfono</label><input id="vTel" readonly></div>
           </div>
         </div>
+        <div id="vAnalitSec" style="margin-bottom:13px">
+          <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">DATOS PARA ANÁLISIS (OPCIONAL)</div>
+          <div class="fr">
+            <div>
+              <label class="fl">Lugar</label>
+              <select id="vLugar" onchange="toggleVLugarOtro()">
+                <option value="">—</option>
+                <option value="Baños">Baños</option>
+                <option value="Patio">Patio</option>
+                <option value="Aula">Aula</option>
+                <option value="Cancha">Cancha</option>
+                <option value="Cafetería">Cafetería</option>
+                <option value="Pasillo">Pasillo</option>
+                <option value="Entrada/Salida">Entrada/Salida</option>
+                <option value="Transporte">Transporte</option>
+                <option value="Otro">Otro…</option>
+              </select>
+              <input id="vLugarOtro" placeholder="Ej: Aula 201" style="display:none;margin-top:6px" maxlength="80">
+            </div>
+            <div>
+              <label class="fl">Afectados / víctimas (enter para agregar)</label>
+              <input id="vAfectInp" placeholder="Nombre o identificador" maxlength="60" onkeydown="if(event.key==='Enter'){event.preventDefault();addVAfect();}">
+              <div id="vAfectChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+              <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                <button type="button" class="btn btn-xs btn-i" onclick="guardarAnaliticaFalta()">Guardar datos</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div id="verAnotSec" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)">
           <label class="fl" id="verAnotLbl">Agregar observación</label>
           <textarea id="vAnotTxt" rows="3" placeholder="Escriba su observación, seguimiento o acción tomada..."></textarea>
@@ -378,8 +407,9 @@
     <div class="abanner ab-r" style="margin-bottom:12px;font-size:11px;line-height:1.45">Registro institucional de conductas. Complete con hechos observables. La evidencia adjunta es opcional y debe respetar la protección de datos personales.</div>
     <div class="fr">
       <div><label class="fl">Curso</label><select id="crCurso" onchange="loadCrEstudiantes()"><option value="">Seleccionar</option></select></div>
-      <div><label class="fl">Estudiante</label><select id="crEst"><option value="">Primero elija curso</option></select></div>
+      <div><label class="fl">Estudiante</label><select id="crEst" onchange="refreshCrReiteracion()"><option value="">Primero elija curso</option></select></div>
     </div>
+    <div id="crReitWrap" style="margin-top:10px"></div>
     <div class="fr" style="margin-top:10px">
       <div><label class="fl">Tipo</label><select id="crTipo" onchange="refreshCrSubOpciones()"><option value="">Seleccionar</option>
         <option value="conv_i">Tipo I (convivencia)</option>
