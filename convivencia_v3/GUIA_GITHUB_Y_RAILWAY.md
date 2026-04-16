@@ -53,7 +53,7 @@ git init
 git add .
 git commit -m "Primera versión: Convivencia Escolar"
 git branch -M main
-git remote add origin https://github.com/TU_USUARIO/NOMBRE_DEL_REPO.git
+git remote add origin https://github.com/54b4freddy/convivencia-escolar.git
 git push -u origin main
 ```
 

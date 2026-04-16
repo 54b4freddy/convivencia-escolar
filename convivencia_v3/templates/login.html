@@ -267,9 +267,9 @@
         <input type="checkbox" id="chkEst" onchange="toggleEstColegio()"> Soy estudiante: mi usuario es mi documento
       </label>
       <div class="field" id="estColWrap" style="display:none;margin-top:10px">
-        <label>Código de la institución</label>
-        <input type="number" id="estColegio" min="1" value="1" style="width:100%;padding:10px 12px;border-radius:4px;border:1px solid rgba(201,168,76,.35);background:rgba(255,252,245,.9)">
-        <span style="font-size:0.72rem;color:var(--muted);display:block;margin-top:6px">Lo indica el colegio (a veces es 1). Si hay varias sedes en el sistema, debe ser el correcto.</span>
+        <label>Nombre de mi colegio (I.E.)</label>
+        <input type="text" id="estColegioNombre" autocomplete="organization" placeholder="Ej. Institución educativa Pablo VI Puerto Triunfo" style="width:100%;padding:10px 12px;border-radius:4px;border:1px solid rgba(201,168,76,.35);background:rgba(255,252,245,.9)">
+        <span style="font-size:0.72rem;color:var(--muted);display:block;margin-top:6px">Como aparece en el carnet o en la página del colegio. Solo si el sistema se lo pide.</span>
       </div>
 
       <button class="btn-primary" id="btnLogin" onclick="iniciarSesion()">Ingresar</button>
@@ -339,7 +339,9 @@
 
     function toggleEstColegio() {
       const on = document.getElementById('chkEst').checked;
-      document.getElementById('estColWrap').style.display = on ? 'block' : 'none';
+      document.getElementById('estColWrap').style.display = 'none';
+      const nm = document.getElementById('estColegioNombre');
+      if (nm) nm.value = '';
       document.getElementById('lblUsuario').textContent = on ? 'Documento (sin puntos)' : 'Usuario';
       document.getElementById('usuario').placeholder = on ? 'Ej. 1001234567' : 'Ingrese su usuario';
     }
@@ -355,8 +357,8 @@
       const contrasena = document.getElementById('contrasena').value;
       const payload = { usuario, contrasena };
       if (document.getElementById('chkEst').checked) {
-        const c = parseInt(String(document.getElementById('estColegio').value || ''), 10);
-        if (c > 0) payload.colegio_id = c;
+        const nom = (document.getElementById('estColegioNombre') && document.getElementById('estColegioNombre').value || '').trim();
+        if (nom) payload.colegio_nombre = nom;
       }
 
       try {
@@ -374,6 +376,11 @@
             window.location.href = '/dashboard';
         } else {
           err.textContent = data.error || 'Credenciales incorrectas';
+          if ((data.need_institucion || data.need_colegio_id) && document.getElementById('chkEst').checked) {
+            document.getElementById('estColWrap').style.display = 'block';
+            const nm = document.getElementById('estColegioNombre');
+            if (nm) nm.focus();
+          }
           btn.disabled = false;
           btn.textContent = 'Ingresar';
         }

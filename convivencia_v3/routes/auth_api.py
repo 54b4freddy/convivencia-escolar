@@ -10,12 +10,37 @@ from routes.authz import cu, login_required
 bp = Blueprint("auth_api", __name__)
 
 
+def _norm_nombre_inst(s: str) -> str:
+    return " ".join((s or "").lower().split())
+
+
+def _coincide_nombre_inst(nombre_colegio: str, busqueda: str) -> bool:
+    """Compara nombre oficial del colegio con lo que escribe el estudiante (carnet)."""
+    nom = _norm_nombre_inst(nombre_colegio)
+    t = _norm_nombre_inst(busqueda)
+    if len(t) < 2:
+        return False
+    if t in nom:
+        return True
+    words = [w for w in t.split() if len(w) >= 2]
+    if not words:
+        return False
+    return all(w in nom for w in words)
+
+
 def _login_estudiante_por_documento(conn, d):
-    """Usuario = documento del estudiante + contraseña definida por el colegio + institución."""
+    """Documento + contraseña. Si hay varios colegios, puede acotar con colegio_id o nombre de institución."""
     doc = solo_numeros((d.get("usuario") or "").strip())
     if len(doc) < 5:
-        return None
-    pwd = d.get("contrasena") or ""
+        return None, None
+    pwd_h = hpwd(d.get("contrasena") or "")
+    p = ph()
+    base = (
+        f"SELECT u.*, c.nombre AS col_nom FROM usuarios u "
+        f"JOIN estudiantes e ON e.id = u.estudiante_id "
+        f"LEFT JOIN colegios c ON c.id = u.colegio_id "
+        f"WHERE u.rol = 'Estudiante' AND e.documento_identidad = {p} AND u.contrasena = {p}"
+    )
     raw_c = d.get("colegio_id")
     cid = None
     if raw_c is not None and str(raw_c).strip() != "":
@@ -23,23 +48,26 @@ def _login_estudiante_por_documento(conn, d):
             cid = int(raw_c)
         except (TypeError, ValueError):
             cid = None
-    if not cid or cid <= 0:
-        cnt = execute(conn, "SELECT COUNT(*) as c FROM colegios", fetch="one")
-        if (cnt or {}).get("c", 0) == 1:
-            one = execute(conn, "SELECT id FROM colegios ORDER BY id LIMIT 1", fetch="one")
-            cid = int(one["id"]) if one else 0
-    if not cid or cid <= 0:
-        return None
-    p = ph()
-    return execute(
-        conn,
-        f"SELECT u.*, c.nombre AS col_nom FROM usuarios u "
-        f"JOIN estudiantes e ON e.id = u.estudiante_id "
-        f"LEFT JOIN colegios c ON c.id = u.colegio_id "
-        f"WHERE u.rol = 'Estudiante' AND e.colegio_id = {p} AND e.documento_identidad = {p} AND u.contrasena = {p}",
-        (cid, doc, hpwd(pwd)),
-        fetch="one",
-    )
+    if cid and cid > 0:
+        u = execute(conn, base + f" AND e.colegio_id = {p}", (doc, pwd_h, cid), fetch="one")
+        return (u, None) if u else (None, None)
+
+    rows = execute(conn, base, (doc, pwd_h), fetch="all") or []
+    nombre_filtro = (d.get("colegio_nombre") or d.get("institucion") or "").strip()
+
+    if len(rows) > 1 and nombre_filtro:
+        rows = [r for r in rows if _coincide_nombre_inst(r.get("col_nom") or "", nombre_filtro)]
+        if len(rows) == 1:
+            return rows[0], None
+        if len(rows) == 0:
+            return None, "bad_institucion"
+        return None, "ambiguous"
+
+    if len(rows) == 1:
+        return rows[0], None
+    if len(rows) > 1:
+        return None, "ambiguous"
+    return None, None
 
 
 def _norm_colegio_id(v):
@@ -65,10 +93,27 @@ def api_login():
         (usuario_in, hpwd(d.get("contrasena", ""))),
         fetch="one",
     )
+    amb = None
     if not u:
-        u = _login_estudiante_por_documento(conn, d)
+        u, amb = _login_estudiante_por_documento(conn, d)
     conn.close()
     if not u:
+        if amb == "ambiguous":
+            return jsonify(
+                {
+                    "ok": False,
+                    "error": "Este documento está en más de un colegio. Escriba el nombre de su institución (como en el carnet).",
+                    "need_institucion": True,
+                }
+            ), 401
+        if amb == "bad_institucion":
+            return jsonify(
+                {
+                    "ok": False,
+                    "error": "Ese nombre no coincide con ninguno de los colegios donde figura su documento. Pruebe más palabras del nombre oficial.",
+                    "need_institucion": True,
+                }
+            ), 401
         return jsonify({"ok": False, "error": "Usuario o contraseña incorrectos"}), 401
     session["usuario"] = {
         "id": u["id"],

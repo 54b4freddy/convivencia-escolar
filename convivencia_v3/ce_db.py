@@ -139,6 +139,35 @@ def _migrate_schema(conn):
                 creado_en TEXT NOT NULL,
                 actualizado_en TEXT DEFAULT ''
             )""",
+            """CREATE TABLE IF NOT EXISTS promocion_actividades (
+                id SERIAL PRIMARY KEY,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                titulo TEXT NOT NULL,
+                tema TEXT NOT NULL,
+                fecha TEXT NOT NULL,
+                lugar TEXT DEFAULT '',
+                recursos TEXT DEFAULT '',
+                descripcion TEXT DEFAULT '',
+                publico_tipo TEXT NOT NULL,
+                publico_curso TEXT DEFAULT '',
+                publico_json TEXT DEFAULT '',
+                evidencia_path TEXT DEFAULT '',
+                creado_por_id INTEGER,
+                creado_por_nombre TEXT DEFAULT '',
+                creado_por_rol TEXT DEFAULT '',
+                creado_en TEXT NOT NULL
+            )""",
+            """CREATE TABLE IF NOT EXISTS promocion_evidencias (
+                id SERIAL PRIMARY KEY,
+                actividad_id INTEGER NOT NULL REFERENCES promocion_actividades(id) ON DELETE CASCADE,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                stored_path TEXT NOT NULL,
+                nombre_original TEXT DEFAULT '',
+                mime TEXT DEFAULT '',
+                subido_por_id INTEGER,
+                subido_por_nombre TEXT DEFAULT '',
+                creado_en TEXT NOT NULL
+            )""",
             "DROP TABLE IF EXISTS acta_descargos CASCADE",
             """CREATE TABLE IF NOT EXISTS citas_acudiente (
                 id SERIAL PRIMARY KEY,
@@ -276,6 +305,47 @@ def _migrate_schema(conn):
         )
     except Exception:
         pass
+    try:
+        execute(
+            conn,
+            """CREATE TABLE IF NOT EXISTS promocion_actividades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                titulo TEXT NOT NULL,
+                tema TEXT NOT NULL,
+                fecha TEXT NOT NULL,
+                lugar TEXT DEFAULT '',
+                recursos TEXT DEFAULT '',
+                descripcion TEXT DEFAULT '',
+                publico_tipo TEXT NOT NULL,
+                publico_curso TEXT DEFAULT '',
+                publico_json TEXT DEFAULT '',
+                evidencia_path TEXT DEFAULT '',
+                creado_por_id INTEGER,
+                creado_por_nombre TEXT DEFAULT '',
+                creado_por_rol TEXT DEFAULT '',
+                creado_en TEXT NOT NULL
+            )""",
+        )
+    except Exception:
+        pass
+    try:
+        execute(
+            conn,
+            """CREATE TABLE IF NOT EXISTS promocion_evidencias (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                actividad_id INTEGER NOT NULL REFERENCES promocion_actividades(id) ON DELETE CASCADE,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                stored_path TEXT NOT NULL,
+                nombre_original TEXT DEFAULT '',
+                mime TEXT DEFAULT '',
+                subido_por_id INTEGER,
+                subido_por_nombre TEXT DEFAULT '',
+                creado_en TEXT NOT NULL
+            )""",
+        )
+    except Exception:
+        pass
 
 
 def _backfill_reporte_tokens(conn):
@@ -408,6 +478,35 @@ CREATE TABLE IF NOT EXISTS asistencia_detalle (
     estudiante_nombre TEXT NOT NULL,
     ausente INTEGER DEFAULT 1,
     justificada INTEGER
+);
+CREATE TABLE IF NOT EXISTS promocion_actividades (
+    id SERIAL PRIMARY KEY,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    titulo TEXT NOT NULL,
+    tema TEXT NOT NULL,
+    fecha TEXT NOT NULL,
+    lugar TEXT DEFAULT '',
+    recursos TEXT DEFAULT '',
+    descripcion TEXT DEFAULT '',
+    publico_tipo TEXT NOT NULL,
+    publico_curso TEXT DEFAULT '',
+    publico_json TEXT DEFAULT '',
+    evidencia_path TEXT DEFAULT '',
+    creado_por_id INTEGER,
+    creado_por_nombre TEXT DEFAULT '',
+    creado_por_rol TEXT DEFAULT '',
+    creado_en TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS promocion_evidencias (
+    id SERIAL PRIMARY KEY,
+    actividad_id INTEGER NOT NULL REFERENCES promocion_actividades(id) ON DELETE CASCADE,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    stored_path TEXT NOT NULL,
+    nombre_original TEXT DEFAULT '',
+    mime TEXT DEFAULT '',
+    subido_por_id INTEGER,
+    subido_por_nombre TEXT DEFAULT '',
+    creado_en TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS falta_adjuntos (
     id SERIAL PRIMARY KEY,
@@ -542,6 +641,35 @@ CREATE TABLE IF NOT EXISTS asistencia_detalle (
     ausente INTEGER DEFAULT 1,
     justificada INTEGER
 );
+CREATE TABLE IF NOT EXISTS promocion_actividades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    titulo TEXT NOT NULL,
+    tema TEXT NOT NULL,
+    fecha TEXT NOT NULL,
+    lugar TEXT DEFAULT '',
+    recursos TEXT DEFAULT '',
+    descripcion TEXT DEFAULT '',
+    publico_tipo TEXT NOT NULL,
+    publico_curso TEXT DEFAULT '',
+    publico_json TEXT DEFAULT '',
+    evidencia_path TEXT DEFAULT '',
+    creado_por_id INTEGER,
+    creado_por_nombre TEXT DEFAULT '',
+    creado_por_rol TEXT DEFAULT '',
+    creado_en TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS promocion_evidencias (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actividad_id INTEGER NOT NULL REFERENCES promocion_actividades(id) ON DELETE CASCADE,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    stored_path TEXT NOT NULL,
+    nombre_original TEXT DEFAULT '',
+    mime TEXT DEFAULT '',
+    subido_por_id INTEGER,
+    subido_por_nombre TEXT DEFAULT '',
+    creado_en TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS falta_adjuntos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     falta_id INTEGER NOT NULL REFERENCES faltas(id) ON DELETE CASCADE,
@@ -595,6 +723,8 @@ def init_db():
         "CREATE INDEX IF NOT EXISTS idx_citas_falta ON citas_acudiente(falta_id)",
         "CREATE INDEX IF NOT EXISTS idx_falta_adjuntos_falta ON falta_adjuntos(falta_id)",
         "CREATE INDEX IF NOT EXISTS idx_reportes_colegio_estado ON reportes_convivencia(colegio_id, estado)",
+        "CREATE INDEX IF NOT EXISTS idx_promo_colegio_fecha ON promocion_actividades(colegio_id, fecha)",
+        "CREATE INDEX IF NOT EXISTS idx_promo_evid_act ON promocion_evidencias(actividad_id)",
     ):
         try:
             execute(conn, stmt)

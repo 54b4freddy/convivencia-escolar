@@ -15,6 +15,8 @@ def api_asistencia_tomas():
     u = cu()
     if u["rol"] == "Acudiente":
         return jsonify({"error": "Sin permisos"}), 403
+    if u["rol"] == "Estudiante":
+        return jsonify({"error": "Sin permisos"}), 403
     cid, terr = resolve_colegio_id(u)
     if terr:
         return jsonify({"error": terr}), 400

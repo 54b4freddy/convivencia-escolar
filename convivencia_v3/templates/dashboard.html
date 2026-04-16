@@ -281,7 +281,7 @@
       </div>
       <div><label class="fl">Clave del portal estudiante (mín. 6 caracteres)</label>
         <input id="eClaveEst" type="password" maxlength="80" autocomplete="new-password" placeholder="Solo al crear o cambiar; vacío = no cambiar">
-        <div class="fhint">En <strong>login</strong> el estudiante marca «Soy estudiante», pone <strong>este documento</strong> como usuario y esta clave. Opcional: acceso por QR/PIN abajo.</div>
+        <div class="fhint">En <strong>login</strong> marca «Soy estudiante», <strong>documento</strong> y esta clave. Si su documento estuviera en más de un colegio del sistema, pedirán el <strong>nombre de la institución</strong> (como en el carnet). Opcional: QR/PIN abajo.</div>
       </div>
       <div><label class="fl">PIN solo para página pública /reporte (4–8 dígitos, opcional)</label>
         <input id="eRepPin" maxlength="8" inputmode="numeric" placeholder="Vacío = no cambiar">
@@ -413,6 +413,91 @@
 </div>
 </div>
 
+<!-- OVERLAY: Ayuda prevención -->
+<div class="ov" id="ov-ayuda-prev">
+<div class="modal" style="max-width:640px;margin-top:14px">
+  <div class="mh">
+    <div class="mh-l">
+      <h3>Prevención — ¿Qué significa cada bloque?</h3>
+      <small>Guía rápida para el equipo de convivencia</small>
+    </div>
+    <button onclick="closeOv('ov-ayuda-prev')">×</button>
+  </div>
+  <div class="mb" style="padding:14px 16px;line-height:1.55">
+    <div class="abanner ab-i" style="margin-bottom:10px">
+      Las <strong>alertas estudiantiles</strong> son un canal de reporte para cuidado y detección temprana. <strong>No crean una falta automáticamente</strong>.
+    </div>
+    <p style="margin:0 0 10px"><strong>Alertas estudiantiles</strong>: quedan en “Pendiente de validación” hasta que el comité decide si:</p>
+    <ul style="margin:0 0 12px 18px">
+      <li><strong>Abrir caso</strong> (iniciar proceso formal).</li>
+      <li><strong>Orientación</strong> (manejo privado/psicosocial).</li>
+      <li><strong>Descartar</strong> (si es broma o error; queda nota por auditoría).</li>
+    </ul>
+    <p style="margin:0"><strong>Reiteración y focos</strong>: análisis de señales y faltas para identificar patrones (lugares, víctimas, estudiantes) en rangos de tiempo.</p>
+  </div>
+</div>
+</div>
+
+<!-- OVERLAY: Promoción — detalle / edición -->
+<div class="ov" id="ov-prom">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh">
+    <div class="mh-l">
+      <h3 id="promDetTit">Actividad de promoción</h3>
+      <small id="promDetSub">—</small>
+    </div>
+    <button onclick="closeOv('ov-prom')">×</button>
+  </div>
+  <div class="mb" style="padding:12px 14px">
+    <div class="fr">
+      <div style="flex:2"><label class="fl">Título *</label><input id="promETit" maxlength="120"></div>
+      <div><label class="fl">Tema *</label><select id="promETema"><option value="">Seleccionar</option>{% for x in [] %}{% endfor %}</select></div>
+    </div>
+    <div class="fr" style="margin-top:10px">
+      <div><label class="fl">Fecha *</label><input type="date" id="promEFecha"></div>
+      <div style="flex:2"><label class="fl">Lugar</label><input id="promELugar" maxlength="120"></div>
+    </div>
+    <div class="fr" style="margin-top:10px">
+      <div style="flex:2"><label class="fl">Recursos</label><input id="promERec" maxlength="240"></div>
+      <div><label class="fl">Público *</label>
+        <select id="promEPub" onchange="promEPubChanged()">
+          <option value="colegio">Todo el colegio</option>
+          <option value="curso">Un curso</option>
+          <option value="estudiantes">Estudiantes seleccionados</option>
+        </select>
+      </div>
+    </div>
+    <div id="promEPubCursoRow" class="fr" style="margin-top:10px;display:none">
+      <div><label class="fl">Curso</label><select id="promECurso"><option value="">Seleccionar</option></select></div>
+    </div>
+    <div id="promEPubEstRow" style="margin-top:10px;display:none">
+      <div class="fr">
+        <div><label class="fl">Curso base</label><select id="promEEstCurso" onchange="promELoadEstSel()"><option value="">Seleccionar</option></select></div>
+        <div style="flex:2"><label class="fl">Estudiantes (marcar varios)</label><div id="promEEstPick" class="mut">Seleccione curso</div></div>
+      </div>
+    </div>
+    <div style="margin-top:10px"><label class="fl">Descripción</label><textarea id="promEDesc" rows="3"></textarea></div>
+    <div class="fsec" style="margin-top:12px">EVIDENCIAS</div>
+    <div class="fr" style="margin-top:8px">
+      <div style="flex:2"><label class="fl">Subir evidencia</label><input type="file" id="promEAddFile" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <label style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut);cursor:pointer;margin-bottom:2px">
+          <input type="checkbox" id="promESetMain"> Marcar como principal
+        </label>
+        <button type="button" class="btn btn-xs btn-p" onclick="promEvidAdd()">Subir</button>
+      </div>
+    </div>
+    <div id="promEvidList" style="margin-top:8px"></div>
+    <p class="ferr" id="promEErr" style="font-size:12px;margin-top:8px"></p>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="closeOv('ov-prom')">Cerrar</button>
+    <button class="btn btn-d" id="promDelBtn" onclick="promDelete()">Eliminar</button>
+    <button class="btn btn-p" onclick="promSave()">Guardar cambios</button>
+  </div>
+</div>
+</div>
+
 <!-- OVERLAY: Conductas de riesgo -->
 <div class="ov" id="ov-senal">
 <div class="modal modal-lg" style="margin-top:14px">
@@ -503,5 +588,7 @@
 <div id="toast"></div>
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>
+<script src="{{ url_for('static', filename='promocion.js') }}"></script>
+<script src="{{ url_for('static', filename='prevencion.js') }}"></script>
 </body>
 </html>
