@@ -58,3 +58,13 @@ def test_promocion_crear_y_listar(client):
     assert any(x.get("id") == aid for x in f2)
 
 
+def test_promocion_focos_calor(client):
+    _login(client, "admin", "admin123")
+    rv = client.get("/api/promocion/focos-calor?dias=30")
+    assert rv.status_code == 200
+    j = rv.get_json()
+    assert "filas" in j and "desde" in j and "hasta" in j
+    assert isinstance(j["filas"], list)
+    assert "max_total" in j
+
+

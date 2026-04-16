@@ -1,7 +1,8 @@
 """Promoción: actividades institucionales (planeación, público objetivo, evidencias)."""
 import os
 import secrets
-from datetime import datetime
+from collections import Counter, defaultdict
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, jsonify, request, send_file
 from werkzeug.utils import secure_filename
@@ -98,6 +99,156 @@ def api_prom_get(aid):
     if not row:
         return jsonify({"error": "No encontrada"}), 404
     return jsonify(row)
+
+
+_REP_CAT_LBL = {
+    "mal": "Alerta ciudadana — Me siento mal / necesito ayuda",
+    "molestan": "Alerta ciudadana — Me molestan",
+    "mal_colegio": "Alerta ciudadana — Algo malo en el colegio",
+    "peligro": "Alerta ciudadana — Peligro en el entorno",
+}
+_CR_TIPO_LBL = {
+    "conv_i": "Conducta de riesgo — Tipo I (convivencia)",
+    "conv_ii": "Conducta de riesgo — Tipo II (riesgo moderado)",
+    "conv_iii": "Conducta de riesgo — Tipo III (grave/delito)",
+}
+_MAP_REP_TEMA = {
+    "mal": "gestion_emocional",
+    "molestan": "prevencion_conflictos",
+    "mal_colegio": "normas_convivencia",
+    "peligro": "ambiente_fisico_seguro",
+}
+_MAP_CONV_TEMA = {
+    "conv_i": "relaciones_respetuosas",
+    "conv_ii": "prevencion_conflictos",
+    "conv_iii": "ambiente_fisico_seguro",
+}
+
+
+@bp.route("/api/promocion/focos-calor", methods=["GET"])
+@login_required
+def api_prom_focos_calor():
+    """Agregados últimos N días: alertas ciudadanas + conductas de riesgo, para mapa de calor en Promoción."""
+    u = cu()
+    if not _puede_ver(u):
+        return jsonify({"error": "Sin permisos"}), 403
+    cid, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    try:
+        dias = int(request.args.get("dias", 30))
+    except (TypeError, ValueError):
+        dias = 30
+    dias = min(max(dias, 7), 90)
+    hoy = date.today()
+    desde_d = hoy - timedelta(days=dias - 1)
+    desde = desde_d.isoformat()
+    hasta = hoy.isoformat()
+
+    conn = get_db()
+    p = ph()
+
+    rep_rows = []
+    if u["rol"] in ("Coordinador", "Orientador", "Superadmin"):
+        rep_rows = execute(
+            conn,
+            f"SELECT categoria_visual, urgencia, curso FROM reportes_convivencia WHERE colegio_id={p} "
+            f"AND substr(creado_en,1,10)>={p} AND substr(creado_en,1,10)<={p}",
+            (cid, desde, hasta),
+            fetch="all",
+        ) or []
+
+    qsen = (
+        f"SELECT tipo_conducta, urgencia, curso FROM senales_atencion WHERE colegio_id={p} "
+        f"AND categoria={p} AND fecha_registro>={p} AND fecha_registro<={p}"
+    )
+    prm = [cid, "conducta_riesgo", desde, hasta]
+    if u["rol"] == "Docente":
+        qsen += f" AND registrado_por_id={p}"
+        prm.append(u["id"])
+    elif u["rol"] == "Director" and u.get("curso"):
+        qsen += f" AND curso={p}"
+        prm.append(u["curso"])
+    sen_rows = execute(conn, qsen, prm, fetch="all") or []
+    conn.close()
+
+    # key -> {"u": int, "r": int, "cursos": Counter}
+    agg = defaultdict(lambda: {"u": 0, "r": 0, "cursos": Counter()})
+
+    for row in rep_rows:
+        cat = (row.get("categoria_visual") or "").strip()
+        if cat not in _MAP_REP_TEMA:
+            continue
+        key = ("ac", cat)
+        urg = (row.get("urgencia") or "").strip() == "urgente"
+        agg[key]["u" if urg else "r"] += 1
+        c = (row.get("curso") or "").strip() or "—"
+        agg[key]["cursos"][c] += 1
+
+    for row in sen_rows:
+        tipo = (row.get("tipo_conducta") or "").strip()
+        if tipo not in _MAP_CONV_TEMA:
+            continue
+        key = ("cr", tipo)
+        urg_s = (row.get("urgencia") or "").strip().lower()
+        urg = urg_s in ("critica", "alta")
+        agg[key]["u" if urg else "r"] += 1
+        c = (row.get("curso") or "").strip() or "—"
+        agg[key]["cursos"][c] += 1
+
+    filas = []
+    for (kind, code), v in agg.items():
+        nu, nr = int(v["u"]), int(v["r"])
+        tot = nu + nr
+        if tot <= 0:
+            continue
+        if kind == "ac":
+            label = _REP_CAT_LBL.get(code, code)
+            tema = _MAP_REP_TEMA.get(code, "gestion_emocional")
+            tid = f"ac:{code}"
+            tit = f"Promoción — foco alertas: {label.split(' — ', 1)[-1] if ' — ' in label else label} ({dias} días)"
+        else:
+            label = _CR_TIPO_LBL.get(code, code)
+            tema = _MAP_CONV_TEMA.get(code, "prevencion_conflictos")
+            tid = f"cr:{code}"
+            tit = f"Promoción — foco conductas: {label.split(' — ', 1)[-1] if ' — ' in label else label} ({dias} días)"
+        top_c = v["cursos"].most_common(1)
+        curso_sug = (top_c[0][0] if top_c and top_c[0][0] != "—" else "") or ""
+        desc = (
+            f"Planeación sugerida a partir del mapa de calor ({desde} a {hasta}). "
+            f"Registros en ventana: {tot} (urgentes/alta: {nu}, resto: {nr}). "
+            f"Revise convivencia y ajuste público objetivo según el colegio."
+        )
+        filas.append(
+            {
+                "id": tid,
+                "label": label,
+                "tema_promocion": tema,
+                "titulo_sugerido": tit[:120],
+                "descripcion_bosquejo": desc,
+                "urgente": nu,
+                "no_urgente": nr,
+                "total": tot,
+                "curso_sugerido": curso_sug[:80],
+            }
+        )
+
+    filas.sort(key=lambda x: (-x["total"], x["label"]))
+    max_u = max((x["urgente"] for x in filas), default=0)
+    max_r = max((x["no_urgente"] for x in filas), default=0)
+    max_t = max((x["total"] for x in filas), default=0)
+
+    return jsonify(
+        {
+            "desde": desde,
+            "hasta": hasta,
+            "dias": dias,
+            "filas": filas,
+            "max_urgente": max_u,
+            "max_no_urgente": max_r,
+            "max_total": max_t,
+        }
+    )
 
 
 def _save_evid(file_storage, colegio_id: int) -> str:

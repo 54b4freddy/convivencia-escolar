@@ -1,5 +1,82 @@
 ﻿// Tras app.js (globales): api, CU, CURSOS, escHtml, toast, renderCurrentTab, openOv, closeOv
 
+// ── Mapa de calor (focos) → planificación de actividad ───────────────────────
+window._promCalorFilas=[];
+function _promHmBg(n,max,kind){
+  if(!max||!n) return 'background:transparent';
+  const t=Math.min(1,n/max);
+  const a=kind==='u'?0.14+t*0.52:0.1+t*0.42;
+  const rgb=kind==='u'?'200,50,60':'40,90,160';
+  return `background:rgba(${rgb},${a.toFixed(2)})`;
+}
+async function promRefreshCalor(){
+  const wrap=document.getElementById('promCalorWrap');
+  if(!wrap)return;
+  const sel=document.getElementById('promCalorDias');
+  const dias=Math.min(90,Math.max(7,Number(sel?.value)||30));
+  if(sel) sel.value=String(dias);
+  wrap.innerHTML='<div class="mut">Cargando mapa de calor…</div>';
+  let url=`/api/promocion/focos-calor?dias=${encodeURIComponent(String(dias))}`;
+  if(CU.rol==='Superadmin'&&CU.colegio_id) url+=`&colegio_id=${encodeURIComponent(String(CU.colegio_id))}`;
+  const j=await api(url);
+  if(j&&j.error){wrap.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;return;}
+  const filas=Array.isArray(j.filas)?j.filas:[];
+  window._promCalorFilas=filas;
+  const mu=Number(j.max_urgente)||0;
+  const mr=Number(j.max_no_urgente)||0;
+  const mt=Number(j.max_total)||0;
+  if(!filas.length){
+    wrap.innerHTML=`<div class="empty">Sin datos en el rango ${escHtml(j.desde||'')} — ${escHtml(j.hasta||'')}. Cuando haya alertas o conductas registradas, aparecerán aquí.</div>`;
+    return;
+  }
+  wrap.innerHTML=`
+    <div class="mut" style="font-size:11px;margin-bottom:8px">Rango: <strong>${escHtml(j.desde||'')} → ${escHtml(j.hasta||'')}</strong> · Intensidad = cantidad relativa al máximo en la columna.</div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>Foco (tema recurrente)</th><th style="width:110px;text-align:center">Urgente / alta</th><th style="width:110px;text-align:center">Resto</th><th style="width:72px;text-align:center">Total</th><th style="width:150px"></th></tr></thead>
+        <tbody>
+          ${filas.map((r,i)=>{
+            const u=Number(r.urgente)||0;
+            const nr=Number(r.no_urgente)||0;
+            const tot=Number(r.total)||0;
+            return `<tr>
+              <td style="font-size:12px;line-height:1.35"><strong>${escHtml(r.label||'')}</strong>
+                ${r.curso_sugerido?`<div class="mut">Curso más frecuente: ${escHtml(r.curso_sugerido)}</div>`:''}</td>
+              <td style="text-align:center;${_promHmBg(u,mu,'u')}">${u}</td>
+              <td style="text-align:center;${_promHmBg(nr,mr,'r')}">${nr}</td>
+              <td style="text-align:center;${_promHmBg(tot,mt,'u')}">${tot}</td>
+              <td><button type="button" class="btn btn-xs btn-p" onclick="promPlanDesdeCalor(${i})">Programar actividad</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+function promPlanDesdeCalor(i){
+  const row=(window._promCalorFilas||[])[i];
+  if(!row)return;
+  const tit=document.getElementById('promTit');
+  const tema=document.getElementById('promTema');
+  const desc=document.getElementById('promDesc');
+  const pub=document.getElementById('promPub');
+  const cur=document.getElementById('promCurso');
+  if(tit) tit.value=(row.titulo_sugerido||'').slice(0,120);
+  if(tema&&row.tema_promocion) tema.value=row.tema_promocion;
+  if(desc) desc.value=row.descripcion_bosquejo||'';
+  if(pub){
+    if(row.curso_sugerido){
+      pub.value='curso';
+      promPubChanged();
+      if(cur) cur.value=row.curso_sugerido;
+    }else{
+      pub.value='colegio';
+      promPubChanged();
+    }
+  }
+  tit?.scrollIntoView({behavior:'smooth',block:'center'});
+  toast('Formulario listo: revise título, fecha y público antes de guardar.');
+}
+
 // ── Promoción (actividades) ───────────────────────────────────────────────────
 const PROM_TEMAS=[
   {v:'relaciones_respetuosas',l:'Relaciones respetuosas'},
@@ -144,6 +221,30 @@ async function renderPromocion(tab){
       Actividades de <strong>Promoción</strong> en convivencia (planeación, público objetivo y evidencias). No visible para acudientes ni estudiantes.
     </div>
     <div class="card">
+      <div class="ch">
+        <h3>Focos para promoción (mapa de calor)</h3>
+        <div class="ch-r" style="gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="mut" style="font-size:11px;display:flex;align-items:center;gap:6px">Últimos
+            <select id="promCalorDias" class="inp-sm" style="padding:4px 8px">
+              <option value="7">7 días</option>
+              <option value="14">14 días</option>
+              <option value="30" selected>30 días</option>
+              <option value="60">60 días</option>
+              <option value="90">90 días</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-xs" onclick="promRefreshCalor()">Actualizar</button>
+        </div>
+      </div>
+      <div class="mb" style="padding:10px 14px">
+        <p class="mut" style="font-size:11px;line-height:1.45;margin:0 0 8px">
+          Cruce de <strong>alertas ciudadanas</strong> (coordinación/orientación) y <strong>conductas de riesgo</strong> visibles para su rol, por fecha de registro.
+          La columna «Urgente» suma alertas marcadas como urgentes y conductas con urgencia alta o crítica.
+        </p>
+        <div id="promCalorWrap"><div class="mut">Cargando…</div></div>
+      </div>
+    </div>
+    <div class="card">
       <div class="ch"><h3>Crear actividad</h3></div>
       <div class="mb" style="padding:12px 14px;max-width:780px">
         <div class="fr">
@@ -206,6 +307,7 @@ async function renderPromocion(tab){
         </table>
       </div>
     </div>`;
+  promRefreshCalor();
 }
 
 // ── Promoción: detalle / edición / evidencias ────────────────────────────────
