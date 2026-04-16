@@ -585,6 +585,18 @@
 </div>
 </div>
 
+<!-- OVERLAY: Bitácora alerta ciudadana -->
+<div class="ov" id="ov-rep-bit">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh">
+    <div class="mh-l"><h3>Bitácora — alerta ciudadana</h3><small class="mut">Historial de cambios de estado</small></div>
+    <button type="button" onclick="closeOv('ov-rep-bit')">×</button>
+  </div>
+  <div class="mb" id="repBitBody" style="max-height:62vh;overflow:auto;padding:8px 12px"></div>
+  <div class="mf"><button type="button" class="btn" onclick="closeOv('ov-rep-bit')">Cerrar</button></div>
+</div>
+</div>
+
 <div id="toast"></div>
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>

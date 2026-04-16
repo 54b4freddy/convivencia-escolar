@@ -139,6 +139,18 @@ def _migrate_schema(conn):
                 creado_en TEXT NOT NULL,
                 actualizado_en TEXT DEFAULT ''
             )""",
+            """CREATE TABLE IF NOT EXISTS reportes_convivencia_bitacora (
+                id SERIAL PRIMARY KEY,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                reporte_id INTEGER NOT NULL REFERENCES reportes_convivencia(id) ON DELETE CASCADE,
+                usuario_id INTEGER REFERENCES usuarios(id),
+                usuario_nombre TEXT DEFAULT '',
+                rol TEXT DEFAULT '',
+                estado_anterior TEXT DEFAULT '',
+                estado_nuevo TEXT NOT NULL,
+                nota TEXT NOT NULL,
+                creado_en TEXT NOT NULL
+            )""",
             """CREATE TABLE IF NOT EXISTS promocion_actividades (
                 id SERIAL PRIMARY KEY,
                 colegio_id INTEGER NOT NULL REFERENCES colegios(id),
@@ -308,6 +320,24 @@ def _migrate_schema(conn):
     try:
         execute(
             conn,
+            """CREATE TABLE IF NOT EXISTS reportes_convivencia_bitacora (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+                reporte_id INTEGER NOT NULL REFERENCES reportes_convivencia(id) ON DELETE CASCADE,
+                usuario_id INTEGER,
+                usuario_nombre TEXT DEFAULT '',
+                rol TEXT DEFAULT '',
+                estado_anterior TEXT DEFAULT '',
+                estado_nuevo TEXT NOT NULL,
+                nota TEXT NOT NULL,
+                creado_en TEXT NOT NULL
+            )""",
+        )
+    except Exception:
+        pass
+    try:
+        execute(
+            conn,
             """CREATE TABLE IF NOT EXISTS promocion_actividades (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 colegio_id INTEGER NOT NULL REFERENCES colegios(id),
@@ -460,6 +490,18 @@ CREATE TABLE IF NOT EXISTS reportes_convivencia (
     nota_comite TEXT DEFAULT '',
     creado_en TEXT NOT NULL,
     actualizado_en TEXT DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS reportes_convivencia_bitacora (
+    id SERIAL PRIMARY KEY,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    reporte_id INTEGER NOT NULL REFERENCES reportes_convivencia(id) ON DELETE CASCADE,
+    usuario_id INTEGER REFERENCES usuarios(id),
+    usuario_nombre TEXT DEFAULT '',
+    rol TEXT DEFAULT '',
+    estado_anterior TEXT DEFAULT '',
+    estado_nuevo TEXT NOT NULL,
+    nota TEXT NOT NULL,
+    creado_en TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS asistencia_toma (
     id SERIAL PRIMARY KEY,
@@ -623,6 +665,18 @@ CREATE TABLE IF NOT EXISTS reportes_convivencia (
     creado_en TEXT NOT NULL,
     actualizado_en TEXT DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS reportes_convivencia_bitacora (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+    reporte_id INTEGER NOT NULL REFERENCES reportes_convivencia(id) ON DELETE CASCADE,
+    usuario_id INTEGER,
+    usuario_nombre TEXT DEFAULT '',
+    rol TEXT DEFAULT '',
+    estado_anterior TEXT DEFAULT '',
+    estado_nuevo TEXT NOT NULL,
+    nota TEXT NOT NULL,
+    creado_en TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS asistencia_toma (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     colegio_id INTEGER NOT NULL REFERENCES colegios(id),
@@ -723,6 +777,7 @@ def init_db():
         "CREATE INDEX IF NOT EXISTS idx_citas_falta ON citas_acudiente(falta_id)",
         "CREATE INDEX IF NOT EXISTS idx_falta_adjuntos_falta ON falta_adjuntos(falta_id)",
         "CREATE INDEX IF NOT EXISTS idx_reportes_colegio_estado ON reportes_convivencia(colegio_id, estado)",
+        "CREATE INDEX IF NOT EXISTS idx_rep_bit_colegio_reporte ON reportes_convivencia_bitacora(colegio_id, reporte_id)",
         "CREATE INDEX IF NOT EXISTS idx_promo_colegio_fecha ON promocion_actividades(colegio_id, fecha)",
         "CREATE INDEX IF NOT EXISTS idx_promo_evid_act ON promocion_evidencias(actividad_id)",
     ):

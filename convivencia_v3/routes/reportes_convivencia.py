@@ -1,7 +1,8 @@
 """Reportes ciudadanos estudiantiles (Ley 1620): no son faltas hasta validación del comité."""
 import os
 import secrets
-from datetime import date, datetime, timezone
+from collections import Counter
+from datetime import date, datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request, session
 from werkzeug.utils import secure_filename
@@ -225,6 +226,27 @@ def _mensaje_confirmacion(urgente: bool):
     )
 
 
+def _insert_bitacora(conn, colegio_id: int, rid: int, u: dict, prev_estado: str, nuevo: str, nota: str):
+    p = ph()
+    execute(
+        conn,
+        f"""INSERT INTO reportes_convivencia_bitacora (
+            colegio_id, reporte_id, usuario_id, usuario_nombre, rol, estado_anterior, estado_nuevo, nota, creado_en
+        ) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p})""",
+        (
+            colegio_id,
+            rid,
+            u.get("id"),
+            (u.get("nombre") or "")[:200],
+            (u.get("rol") or "")[:80],
+            (prev_estado or "")[:80],
+            nuevo[:80],
+            (nota or "")[:2000],
+            _now_iso(),
+        ),
+    )
+
+
 @bp.route("/api/reportes-convivencia", methods=["GET"])
 @login_required
 @roles("Coordinador", "Orientador", "Superadmin")
@@ -247,6 +269,110 @@ def api_reportes_listar():
     return jsonify(rows or [])
 
 
+@bp.route("/api/reportes-convivencia/patrones", methods=["GET"])
+@login_required
+@roles("Coordinador", "Orientador", "Superadmin")
+def api_reportes_patrones():
+    """Agregados por rango (fecha de recepción creado_en) para focos del canal ciudadano."""
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    desde = (request.args.get("desde") or "").strip()[:12]
+    hasta = (request.args.get("hasta") or "").strip()[:12]
+    if not desde or not hasta:
+        hoy = date.today()
+        hasta = hoy.isoformat()
+        desde = (hoy - timedelta(days=30)).isoformat()
+    if len(desde) < 10 or len(hasta) < 10 or desde > hasta:
+        return jsonify({"error": "Rango inválido: use desde y hasta (YYYY-MM-DD)."}), 400
+
+    conn = get_db()
+    p = ph()
+    rows = execute(
+        conn,
+        f"SELECT * FROM reportes_convivencia WHERE colegio_id={p} "
+        f"AND substr(creado_en,1,10)>={p} AND substr(creado_en,1,10)<={p} "
+        f"ORDER BY creado_en DESC LIMIT 5000",
+        (tenant_id, desde[:10], hasta[:10]),
+        fetch="all",
+    ) or []
+    conn.close()
+
+    por_cat = Counter()
+    por_lugar = Counter()
+    por_quien = Counter()
+    por_urg = Counter()
+    por_est = Counter()
+    por_curso = Counter()
+    por_estudiante = Counter()
+    nom_est = {}
+
+    for r in rows:
+        por_cat[(r.get("categoria_visual") or "").strip() or "—"] += 1
+        por_lugar[(r.get("lugar_clave") or "").strip() or "—"] += 1
+        por_quien[(r.get("a_quien") or "").strip() or "—"] += 1
+        por_urg[(r.get("urgencia") or "").strip() or "—"] += 1
+        por_est[(r.get("estado") or "").strip() or "—"] += 1
+        c = (r.get("curso") or "").strip() or "—"
+        por_curso[c] += 1
+        try:
+            eid = int(r.get("estudiante_id") or 0)
+        except (TypeError, ValueError):
+            eid = 0
+        if eid:
+            por_estudiante[eid] += 1
+            nom_est[eid] = (r.get("estudiante_nombre") or "")[:120]
+
+    top_cursos = sorted(por_curso.items(), key=lambda x: (-x[1], x[0]))[:12]
+    top_est = sorted(por_estudiante.items(), key=lambda x: (-x[1], x[0]))[:12]
+    top_est_out = [{"estudiante_id": eid, "nombre": nom_est.get(eid, "—"), "n": n} for eid, n in top_est]
+
+    return jsonify(
+        {
+            "desde": desde[:10],
+            "hasta": hasta[:10],
+            "total": len(rows),
+            "por_categoria": dict(por_cat),
+            "por_lugar": dict(por_lugar),
+            "por_a_quien": dict(por_quien),
+            "por_urgencia": dict(por_urg),
+            "por_estado": dict(por_est),
+            "top_cursos": [{"curso": k, "n": v} for k, v in top_cursos],
+            "top_estudiantes": top_est_out,
+        }
+    )
+
+
+@bp.route("/api/reportes-convivencia/<int:rid>/bitacora", methods=["GET"])
+@login_required
+@roles("Coordinador", "Orientador", "Superadmin")
+def api_reporte_bitacora(rid):
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"error": terr}), 400
+    conn = get_db()
+    p = ph()
+    rep = execute(
+        conn,
+        f"SELECT id FROM reportes_convivencia WHERE id={p} AND colegio_id={p}",
+        (rid, tenant_id),
+        fetch="one",
+    )
+    if not rep:
+        conn.close()
+        return jsonify({"error": "No encontrado."}), 404
+    bits = execute(
+        conn,
+        f"SELECT * FROM reportes_convivencia_bitacora WHERE reporte_id={p} AND colegio_id={p} ORDER BY id ASC",
+        (rid, tenant_id),
+        fetch="all",
+    )
+    conn.close()
+    return jsonify(bits or [])
+
+
 @bp.route("/api/reportes-convivencia/<int:rid>", methods=["PATCH"])
 @login_required
 @roles("Coordinador", "Orientador", "Superadmin")
@@ -256,8 +382,6 @@ def api_reporte_actualizar(rid):
     if nuevo not in ESTADOS:
         return jsonify({"ok": False, "error": "Estado no válido."}), 400
     nota = (d.get("nota_comite") or "").strip()[:2000]
-    if nuevo == "descartado" and len(nota) < 3:
-        return jsonify({"ok": False, "error": "Para descartar, registre brevemente el motivo (auditoría)."}), 400
 
     u = cu()
     tenant_id, terr = resolve_colegio_id(u)
@@ -266,21 +390,35 @@ def api_reporte_actualizar(rid):
 
     conn = get_db()
     p = ph()
-    row = execute(
+    full = execute(
         conn,
-        f"SELECT id FROM reportes_convivencia WHERE id={p} AND colegio_id={p}",
+        f"SELECT * FROM reportes_convivencia WHERE id={p} AND colegio_id={p}",
         (rid, tenant_id),
         fetch="one",
     )
-    if not row:
+    if not full:
         conn.close()
         return jsonify({"ok": False, "error": "No encontrado."}), 404
+
+    prev_estado = (full.get("estado") or "").strip()
+    if nuevo == prev_estado:
+        conn.close()
+        return jsonify({"ok": False, "error": "El reporte ya está en ese estado."}), 400
+    if len(nota) < 10:
+        conn.close()
+        return jsonify(
+            {
+                "ok": False,
+                "error": "Registre una nota de seguimiento (mínimo 10 caracteres) para documentar el cambio de estado.",
+            }
+        ), 400
 
     execute(
         conn,
         f"UPDATE reportes_convivencia SET estado={p}, nota_comite={p}, actualizado_en={p} WHERE id={p}",
         (nuevo, nota, _now_iso(), rid),
     )
+    _insert_bitacora(conn, tenant_id, rid, u, prev_estado, nuevo, nota)
     commit(conn)
     conn.close()
     return jsonify({"ok": True})

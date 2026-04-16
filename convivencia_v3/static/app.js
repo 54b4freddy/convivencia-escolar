@@ -959,21 +959,62 @@ function showP2(id,btn){
 
 // ── Alertas ciudadanas (reporte estudiantil, Ley 1620) ───────────────────────
 async function patchRepEst(id, estado) {
-  let nota = '';
-  if (estado === 'descartado') {
-    nota = prompt('Motivo del descarte (obligatorio, queda en auditoría):') || '';
-    if (nota.trim().length < 3) {
-      toast('Indique un motivo de al menos 3 caracteres', 'e');
-      return;
-    }
+  const nota =
+    prompt(
+      'Nota para la bitácora y el equipo (mínimo 10 caracteres). Explique el criterio, acuerdos o siguiente paso:',
+    ) || '';
+  if (nota.trim().length < 10) {
+    toast('La nota debe tener al menos 10 caracteres.', 'e');
+    return;
   }
-  const body = { estado, nota_comite: nota };
+  const body = { estado, nota_comite: nota.trim() };
   if (CU.rol === 'Superadmin' && CU.colegio_id) body.colegio_id = CU.colegio_id;
   const r = await api(`/api/reportes-convivencia/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
   if (r.ok) {
     toast('Estado actualizado');
     renderCurrentTab();
   } else toast(r.error || 'Error', 'e');
+}
+
+async function openRepBitacora(id) {
+  const body = document.getElementById('repBitBody');
+  if (body) body.innerHTML = '<div class="mut">Cargando…</div>';
+  let url = `/api/reportes-convivencia/${encodeURIComponent(String(id))}/bitacora`;
+  if (CU.rol === 'Superadmin') {
+    const cid = CU.colegio_id || '';
+    if (cid) url += `?colegio_id=${encodeURIComponent(String(cid))}`;
+  }
+  const rows = await api(url);
+  if (rows && rows.error) {
+    if (body) body.innerHTML = `<div class="abanner ab-r">${escHtml(rows.error)}</div>`;
+    openOv('ov-rep-bit');
+    return;
+  }
+  const list = Array.isArray(rows) ? rows : [];
+  const stLbl = {
+    pendiente_validacion: 'Pendiente validación',
+    caso_abierto: 'Caso abierto',
+    orientacion: 'Orientación',
+    descartado: 'Descartado',
+  };
+  if (body) {
+    body.innerHTML = list.length
+      ? `<table class="tbl"><thead><tr><th>Cuándo</th><th>Quién</th><th>Cambio</th><th>Nota</th></tr></thead><tbody>${list
+          .map((b) => {
+            const ant = stLbl[b.estado_anterior] || b.estado_anterior || '—';
+            const nv = stLbl[b.estado_nuevo] || b.estado_nuevo || '—';
+            const who = `${escHtml(b.usuario_nombre || '—')} <span class="mut">(${escHtml(b.rol || '')})</span>`;
+            return `<tr>
+            <td style="font-size:11px;white-space:nowrap">${escHtml(b.creado_en || '—')}</td>
+            <td style="font-size:11px">${who}</td>
+            <td style="font-size:11px">${escHtml(ant)} → <strong>${escHtml(nv)}</strong></td>
+            <td style="font-size:12px">${escHtml(b.nota || '')}</td>
+          </tr>`;
+          })
+          .join('')}</tbody></table>`
+      : '<div class="empty">Aún no hay movimientos registrados en bitácora (aparecen al cambiar estado con nota).</div>';
+  }
+  openOv('ov-rep-bit');
 }
 
 async function renderReportesEst(tab) {
@@ -1003,12 +1044,15 @@ async function renderReportesEst(tab) {
           const ev = r.evidencia_path
             ? `<a href="/static/uploads/${escHtml(r.evidencia_path)}" target="_blank" rel="noopener">Archivo</a>`
             : '—';
+          const bitBtn = `<button type="button" class="btn btn-xs btn-i" onclick="openRepBitacora(${Number(r.id)})">Bitácora</button>`;
           const btns =
             r.estado === 'pendiente_validacion'
-              ? `<button type="button" class="btn btn-xs btn-p" onclick="patchRepEst(${Number(r.id)},'caso_abierto')">Abrir caso formal</button>
+              ? `${bitBtn}<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">
+                 <button type="button" class="btn btn-xs btn-p" onclick="patchRepEst(${Number(r.id)},'caso_abierto')">Abrir caso formal</button>
                  <button type="button" class="btn btn-xs" onclick="patchRepEst(${Number(r.id)},'orientacion')">Orientación privada</button>
-                 <button type="button" class="btn btn-xs btn-d" onclick="patchRepEst(${Number(r.id)},'descartado')">Descartar</button>`
-              : '—';
+                 <button type="button" class="btn btn-xs btn-d" onclick="patchRepEst(${Number(r.id)},'descartado')">Descartar</button>
+                 </div>`
+              : bitBtn;
           return `<tr>
             <td style="font-size:11px">${escHtml(r.creado_en || '—')}</td>
             <td>${urg}</td>
@@ -1029,7 +1073,7 @@ async function renderReportesEst(tab) {
         <p style="margin:0 0 8px"><strong>1) Recomendado: documento + clave</strong> — en «Estudiantes» defina la <strong>clave del portal estudiante</strong> (mín. 6 caracteres). En login: <strong>«Soy estudiante»</strong>, documento y clave. Si el documento está en más de un colegio, el sistema pide el <strong>nombre de la I.E.</strong> (como en el carnet), no un código numérico.</p>
         <p style="margin:0 0 8px"><strong>2) QR / enlace con token</strong> — enlace <code style="font-size:11px;word-break:break-all">${base}/t/<em>token</em></code> (token en datos del estudiante).</p>
         <p style="margin:0 0 8px"><strong>3) PIN en página pública</strong> — <code>${base}</code> + documento + PIN de 4–8 dígitos (campo opcional al editar).</p>
-        <p style="margin:0">Las alertas <strong>no crean falta</strong> solas: quedan pendientes hasta que usted elija abrir caso, orientación o descartar.</p>
+        <p style="margin:0">Las alertas <strong>no crean falta</strong> solas: quedan pendientes hasta que usted elija abrir caso, orientación o descartar. Cada cambio de estado exige una <strong>nota de al menos 10 caracteres</strong> y queda registrada en la <strong>bitácora</strong> del reporte.</p>
       </div>
     </div>
     <div class="card">

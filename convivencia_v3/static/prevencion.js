@@ -1,4 +1,4 @@
-﻿// Tras app.js (globales): api, CU, CURSOS, CR_*, SEN_CAT_LBL, REP_CAT_LBL, REP_LUG_LBL, escHtml, getAnio, toast, openOv, closeOv, renderCurrentTab, patchRepEst, verFalta, _parseAfectadosJson
+﻿// Tras app.js (globales): api, CU, CURSOS, CR_*, SEN_CAT_LBL, REP_CAT_LBL, REP_LUG_LBL, escHtml, getAnio, toast, openOv, closeOv, renderCurrentTab, patchRepEst, openRepBitacora, verFalta, _parseAfectadosJson
 
 // ── Conductas de riesgo ───────────────────────────────────────────────────────
 function refreshCrSubOpciones(){
@@ -389,6 +389,17 @@ async function renderSenales(tab){
         <div id="repEstPrevCiudadana" class="prev-est-pane"></div>
         <div id="repEstPrevConductas" class="prev-est-pane" style="display:none">${_miniInstSenalesTable(instMiniRows)}</div>
       </div>
+    </div>
+    <div class="card" id="repPatronesCard" style="margin-bottom:12px">
+      <div class="ch">
+        <h3>Patrones — canal ciudadano</h3>
+        <div class="ch-r" style="gap:8px;flex-wrap:wrap;align-items:center">
+          <label class="mut" style="font-size:11px">Desde <input type="date" id="repPatDesde" class="inp-sm" style="padding:4px 8px" /></label>
+          <label class="mut" style="font-size:11px">Hasta <input type="date" id="repPatHasta" class="inp-sm" style="padding:4px 8px" /></label>
+          <button type="button" class="btn btn-xs" onclick="refreshRepPatrones()">Actualizar</button>
+        </div>
+      </div>
+      <div id="repPatBody" style="padding:10px"><div class="mut">Pulse Actualizar para ver agregados por fecha de recepción.</div></div>
     </div>`:''}
     ${canPrev?`
     <div class="card" style="margin-bottom:12px">
@@ -411,6 +422,7 @@ async function renderSenales(tab){
   if(canRepPrev){
     _wirePrevEstTabs();
     refreshAlertasEstPrev();
+    refreshRepPatrones();
   }
   if(canPrev) refreshPrevencionReiteracion();
 }
@@ -449,21 +461,82 @@ async function refreshAlertasEstPrev(){
       <td style="font-size:11px" title="${escHtml(r.descripcion||'')}">${desc}</td>
       <td style="font-size:11px">${ev}</td>
       <td style="font-size:11px">
+        <button type="button" class="btn btn-xs btn-i" onclick="openRepBitacora(${Number(r.id)})">Bitácora</button>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">
         <button type="button" class="btn btn-xs btn-p" onclick="patchRepEst(${Number(r.id)},'caso_abierto')">Abrir caso</button>
         <button type="button" class="btn btn-xs" onclick="patchRepEst(${Number(r.id)},'orientacion')">Orientación</button>
         <button type="button" class="btn btn-xs btn-d" onclick="patchRepEst(${Number(r.id)},'descartado')">Descartar</button>
+        </div>
       </td>
     </tr>`;
   }).join('');
   box.innerHTML=header+`
     <div class="table-wrap">
       <table>
-        <thead><tr><th style="width:92px">Recibido</th><th style="width:86px">Urgencia</th><th>Estudiante</th><th style="width:160px">Tema / lugar</th><th>Resumen</th><th style="width:70px">Evid.</th><th style="width:240px">Acción</th></tr></thead>
+        <thead><tr><th style="width:92px">Recibido</th><th style="width:86px">Urgencia</th><th>Estudiante</th><th style="width:160px">Tema / lugar</th><th>Resumen</th><th style="width:70px">Evid.</th><th style="width:260px">Bitácora / acción</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
     ${pend.length>top.length?`<div class="mut" style="margin-top:8px">Mostrando ${top.length} de ${pend.length}. Las demás quedan en el historial al cambiar el estado.</div>`:''}
   `;
+}
+
+async function refreshRepPatrones(){
+  const box=document.getElementById('repPatBody');
+  if(!box)return;
+  let d1=document.getElementById('repPatDesde')?.value||'';
+  let d2=document.getElementById('repPatHasta')?.value||'';
+  if(!d1||!d2){
+    d2=_hoyIso();
+    d1=_isoDateNDaysAgo(30);
+    const i1=document.getElementById('repPatDesde');
+    const i2=document.getElementById('repPatHasta');
+    if(i1)i1.value=d1;
+    if(i2)i2.value=d2;
+  }
+  box.innerHTML='<div class="mut">Cargando patrones…</div>';
+  let url=`/api/reportes-convivencia/patrones?desde=${encodeURIComponent(d1)}&hasta=${encodeURIComponent(d2)}`;
+  if(CU.rol==='Superadmin'&&CU.colegio_id) url+=`&colegio_id=${encodeURIComponent(String(CU.colegio_id))}`;
+  const j=await api(url);
+  if(j&&j.error){box.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;return;}
+  const urgLbl={normal:'Puede esperar',urgente:'Urgente'};
+  const quienLbl={yo:'Yo',amigo:'Amigo/a',grupo:'Grupo'};
+  const catRows=Object.entries(j.por_categoria||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[
+    `<span style="font-size:12px">${escHtml(REP_CAT_LBL[k]||k)}</span>`,`<strong>${v}</strong>`
+  ]);
+  const lugRows=Object.entries(j.por_lugar||{}).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>[
+    `<span style="font-size:12px">${escHtml(REP_LUG_LBL[k]||k)}</span>`,`<strong>${v}</strong>`
+  ]);
+  const qRows=Object.entries(j.por_a_quien||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[
+    `<span style="font-size:12px">${escHtml(quienLbl[k]||k)}</span>`,`<strong>${v}</strong>`
+  ]);
+  const uRows=Object.entries(j.por_urgencia||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[
+    `<span style="font-size:12px">${escHtml(urgLbl[k]||k)}</span>`,`<strong>${v}</strong>`
+  ]);
+  const eRows=Object.entries(j.por_estado||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[
+    `<span style="font-size:12px">${escHtml(k)}</span>`,`<strong>${v}</strong>`
+  ]);
+  const topC=(j.top_cursos||[]).map(x=>[
+    `<span style="font-size:12px">${escHtml(x.curso||'—')}</span>`,`<strong>${x.n||0}</strong>`
+  ]);
+  const topE=(j.top_estudiantes||[]).map(x=>[
+    `<span style="font-size:12px">${escHtml(x.nombre||'—')}</span><div class="mut">id ${escHtml(String(x.estudiante_id||''))}</div>`,
+    `<strong>${x.n||0}</strong>`
+  ]);
+  box.innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <span class="bdg bg">Total en rango: <strong>${j.total||0}</strong></span>
+      <span class="bdg bg">${escHtml(j.desde||'')} → ${escHtml(j.hasta||'')}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      ${_tblRank('Por tema (categoría)', ['Tema','Alertas'], catRows, 'Sin datos en el rango')}
+      ${_tblRank('Por lugar', ['Lugar','Alertas'], lugRows, 'Sin datos')}
+      ${_tblRank('Por a quién le pasó', ['Ámbito','Alertas'], qRows, 'Sin datos')}
+      ${_tblRank('Por urgencia declarada', ['Urgencia','Alertas'], uRows, 'Sin datos')}
+      ${_tblRank('Por estado del flujo', ['Estado','Cantidad'], eRows, 'Sin datos')}
+      ${_tblRank('Top cursos (por cantidad de alertas)', ['Curso','Alertas'], topC, 'Sin datos')}
+      ${_tblRank('Top estudiantes (más alertas en el rango)', ['Estudiante','Alertas'], topE, 'Sin datos')}
+    </div>`;
 }
 
 function _hoyIso(){return new Date().toISOString().slice(0,10);}
