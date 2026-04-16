@@ -285,8 +285,7 @@ function _senalesRowsHtml(rows,canSeg){
       const obs=(s.observacion||'').replace(/</g,'&lt;');
       const short=obs.length>100?obs.slice(0,100)+'…':obs;
       const urg=s.urgencia?(String(s.urgencia).charAt(0).toUpperCase()+String(s.urgencia).slice(1)):'—';
-      const evOk=CU.rol!=='Acudiente'||Number(s.estudiante_id)===Number(CU.estudiante_id);
-      const ev=s.evidencia_path&&evOk?`<a class="btn btn-xs btn-g" href="/api/senales-atencion/${s.id}/evidencia" target="_blank" rel="noopener">Archivo</a>`:'—';
+      const ev=s.evidencia_path?`<a class="btn btn-xs btn-g" href="/api/senales-atencion/${s.id}/evidencia" target="_blank" rel="noopener">Archivo</a>`:'—';
       return`<tr>
         <td>${s.fecha_registro||'—'}</td>
         <td>${String(s.estudiante_nombre||'—').replace(/</g,'&lt;')}</td>
@@ -354,6 +353,15 @@ function _wirePrevEstTabs(){
   set('ciudadana');
 }
 async function renderSenales(tab){
+  if(CU.rol==='Acudiente'){
+    tab.innerHTML=`
+    <div class="abanner ab-i" style="font-size:11px;line-height:1.45">Aquí puede <strong>enviar un registro</strong> de conducta de riesgo observada en casa o en contexto del estudiante. El colegio lo revisa en convivencia; <strong>no verá aquí el historial ni el estado</strong> del caso (eso lo gestiona coordinación/orientación).</div>
+    <div class="card">
+      <div class="ch"><h3>Registrar conducta de riesgo</h3><button type="button" class="btn btn-p btn-xs" onclick="openOvSenal()">Abrir formulario</button></div>
+      <div style="padding:12px;font-size:12px;line-height:1.5;color:var(--mut)">Si necesita seguimiento sobre un envío previo, comuníquese con el colegio por los canales habituales (reuniones, citas, etc.).</div>
+    </div>`;
+    return;
+  }
   const raw=await api('/api/senales-atencion');
   if(raw&&raw.error){tab.innerHTML=`<div class="abanner ab-r">${raw.error}</div>`;return;}
   const rows=Array.isArray(raw)?raw:[];

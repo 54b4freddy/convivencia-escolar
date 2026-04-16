@@ -7,6 +7,12 @@ def _login(client, usuario, contrasena):
     return rv.get_json()
 
 
+def test_acudiente_get_senales_403(client):
+    _login(client, "1234567", "1234567")
+    rv = client.get("/api/senales-atencion")
+    assert rv.status_code == 403
+
+
 def test_acudiente_estudiantes_solo_su_hijo(client):
     _login(client, "1234567", "1234567")
     rv = client.get("/api/estudiantes")

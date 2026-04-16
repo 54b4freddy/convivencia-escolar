@@ -78,6 +78,8 @@ def _conducta_recurrencia_limite(conn, colegio_id: int, estudiante_id: int, tipo
 @login_required
 def api_senales_listar():
     u = cu()
+    if u["rol"] == "Acudiente":
+        return jsonify({"error": "Los acudientes no consultan el listado; use el formulario para registrar."}), 403
     tenant_id, terr = resolve_colegio_id(u)
     if terr:
         return jsonify({"error": terr}), 400
@@ -85,16 +87,6 @@ def api_senales_listar():
     p = ph()
     q = f"SELECT s.* FROM senales_atencion s WHERE s.colegio_id={p}"
     prm = [tenant_id]
-    if u["rol"] == "Acudiente":
-        try:
-            eid = int(u.get("estudiante_id") or 0)
-        except (TypeError, ValueError):
-            eid = 0
-        if not eid:
-            conn.close()
-            return jsonify({"error": "Sesión de acudiente sin estudiante asociado."}), 400
-        q += f" AND s.estudiante_id={p}"
-        prm.append(eid)
     if u["rol"] == "Docente":
         q += f" AND s.registrado_por_id={p}"
         prm.append(u["id"])
@@ -278,6 +270,8 @@ def api_senales_actualizar(sid):
 @login_required
 def api_senales_evidencia(sid):
     u = cu()
+    if u["rol"] == "Acudiente":
+        return jsonify({"error": "Sin permisos"}), 403
     tenant_id, terr = resolve_colegio_id(u)
     if terr:
         return jsonify({"error": terr}), 400
@@ -291,17 +285,6 @@ def api_senales_evidencia(sid):
         return jsonify({"error": "No autorizado"}), 403
     if u["rol"] == "Docente" and s.get("registrado_por_id") != u.get("id"):
         return jsonify({"error": "No autorizado"}), 403
-    if u["rol"] == "Acudiente":
-        try:
-            mine = int(u.get("estudiante_id") or 0)
-        except (TypeError, ValueError):
-            mine = 0
-        try:
-            se = int(s.get("estudiante_id") or 0)
-        except (TypeError, ValueError):
-            se = 0
-        if not mine or se != mine:
-            return jsonify({"error": "No autorizado"}), 403
     if u["rol"] == "Director" and u.get("curso") and s.get("curso") != u["curso"]:
         return jsonify({"error": "No autorizado"}), 403
     rel = (s.get("evidencia_path") or "").strip()
