@@ -157,6 +157,17 @@ def api_estudiantes():
         return jsonify({"error": terr}), 400
     conn = get_db()
     p = ph()
+    if u["rol"] == "Acudiente":
+        try:
+            eid = int(u.get("estudiante_id") or 0)
+        except (TypeError, ValueError):
+            eid = 0
+        if not eid:
+            conn.close()
+            return jsonify({"error": "Sesión de acudiente sin estudiante asociado."}), 400
+        rows = execute(conn, f"SELECT * FROM estudiantes WHERE colegio_id={p} AND id={p}", (tenant_id, eid), fetch="all")
+        conn.close()
+        return jsonify(rows or [])
     curso = request.args.get("curso", "")
     q = f"SELECT * FROM estudiantes WHERE colegio_id={p}"
     params = [tenant_id]

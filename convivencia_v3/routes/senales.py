@@ -1,7 +1,7 @@
 """Señales de atención / conductas de riesgo (bienestar; no constituye diagnóstico)."""
 import os
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Blueprint, jsonify, request, send_file
 from werkzeug.utils import secure_filename
@@ -51,12 +51,33 @@ def _save_conducta_evidencia(file_storage, colegio_id: int) -> str:
     return os.path.join("conductas", name).replace("\\", "/")
 
 
+def _conducta_recurrencia_limite(conn, colegio_id: int, estudiante_id: int, tipo_con: str, subtipo: str, urgencia: str):
+    """Límite conservador por estudiante + tipo + subtipo (ventana según urgencia)."""
+    p = ph()
+    dias = 14 if urgencia == "critica" else 90
+    limite = 2 if urgencia == "critica" else 3
+    desde = (datetime.now() - timedelta(days=dias)).strftime("%Y-%m-%d")
+    row = execute(
+        conn,
+        f"SELECT COUNT(*) as c FROM senales_atencion WHERE colegio_id={p} AND estudiante_id={p} "
+        f"AND categoria={p} AND tipo_conducta={p} AND subtipo_clave={p} AND fecha_registro >= {p}",
+        (colegio_id, estudiante_id, "conducta_riesgo", tipo_con, subtipo, desde),
+        fetch="one",
+    )
+    n = int((row or {}).get("c") or 0)
+    if n >= limite:
+        return (
+            False,
+            f"Límite de recurrencia: ya hay {n} registro(s) similar(es) en los últimos {dias} días "
+            f"(máx. {limite} por estudiante y opción; ventana más corta si urgencia crítica).",
+        )
+    return True, None
+
+
 @bp.route("/api/senales-atencion")
 @login_required
 def api_senales_listar():
     u = cu()
-    if u["rol"] == "Acudiente":
-        return jsonify({"error": "Sin permisos"}), 403
     tenant_id, terr = resolve_colegio_id(u)
     if terr:
         return jsonify({"error": terr}), 400
@@ -64,6 +85,16 @@ def api_senales_listar():
     p = ph()
     q = f"SELECT s.* FROM senales_atencion s WHERE s.colegio_id={p}"
     prm = [tenant_id]
+    if u["rol"] == "Acudiente":
+        try:
+            eid = int(u.get("estudiante_id") or 0)
+        except (TypeError, ValueError):
+            eid = 0
+        if not eid:
+            conn.close()
+            return jsonify({"error": "Sesión de acudiente sin estudiante asociado."}), 400
+        q += f" AND s.estudiante_id={p}"
+        prm.append(eid)
     if u["rol"] == "Docente":
         q += f" AND s.registrado_por_id={p}"
         prm.append(u["id"])
@@ -77,7 +108,7 @@ def api_senales_listar():
 
 
 @bp.route("/api/senales-atencion", methods=["POST"])
-@roles("Superadmin", "Coordinador", "Orientador", "Director", "Docente")
+@roles("Superadmin", "Coordinador", "Orientador", "Director", "Docente", "Acudiente")
 def api_senales_crear():
     u = cu()
     file_storage = None
@@ -117,6 +148,14 @@ def api_senales_crear():
         if not eid:
             conn.close()
             return jsonify({"ok": False, "error": "Seleccione estudiante"}), 400
+        if u["rol"] == "Acudiente":
+            try:
+                mine = int(u.get("estudiante_id") or 0)
+            except (TypeError, ValueError):
+                mine = 0
+            if not mine or eid != mine:
+                conn.close()
+                return jsonify({"ok": False, "error": "Solo puede registrar para su estudiante asociado."}), 403
         est = execute(conn, f"SELECT * FROM estudiantes WHERE id={p} AND colegio_id={p}", (eid, cid), fetch="one")
         if not est:
             conn.close()
@@ -124,6 +163,10 @@ def api_senales_crear():
         if u["rol"] == "Director" and u.get("curso") and est.get("curso") != u["curso"]:
             conn.close()
             return jsonify({"ok": False, "error": "Estudiante fuera de su curso"}), 403
+        ok_r, msg_r = _conducta_recurrencia_limite(conn, cid, eid, tipo_con, sub, urg)
+        if not ok_r:
+            conn.close()
+            return jsonify({"ok": False, "error": msg_r}), 400
         ev_path = ""
         if file_storage and file_storage.filename:
             try:
@@ -165,6 +208,9 @@ def api_senales_crear():
         conn.close()
         return jsonify({"ok": True, "id": nid})
 
+    if u["rol"] == "Acudiente":
+        conn.close()
+        return jsonify({"ok": False, "error": "Use el formulario de conducta de riesgo (tipo y descripción objetiva)."}), 403
     cat = (d.get("categoria") or "").strip()
     if cat not in _SENALES_CAT:
         conn.close()
@@ -232,8 +278,6 @@ def api_senales_actualizar(sid):
 @login_required
 def api_senales_evidencia(sid):
     u = cu()
-    if u["rol"] == "Acudiente":
-        return jsonify({"error": "Sin permisos"}), 403
     tenant_id, terr = resolve_colegio_id(u)
     if terr:
         return jsonify({"error": terr}), 400
@@ -247,6 +291,17 @@ def api_senales_evidencia(sid):
         return jsonify({"error": "No autorizado"}), 403
     if u["rol"] == "Docente" and s.get("registrado_por_id") != u.get("id"):
         return jsonify({"error": "No autorizado"}), 403
+    if u["rol"] == "Acudiente":
+        try:
+            mine = int(u.get("estudiante_id") or 0)
+        except (TypeError, ValueError):
+            mine = 0
+        try:
+            se = int(s.get("estudiante_id") or 0)
+        except (TypeError, ValueError):
+            se = 0
+        if not mine or se != mine:
+            return jsonify({"error": "No autorizado"}), 403
     if u["rol"] == "Director" and u.get("curso") and s.get("curso") != u["curso"]:
         return jsonify({"error": "No autorizado"}), 403
     rel = (s.get("evidencia_path") or "").strip()

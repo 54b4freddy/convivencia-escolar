@@ -27,13 +27,17 @@ const NAV={
     {sep:'PREVENCIÓN'},{id:'doc-sen',l:'Conductas de riesgo'},
     {sep:'ATENCIÓN Y SEGUIMIENTO'},{id:'doc-f',l:'Mis faltas'},{id:'doc-asist',l:'Asistencia'}
   ],
-  Acudiente:[{id:'acu-ini',l:'Inicio'},{id:'acu-f',l:'Faltas de mi hijo/a'}],
+  Acudiente:[
+    {id:'acu-ini',l:'Inicio'},
+    {sep:'PREVENCIÓN'},{id:'acu-sen',l:'Conductas de riesgo'},
+    {sep:'ATENCIÓN Y SEGUIMIENTO'},{id:'acu-f',l:'Faltas de mi hijo/a'}
+  ],
 };
 const TTLS={
   'sa-col':'Instituciones educativas',
   'co-ini':'Resumen general','di-ini':'Mi resumen','or-ini':'Resumen orientación','doc-ini':'Mis registros','acu-ini':'Portal de acudiente',
   'co-prom':'Actividades de promoción','di-prom':'Actividades de promoción','or-prom':'Actividades de promoción','doc-prom':'Actividades de promoción',
-  'co-sen':'Conductas de riesgo','di-sen':'Conductas de riesgo','or-sen':'Conductas de riesgo','doc-sen':'Conductas de riesgo',
+  'co-sen':'Conductas de riesgo','di-sen':'Conductas de riesgo','or-sen':'Conductas de riesgo','doc-sen':'Conductas de riesgo','acu-sen':'Conductas de riesgo',
   'co-f':'Registro de faltas','di-f':'Faltas de mi curso','or-f':'Consulta de faltas','doc-f':'Mis faltas registradas','acu-f':'Faltas de mi hijo/a',
   'co-asist':'Asistencia','di-asist':'Asistencia','doc-asist':'Asistencia','or-asist':'Asistencia',
   'or-perf':'Perfil de estudiante',
@@ -183,7 +187,7 @@ async function renderTab(id){
     'co-prom':renderPromocion,'di-prom':renderPromocion,'or-prom':renderPromocion,'doc-prom':renderPromocion,
     'co-f':renderFaltas,'di-f':renderFaltas,'or-f':renderFaltas,'doc-f':renderFaltas,'acu-f':renderFaltas,
     'co-est':renderEstudiantes,'di-est':renderEstudiantes,
-    'co-sen':renderSenales,'di-sen':renderSenales,'or-sen':renderSenales,'doc-sen':renderSenales,
+    'co-sen':renderSenales,'di-sen':renderSenales,'or-sen':renderSenales,'doc-sen':renderSenales,'acu-sen':renderSenales,
     'co-asist':renderAsistencia,'di-asist':renderAsistencia,'doc-asist':renderAsistencia,'or-asist':renderAsistencia,
     'co-usr':renderUsuarios,'co-cat':renderCatalogo,'co-proto':renderProto,
     'co-rep':renderReportes,'co-anio':renderAnio,'or-perf':renderPerfil};

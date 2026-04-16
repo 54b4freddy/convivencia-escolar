@@ -179,17 +179,41 @@ async function refreshCrReiteracion(){
   const as=tomas.map(t=>({...t,detalles:(t.detalles||[]).filter(d=>Number(d.estudiante_id)===Number(eid))}));
   wrap.innerHTML=renderTarjetaReiteracion({faltas:fs,asistencias:as,estudianteNombre:estNom,curso});
 }
-function openOvSenal(){
+async function openOvSenal(){
   const sc=document.getElementById('crCurso');
   if(!sc)return;
   const keep=sc.options[0];
   sc.innerHTML='';sc.appendChild(keep);
+  sc.disabled=false;
+  const selEst=document.getElementById('crEst');
+  if(selEst) selEst.disabled=false;
   if(CU.rol==='Director'&&CU.curso){
     const o=document.createElement('option');o.value=CU.curso;o.textContent=CU.curso;sc.appendChild(o);sc.value=CU.curso;
+  }else if(CU.rol==='Acudiente'){
+    const list=await api('/api/estudiantes');
+    if(!Array.isArray(list)||!list.length){
+      toast('No se pudo cargar el estudiante asociado.','e');
+      return;
+    }
+    const e=list[0];
+    const c=(e.curso||'').trim();
+    if(!c){
+      toast('El estudiante no tiene curso en ficha. Contacte al colegio.','e');
+      return;
+    }
+    const o=document.createElement('option');o.value=c;o.textContent=c;sc.appendChild(o);sc.value=c;
+    sc.disabled=true;
+    selEst.innerHTML='';
+    const eo=document.createElement('option');
+    eo.value=String(e.id||'');
+    eo.textContent=e.nombre||'Estudiante';
+    selEst.appendChild(eo);
+    selEst.value=String(e.id||'');
+    selEst.disabled=true;
   }else{
     CURSOS.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sc.appendChild(o);});
   }
-  document.getElementById('crEst').innerHTML='<option value="">Seleccionar</option>';
+  if(CU.rol!=='Acudiente') selEst.innerHTML='<option value="">Seleccionar</option>';
   document.getElementById('crTipo').value='';
   document.getElementById('crSub').innerHTML='<option value="">Primero elija tipo</option>';
   document.getElementById('crDesc').value='';
@@ -197,7 +221,8 @@ function openOvSenal(){
   const fe=document.getElementById('crEvid');if(fe)fe.value='';
   document.getElementById('crErr').textContent='';
   refreshCrAccion();
-  if(CU.rol==='Director'&&CU.curso) loadCrEstudiantes();
+  if(CU.rol==='Director'&&CU.curso) await loadCrEstudiantes();
+  if(CU.rol==='Acudiente') await refreshCrReiteracion();
   openOv('ov-senal');
 }
 async function loadCrEstudiantes(){
@@ -252,18 +277,95 @@ function _conductaTipoDesc(s){
   }
   return SEN_CAT_LBL[s.categoria]||s.categoria||'—';
 }
+function _senalesRowsHtml(rows,canSeg){
+  const list=Array.isArray(rows)?rows:[];
+  if(!list.length) return '<div class="empty">Sin registros</div>';
+  return `<table class="tbl"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Curso</th><th>Tipo / detalle</th><th>Urgencia</th><th>Descripción</th><th>Evid.</th><th>Estado</th><th>Registró</th>${canSeg?'<th>Seguimiento</th>':''}</tr></thead><tbody>
+    ${list.map(s=>{
+      const obs=(s.observacion||'').replace(/</g,'&lt;');
+      const short=obs.length>100?obs.slice(0,100)+'…':obs;
+      const urg=s.urgencia?(String(s.urgencia).charAt(0).toUpperCase()+String(s.urgencia).slice(1)):'—';
+      const evOk=CU.rol!=='Acudiente'||Number(s.estudiante_id)===Number(CU.estudiante_id);
+      const ev=s.evidencia_path&&evOk?`<a class="btn btn-xs btn-g" href="/api/senales-atencion/${s.id}/evidencia" target="_blank" rel="noopener">Archivo</a>`:'—';
+      return`<tr>
+        <td>${s.fecha_registro||'—'}</td>
+        <td>${String(s.estudiante_nombre||'—').replace(/</g,'&lt;')}</td>
+        <td>${String(s.curso||'—').replace(/</g,'&lt;')}</td>
+        <td style="max-width:160px;font-size:11px">${_conductaTipoDesc(s)}</td>
+        <td>${urg}</td>
+        <td style="max-width:200px;font-size:12px" title="${obs}">${short}</td>
+        <td>${ev}</td>
+        <td><span class="bdg bg">${senEstadoLbl(s.estado)}</span></td>
+        <td style="font-size:11px">${s.registrado_por_nombre||'—'} <span class="mut">(${s.registrado_rol||''})</span></td>
+        ${canSeg?`<td style="min-width:200px">
+          <select data-sen-st="${s.id}" class="inp-sm" style="width:100%;margin-bottom:6px">
+            <option value="abierta" ${s.estado==='abierta'?'selected':''}>Abierta</option>
+            <option value="en_seguimiento" ${s.estado==='en_seguimiento'?'selected':''}>En seguimiento</option>
+            <option value="cerrada" ${s.estado==='cerrada'?'selected':''}>Cerrada</option>
+          </select>
+          <textarea data-sen-nt="${s.id}" rows="2" placeholder="Nota de seguimiento" style="width:100%;font-size:12px">${(s.nota_seguimiento||'').replace(/</g,'&lt;')}</textarea>
+          <button type="button" class="btn btn-xs" style="margin-top:4px" onclick="patchSenal(${s.id})">Guardar</button>
+        </td>`:''}
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+function _miniInstSenalesTable(rows){
+  const list=(Array.isArray(rows)?rows:[]).filter(s=>String(s.categoria||'')!=='conducta_riesgo').slice(0,12);
+  if(!list.length) return '<div class="empty">Sin señales institucionales recientes en esta vista.</div>';
+  return `<div class="table-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Curso</th><th>Categoría</th><th>Resumen</th><th>Estado</th></tr></thead><tbody>
+    ${list.map(s=>{
+      const obs=(s.observacion||'').replace(/</g,'&lt;');
+      const short=obs.length>120?obs.slice(0,120)+'…':obs;
+      return`<tr>
+        <td style="font-size:11px">${s.fecha_registro||'—'}</td>
+        <td>${String(s.estudiante_nombre||'—').replace(/</g,'&lt;')}</td>
+        <td>${String(s.curso||'—').replace(/</g,'&lt;')}</td>
+        <td style="font-size:11px">${escHtml(SEN_CAT_LBL[s.categoria]||s.categoria||'—')}</td>
+        <td style="font-size:11px" title="${obs}">${short}</td>
+        <td><span class="bdg bg">${senEstadoLbl(s.estado)}</span></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table></div>`;
+}
+function _wirePrevEstTabs(){
+  const root=document.getElementById('prevEstAlertasCard');
+  if(!root) return;
+  const btns=root.querySelectorAll('[data-prev-est]');
+  const panes={ciudadana:document.getElementById('repEstPrevCiudadana'),conductas:document.getElementById('repEstPrevConductas')};
+  const set=(k)=>{
+    btns.forEach(b=>{
+      const on=b.getAttribute('data-prev-est')===k;
+      b.classList.toggle('btn-p',on);
+      b.classList.toggle('btn-xs',true);
+    });
+    Object.keys(panes).forEach(key=>{
+      const el=panes[key];
+      if(el) el.style.display=key===k?'block':'none';
+    });
+  };
+  btns.forEach(b=>{
+    b.addEventListener('click',()=>{
+      const k=b.getAttribute('data-prev-est')||'ciudadana';
+      set(k);
+      if(k==='ciudadana') refreshAlertasEstPrev();
+    });
+  });
+  set('ciudadana');
+}
 async function renderSenales(tab){
   const raw=await api('/api/senales-atencion');
   if(raw&&raw.error){tab.innerHTML=`<div class="abanner ab-r">${raw.error}</div>`;return;}
   const rows=Array.isArray(raw)?raw:[];
-  const canNew=['Coordinador','Director','Orientador','Docente','Superadmin'].includes(CU.rol);
+  const instMiniRows=rows.filter(s=>String(s.categoria||'')!=='conducta_riesgo');
+  const canNew=['Coordinador','Director','Orientador','Docente','Superadmin','Acudiente'].includes(CU.rol);
   const canSeg=['Coordinador','Orientador','Superadmin'].includes(CU.rol);
   const canPrev=['Coordinador','Director','Orientador','Superadmin'].includes(CU.rol);
   const canRepPrev=['Coordinador','Orientador'].includes(CU.rol);
   tab.innerHTML=`
     <div class="abanner ab-i" style="font-size:11px;line-height:1.45">Registro institucional de <strong>conductas de riesgo</strong> y registros históricos de bienestar. Confidencialidad según política del colegio.</div>
     ${canRepPrev?`
-    <div class="card" style="margin-bottom:12px">
+    <div class="card" id="prevEstAlertasCard" style="margin-bottom:12px">
       <div class="ch">
         <h3>Prevención — Alertas estudiantiles</h3>
         <div class="ch-r" style="gap:8px">
@@ -271,7 +373,14 @@ async function renderSenales(tab){
           <button type="button" class="btn btn-xs btn-i" onclick="openOv('ov-ayuda-prev')">¿Qué es esto?</button>
         </div>
       </div>
-      <div id="repEstPrevBody" style="padding:10px"></div>
+      <div style="padding:10px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <button type="button" class="btn btn-xs btn-p" data-prev-est="ciudadana">Alertas ciudadanas</button>
+          <button type="button" class="btn btn-xs" data-prev-est="conductas">Conductas / señales institucionales</button>
+        </div>
+        <div id="repEstPrevCiudadana" class="prev-est-pane"></div>
+        <div id="repEstPrevConductas" class="prev-est-pane" style="display:none">${_miniInstSenalesTable(instMiniRows)}</div>
+      </div>
     </div>`:''}
     ${canPrev?`
     <div class="card" style="margin-bottom:12px">
@@ -289,41 +398,17 @@ async function renderSenales(tab){
     </div>`:''}
     <div class="card">
       <div class="ch"><h3>${rows.length} registro(s)</h3>${canNew?`<button class="btn btn-p btn-xs" onclick="openOvSenal()">+ Nueva conducta</button>`:''}</div>
-      <div style="padding:9px;overflow:auto">${rows.length?`<table class="tbl"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Curso</th><th>Tipo / detalle</th><th>Urgencia</th><th>Descripción</th><th>Evid.</th><th>Estado</th><th>Registró</th>${canSeg?'<th>Seguimiento</th>':''}</tr></thead><tbody>
-        ${rows.map(s=>{
-          const obs=(s.observacion||'').replace(/</g,'&lt;');
-          const short=obs.length>100?obs.slice(0,100)+'…':obs;
-          const urg=s.urgencia?(String(s.urgencia).charAt(0).toUpperCase()+String(s.urgencia).slice(1)):'—';
-          const ev=s.evidencia_path?`<a class="btn btn-xs btn-g" href="/api/senales-atencion/${s.id}/evidencia" target="_blank" rel="noopener">Archivo</a>`:'—';
-          return`<tr>
-            <td>${s.fecha_registro||'—'}</td>
-            <td>${String(s.estudiante_nombre||'—').replace(/</g,'&lt;')}</td>
-            <td>${String(s.curso||'—').replace(/</g,'&lt;')}</td>
-            <td style="max-width:160px;font-size:11px">${_conductaTipoDesc(s)}</td>
-            <td>${urg}</td>
-            <td style="max-width:200px;font-size:12px" title="${obs}">${short}</td>
-            <td>${ev}</td>
-            <td><span class="bdg bg">${senEstadoLbl(s.estado)}</span></td>
-            <td style="font-size:11px">${s.registrado_por_nombre||'—'} <span class="mut">(${s.registrado_rol||''})</span></td>
-            ${canSeg?`<td style="min-width:200px">
-              <select data-sen-st="${s.id}" class="inp-sm" style="width:100%;margin-bottom:6px">
-                <option value="abierta" ${s.estado==='abierta'?'selected':''}>Abierta</option>
-                <option value="en_seguimiento" ${s.estado==='en_seguimiento'?'selected':''}>En seguimiento</option>
-                <option value="cerrada" ${s.estado==='cerrada'?'selected':''}>Cerrada</option>
-              </select>
-              <textarea data-sen-nt="${s.id}" rows="2" placeholder="Nota de seguimiento" style="width:100%;font-size:12px">${(s.nota_seguimiento||'').replace(/</g,'&lt;')}</textarea>
-              <button type="button" class="btn btn-xs" style="margin-top:4px" onclick="patchSenal(${s.id})">Guardar</button>
-            </td>`:''}
-          </tr>`;
-        }).join('')}
-      </tbody></table>`:'<div class="empty">Sin registros</div>'}</div>
+      <div style="padding:9px;overflow:auto">${_senalesRowsHtml(rows,canSeg)}</div>
     </div>`;
-  if(canRepPrev) refreshAlertasEstPrev();
+  if(canRepPrev){
+    _wirePrevEstTabs();
+    refreshAlertasEstPrev();
+  }
   if(canPrev) refreshPrevencionReiteracion();
 }
 
 async function refreshAlertasEstPrev(){
-  const box=document.getElementById('repEstPrevBody');
+  const box=document.getElementById('repEstPrevCiudadana');
   if(!box) return;
   box.innerHTML='<div class="mut">Cargando alertas…</div>';
   let url='/api/reportes-convivencia?estado=pendiente_validacion';
