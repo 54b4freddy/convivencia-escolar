@@ -369,7 +369,7 @@ async function renderSenales(tab){
   const canNew=['Coordinador','Director','Orientador','Docente','Superadmin','Acudiente'].includes(CU.rol);
   const canSeg=['Coordinador','Orientador','Superadmin'].includes(CU.rol);
   const canPrev=['Coordinador','Director','Orientador','Superadmin'].includes(CU.rol);
-  const canRepPrev=['Coordinador','Orientador'].includes(CU.rol);
+  const canRepPrev=['Coordinador','Orientador','Director','Superadmin'].includes(CU.rol);
   tab.innerHTML=`
     <div class="abanner ab-i" style="font-size:11px;line-height:1.45">Registro institucional de <strong>conductas de riesgo</strong> y registros históricos de bienestar. Confidencialidad según política del colegio.</div>
     ${canRepPrev?`
@@ -432,6 +432,7 @@ async function refreshAlertasEstPrev(){
   if(!box) return;
   box.innerHTML='<div class="mut">Cargando alertas…</div>';
   let url='/api/reportes-convivencia?estado=pendiente_validacion';
+  if(CU.rol==='Superadmin'&&CU.colegio_id) url+=`&colegio_id=${encodeURIComponent(String(CU.colegio_id))}`;
   const j=await api(url);
   if(j&&j.error){box.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;return;}
   const list=Array.isArray(j)?j:[];

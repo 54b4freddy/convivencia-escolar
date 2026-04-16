@@ -249,7 +249,7 @@ def _insert_bitacora(conn, colegio_id: int, rid: int, u: dict, prev_estado: str,
 
 @bp.route("/api/reportes-convivencia", methods=["GET"])
 @login_required
-@roles("Coordinador", "Orientador", "Superadmin")
+@roles("Coordinador", "Orientador", "Director", "Superadmin")
 def api_reportes_listar():
     u = cu()
     tenant_id, terr = resolve_colegio_id(u)
@@ -271,7 +271,7 @@ def api_reportes_listar():
 
 @bp.route("/api/reportes-convivencia/patrones", methods=["GET"])
 @login_required
-@roles("Coordinador", "Orientador", "Superadmin")
+@roles("Coordinador", "Orientador", "Director", "Superadmin")
 def api_reportes_patrones():
     """Agregados por rango (fecha de recepción creado_en) para focos del canal ciudadano."""
     u = cu()
@@ -346,7 +346,7 @@ def api_reportes_patrones():
 
 @bp.route("/api/reportes-convivencia/<int:rid>/bitacora", methods=["GET"])
 @login_required
-@roles("Coordinador", "Orientador", "Superadmin")
+@roles("Coordinador", "Orientador", "Director", "Superadmin")
 def api_reporte_bitacora(rid):
     u = cu()
     tenant_id, terr = resolve_colegio_id(u)
@@ -375,7 +375,7 @@ def api_reporte_bitacora(rid):
 
 @bp.route("/api/reportes-convivencia/<int:rid>", methods=["PATCH"])
 @login_required
-@roles("Coordinador", "Orientador", "Superadmin")
+@roles("Coordinador", "Orientador", "Director", "Superadmin")
 def api_reporte_actualizar(rid):
     d = request.get_json(silent=True) or {}
     nuevo = (d.get("estado") or "").strip()
