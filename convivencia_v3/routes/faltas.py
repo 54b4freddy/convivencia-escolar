@@ -171,7 +171,7 @@ def api_falta_gestion(fid):
 
 
 @bp.route("/api/faltas", methods=["POST"])
-@roles("Superadmin", "Coordinador", "Director", "Docente")
+@roles("Superadmin", "Coordinador", "Orientador", "Director", "Docente")
 def api_falta_crear():
     d = request.json or {}
     u = cu()

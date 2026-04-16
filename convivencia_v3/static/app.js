@@ -132,6 +132,23 @@ async function init(){
 
 function buildNav(){
   const nav=document.getElementById('mainNav');nav.innerHTML='';
+  // Acción rápida global: registrar falta (solo roles autorizados)
+  if(['Coordinador','Orientador','Director','Docente'].includes(CU.rol)){
+    const wrap=document.createElement('div');
+    wrap.style.padding='10px 12px 6px 12px';
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='btn btn-p';
+    b.style.width='100%';
+    b.style.justifyContent='center';
+    b.textContent='+ Registrar falta';
+    b.onclick=()=>{
+      openOv('ov-falta');
+      if(isMobile()) closeSidebar();
+    };
+    wrap.appendChild(b);
+    nav.appendChild(wrap);
+  }
   (NAV[CU.rol]||[]).forEach(item=>{
     if(item.sep){const d=document.createElement('div');d.className='ni-sep';d.textContent=item.sep;nav.appendChild(d);return;}
     const d=document.createElement('div');d.className='ni';d.textContent=item.l;d.setAttribute('data-tab',item.id);
@@ -276,8 +293,6 @@ async function renderInicio(tab){
       <div class="stat"><div class="n">${faltasAll.filter(f=>f.tipo_falta==='Tipo II').length}</div><div class="l">Tipo II — Graves</div><div class="stat-ln sl-a"></div></div>
       <div class="stat"><div class="n">${faltasAll.filter(f=>f.tipo_falta==='Tipo III').length}</div><div class="l">Tipo III — Muy graves</div><div class="stat-ln sl-r"></div></div>
     </div>
-    ${t2t3.length?`<div class="abanner ab-r" style="cursor:pointer" onclick="showTab('${CU.rol==='Director'?'di-f':'co-f'}')">⚠ ${t2t3.length} falta(s) Tipo II/III — ver en «Todas las faltas» / filtrar por tipo</div>`:''}
-    ${rT1.length?`<div class="abanner ab-a">⚡ Reincidencia Tipo I detectada: ${rT1.map(r=>`<strong>${r.estudiante}</strong> (${r.count} faltas)`).join(', ')} — requiere proceso Tipo II</div>`:''}
     <div class="ini-grid">
       <div class="card">
         <div class="ch"><h3>Pendiente <span class="ini-count">(${proc.length})</span></h3></div>
@@ -1031,10 +1046,7 @@ async function renderReportes(tab){
   const mData=new Array(12).fill(0);Object.entries(rep.por_mes||{}).forEach(([m,v])=>{const i=parseInt(m)-1;if(i>=0&&i<12)mData[i]=v;});
   const maxM=Math.max(...mData,1);
   const bars=(data,color)=>{if(!data||!Object.keys(data).length)return`<div style="font-size:11px;color:var(--mut);padding:6px 0">Sin datos</div>`;const entries=Array.isArray(data)?data:Object.entries(data).sort((a,b)=>b[1]-a[1]);const mx=Math.max(...(Array.isArray(data)?data.map(d=>d[1]):Object.values(data)),1);return entries.map(([k,v])=>`<div class="brow"><div class="blbl">${k}</div><div class="btrk"><div class="bfil" style="width:${Math.round(v/mx*100)}%;background:${color}"></div></div><div class="bval">${v}</div></div>`).join('');};
-  const rT1=rep.reincidencias_tipo_i||[];
   tab.innerHTML=`
-    ${rep.reincidentes?.length?`<div class="abanner ab-r">⚠ Reincidentes (4+ faltas): ${rep.reincidentes.join(', ')}</div>`:''}
-    ${rT1.length?`<div class="abanner ab-a">⚡ 3+ faltas Tipo I (requieren proceso Tipo II): ${rT1.map(r=>`${r.estudiante} (${r.count})`).join(', ')}</div>`:''}
     <div class="rep-grid">
       <div class="rc"><h4>POR TIPO DE FALTA</h4>${bars(rep.por_tipo,'#378ADD')}</div>
       <div class="rc"><h4>TOP ESTUDIANTES</h4>${bars(rep.top_estudiantes,'#e74c3c')}</div>
@@ -1102,8 +1114,7 @@ async function renderReportes(tab){
         let html='';
         Object.entries(data).sort().forEach(([curso,info])=>{
           const hasSug=info.sugerencias&&info.sugerencias.length>0;
-          const hasRei=info.reincidentes_t1&&info.reincidentes_t1.length>0;
-          if(!hasSug&&!hasRei)return;
+          if(!hasSug)return;
           html+=`<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--brd)">`;
           html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">`;
           html+=`<span style="font-size:12px;font-weight:600">Curso ${curso}</span>`;
@@ -1112,15 +1123,7 @@ async function renderReportes(tab){
           if(info.t2>0)html+=`<span class="bdg b2">${info.t2} tipo II</span>`;
           if(info.t3>0)html+=`<span class="bdg b3">${info.t3} tipo III</span>`;
           html+='</div>';
-          if(hasRei){
-            html+=`<div class="abanner ab-a" style="margin-bottom:6px;font-size:11px">⚡ Reincidencia Tipo I: `;
-            html+=info.reincidentes_t1.map(r=>`<strong>${r.estudiante}</strong> (${r.count} faltas)`).join(', ');
-            html+=' → Activar proceso Tipo II</div>';
-          }
-          info.sugerencias.forEach(s=>{
-            const isAlerta=s.startsWith('ALERTA');
-            html+=`<div class="${isAlerta?'abanner ab-r':'abanner ab-i'}" style="margin-bottom:4px;font-size:11px">${s}</div>`;
-          });
+          info.sugerencias.forEach(s=>{ html+=`<div style="margin-bottom:4px;font-size:11px;color:var(--mut)">${s}</div>`; });
           html+='</div>';
         });
         mp.innerHTML=html||'<div class="empty">No hay sugerencias para este período</div>';

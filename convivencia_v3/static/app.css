@@ -288,7 +288,26 @@ textarea{resize:vertical;min-height:60px}
   .main{margin-left:0}
   .content{padding:12px}
   .topbar{padding:10px 12px}
-  .stats{grid-template-columns:1fr}
+  /* Resumen: conteos en carrusel horizontal para evitar scroll vertical */
+  .stats{
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x mandatory;
+    padding-bottom:6px;
+    margin-bottom:12px;
+    /* Hint visual: leve “fade” a la derecha para sugerir scroll horizontal */
+    mask-image: linear-gradient(to right, #000 0%, #000 86%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 86%, transparent 100%);
+  }
+  .stat{
+    flex:0 0 auto;
+    min-width:170px;
+    scroll-snap-align:start;
+    padding:11px 12px;
+  }
+  .stat .n{font-size:20px}
   .fr{grid-template-columns:1fr}
   .fr3{grid-template-columns:1fr}
   .srch{width:100%}
