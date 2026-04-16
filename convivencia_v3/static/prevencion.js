@@ -309,27 +309,10 @@ function _senalesRowsHtml(rows,canSeg){
     }).join('')}
   </tbody></table>`;
 }
-function _miniInstSenalesTable(rows){
-  const list=(Array.isArray(rows)?rows:[]).filter(s=>String(s.categoria||'')!=='conducta_riesgo').slice(0,12);
-  if(!list.length) return '<div class="empty">Sin señales institucionales recientes en esta vista.</div>';
-  return `<div class="table-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Curso</th><th>Categoría</th><th>Resumen</th><th>Estado</th></tr></thead><tbody>
-    ${list.map(s=>{
-      const obs=(s.observacion||'').replace(/</g,'&lt;');
-      const short=obs.length>120?obs.slice(0,120)+'…':obs;
-      return`<tr>
-        <td style="font-size:11px">${s.fecha_registro||'—'}</td>
-        <td>${String(s.estudiante_nombre||'—').replace(/</g,'&lt;')}</td>
-        <td>${String(s.curso||'—').replace(/</g,'&lt;')}</td>
-        <td style="font-size:11px">${escHtml(SEN_CAT_LBL[s.categoria]||s.categoria||'—')}</td>
-        <td style="font-size:11px" title="${obs}">${short}</td>
-        <td><span class="bdg bg">${senEstadoLbl(s.estado)}</span></td>
-      </tr>`;
-    }).join('')}
-  </tbody></table></div>`;
-}
 function _wirePrevEstTabs(){
   const root=document.getElementById('prevEstAlertasCard');
   if(!root) return;
+  const tit=document.getElementById('prevEstCardTit');
   const btns=root.querySelectorAll('[data-prev-est]');
   const panes={ciudadana:document.getElementById('repEstPrevCiudadana'),conductas:document.getElementById('repEstPrevConductas')};
   const set=(k)=>{
@@ -342,6 +325,7 @@ function _wirePrevEstTabs(){
       const el=panes[key];
       if(el) el.style.display=key===k?'block':'none';
     });
+    if(tit) tit.textContent=k==='conductas'?'Conductas de riesgo':'Alertas estudiantiles';
   };
   btns.forEach(b=>{
     b.addEventListener('click',()=>{
@@ -365,29 +349,38 @@ async function renderSenales(tab){
   const raw=await api('/api/senales-atencion');
   if(raw&&raw.error){tab.innerHTML=`<div class="abanner ab-r">${raw.error}</div>`;return;}
   const rows=Array.isArray(raw)?raw:[];
-  const instMiniRows=rows.filter(s=>String(s.categoria||'')!=='conducta_riesgo');
+  const conductaRows=rows.filter(s=>String(s.categoria||'')==='conducta_riesgo');
   const canNew=['Coordinador','Director','Orientador','Docente','Superadmin','Acudiente'].includes(CU.rol);
   const canSeg=['Coordinador','Orientador','Superadmin'].includes(CU.rol);
   const canPrev=['Coordinador','Director','Orientador','Superadmin'].includes(CU.rol);
   const canRepPrev=['Coordinador','Orientador','Director','Superadmin'].includes(CU.rol);
+  const btnNueva=canNew?`<button type="button" class="btn btn-p btn-xs" onclick="openOvSenal()">+ Nueva conducta</button>`:'';
   tab.innerHTML=`
-    <div class="abanner ab-i" style="font-size:11px;line-height:1.45">Registro institucional de <strong>conductas de riesgo</strong> y registros históricos de bienestar. Confidencialidad según política del colegio.</div>
+    <div class="abanner ab-i" style="font-size:12px;line-height:1.55;max-width:920px;padding:12px 14px">
+      <p style="margin:0 0 8px"><strong>Conductas de riesgo</strong> — Área de convivencia. Use la tarjeta siguiente para revisar <strong>alertas del estudiantado</strong> y la <strong>tabla de conductas</strong> según la pestaña activa.</p>
+      <ul style="margin:0;padding-left:1.15rem">
+        <li style="margin-bottom:4px"><strong>Alertas ciudadanas:</strong> mensajes del canal estudiantil (Ley 1620). No crean falta hasta validación del equipo.</li>
+        <li><strong>Conductas de riesgo:</strong> registros formales (tipo I, II o III) ingresados por coordinación, orientación, dirección o docentes.</li>
+      </ul>
+      <p style="margin:8px 0 0;font-size:11px;opacity:0.92">Tratamiento confidencial según política institucional.</p>
+    </div>
     ${canRepPrev?`
     <div class="card" id="prevEstAlertasCard" style="margin-bottom:12px">
       <div class="ch">
-        <h3>Prevención — Alertas estudiantiles</h3>
-        <div class="ch-r" style="gap:8px">
-          <button type="button" class="btn btn-xs" onclick="refreshAlertasEstPrev()">Actualizar</button>
+        <h3 id="prevEstCardTit">Alertas estudiantiles</h3>
+        <div class="ch-r" style="gap:8px;flex-wrap:wrap;align-items:center">
+          ${btnNueva}
+          <button type="button" class="btn btn-xs" onclick="renderCurrentTab()">Actualizar</button>
           <button type="button" class="btn btn-xs btn-i" onclick="openOv('ov-ayuda-prev')">¿Qué es esto?</button>
         </div>
       </div>
       <div style="padding:10px">
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           <button type="button" class="btn btn-xs btn-p" data-prev-est="ciudadana">Alertas ciudadanas</button>
-          <button type="button" class="btn btn-xs" data-prev-est="conductas">Conductas / señales institucionales</button>
+          <button type="button" class="btn btn-xs" data-prev-est="conductas">Conductas de riesgo</button>
         </div>
         <div id="repEstPrevCiudadana" class="prev-est-pane"></div>
-        <div id="repEstPrevConductas" class="prev-est-pane" style="display:none">${_miniInstSenalesTable(instMiniRows)}</div>
+        <div id="repEstPrevConductas" class="prev-est-pane" style="display:none;padding-top:4px"><div style="overflow:auto">${_senalesRowsHtml(conductaRows,canSeg)}</div></div>
       </div>
     </div>
     <div class="card" id="repPatronesCard" style="margin-bottom:12px">
@@ -415,10 +408,10 @@ async function renderSenales(tab){
       </div>
       <div id="prevBody" style="padding:10px"></div>
     </div>`:''}
-    <div class="card">
-      <div class="ch"><h3>${rows.length} registro(s)</h3>${canNew?`<button class="btn btn-p btn-xs" onclick="openOvSenal()">+ Nueva conducta</button>`:''}</div>
+    ${canRepPrev?'':`<div class="card">
+      <div class="ch"><h3>${rows.length} registro(s)</h3>${btnNueva}</div>
       <div style="padding:9px;overflow:auto">${_senalesRowsHtml(rows,canSeg)}</div>
-    </div>`;
+    </div>`}`;
   if(canRepPrev){
     _wirePrevEstTabs();
     refreshAlertasEstPrev();
