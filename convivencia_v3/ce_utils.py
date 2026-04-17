@@ -15,6 +15,14 @@ def solo_numeros(s: str) -> str:
     return re.sub(r"[^0-9]", "", str(s))
 
 
+def clave_portal_estudiante_por_defecto(documento: str) -> str:
+    """Contraseña inicial del portal estudiante: últimos 4 dígitos del documento (solo números)."""
+    d = solo_numeros(str(documento or ""))
+    if len(d) >= 4:
+        return d[-4:]
+    return d.zfill(4)[:4]
+
+
 def fmt_tel(s: str) -> str:
     n = solo_numeros(s)
     return n if len(n) >= 7 else ""

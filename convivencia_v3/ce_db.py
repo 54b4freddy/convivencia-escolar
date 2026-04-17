@@ -2,10 +2,9 @@
 Capa de acceso a datos: PostgreSQL (DATABASE_URL) o SQLite local.
 """
 import os
-import secrets
 from datetime import datetime
 
-from ce_utils import hpwd
+from ce_utils import clave_portal_estudiante_por_defecto, hpwd, solo_numeros
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 USE_PG = DATABASE_URL.startswith("postgres")
@@ -379,15 +378,34 @@ def _migrate_schema(conn):
 
 
 def _backfill_reporte_tokens(conn):
-    """Asigna token de enlace/QR a estudiantes que aún no lo tengan."""
-    rows = execute(conn, "SELECT id, reporte_token FROM estudiantes", fetch="all") or []
+    """Los enlaces con token/QR ya no se usan; no se generan tokens nuevos."""
+    return
+
+
+def _backfill_estudiante_portal_usuarios(conn):
+    """Usuario portal (rol Estudiante) con contraseña inicial = últimos 4 dígitos del documento."""
+    rows = execute(conn, "SELECT id, colegio_id, nombre, curso, documento_identidad FROM estudiantes", fetch="all") or []
     p = ph()
     for r in rows:
-        tok = (r.get("reporte_token") or "").strip()
-        if tok:
+        eid = int(r["id"])
+        ex = execute(conn, f"SELECT id FROM usuarios WHERE estudiante_id={p} AND rol='Estudiante'", (eid,), fetch="one")
+        if ex:
             continue
-        nt = secrets.token_urlsafe(24)
-        execute(conn, f"UPDATE estudiantes SET reporte_token={p} WHERE id={p}", (nt, r["id"]))
+        doc = solo_numeros((r.get("documento_identidad") or ""))
+        if len(doc) < 5:
+            continue
+        col_id = int(r.get("colegio_id") or 0)
+        if col_id <= 0:
+            continue
+        uinterno = f"est_{eid}"
+        pwd = hpwd(clave_portal_estudiante_por_defecto(doc))
+        nombre = (r.get("nombre") or "")[:120]
+        curso = (r.get("curso") or "")[:80]
+        execute(
+            conn,
+            f"INSERT INTO usuarios (usuario,contrasena,rol,nombre,curso,colegio_id,estudiante_id) VALUES ({p},{p},{p},{p},{p},{p},{p})",
+            (uinterno, pwd, "Estudiante", nombre, curso, col_id, eid),
+        )
 
 
 DDL_PG = """
@@ -750,7 +768,6 @@ def init_db():
         conn.executescript(ddl)
 
     _migrate_schema(conn)
-    _backfill_reporte_tokens(conn)
 
     # Índices para escalar (multi-colegio + filtros frecuentes).
     # Se crean de forma idempotente; si fallan (p.ej. por esquema viejo), se ignoran.
@@ -898,5 +915,6 @@ def init_db():
                 ]:
                     execute(conn, f"INSERT INTO anotaciones (falta_id,rol,autor,fecha,texto) VALUES ({p},{p},{p},{p},{p})", a)
     _backfill_reporte_tokens(conn)
+    _backfill_estudiante_portal_usuarios(conn)
     commit(conn)
     conn.close()

@@ -32,22 +32,34 @@ def test_reporte_requiere_identidad(client):
         },
     )
     assert rv.status_code == 400
-    assert "Identifícate" in (rv.get_json() or {}).get("error", "")
+    assert "documento" in (rv.get_json() or {}).get("error", "").lower()
 
 
-def test_reporte_con_token_y_listado_comite(client):
+def _doc_y_clave_portal_default_tras_reset(client):
+    """Otros tests pueden cambiar la clave del primer estudiante; forzamos valor por defecto."""
     _login(client, "admin", "admin123")
     est_list = client.get("/api/estudiantes").get_json()
     assert isinstance(est_list, list) and est_list
-    tok = (est_list[0].get("reporte_token") or "").strip()
-    assert len(tok) > 8
+    row = est_list[0]
+    eid = row["id"]
+    rv = client.post(f"/api/estudiantes/{eid}/reset-clave-portal", json={})
+    assert rv.status_code == 200
+    doc = (row.get("documento_identidad") or "").strip()
+    assert len(doc) >= 5
+    clave = doc[-4:]
     _logout(client)
+    return doc, clave
+
+
+def test_reporte_con_token_y_listado_comite(client):
+    doc, clave = _doc_y_clave_portal_default_tras_reset(client)
 
     rv = client.post(
         "/api/reportes-convivencia",
         json={
             "colegio_id": 1,
-            "token": tok,
+            "documento_identidad": doc,
+            "contrasena": clave,
             "categoria_visual": "molestan",
             "a_quien": "yo",
             "descripcion": "Un compañero me molesta en clase y no sé cómo decirlo.",
@@ -80,15 +92,13 @@ def test_reporte_con_token_y_listado_comite(client):
 
 
 def test_descartar_requiere_nota(client):
-    _login(client, "admin", "admin123")
-    est_list = client.get("/api/estudiantes").get_json()
-    tok = (est_list[0].get("reporte_token") or "").strip()
-    _logout(client)
+    doc, clave = _doc_y_clave_portal_default_tras_reset(client)
     rv = client.post(
         "/api/reportes-convivencia",
         json={
             "colegio_id": 1,
-            "token": tok,
+            "documento_identidad": doc,
+            "contrasena": clave,
             "categoria_visual": "peligro",
             "a_quien": "grupo",
             "descripcion": "Prueba de descarte con nota obligatoria en el flujo.",
@@ -108,15 +118,13 @@ def test_descartar_requiere_nota(client):
 
 
 def test_reporte_patch_requiere_nota_10(client):
-    _login(client, "admin", "admin123")
-    est_list = client.get("/api/estudiantes").get_json()
-    tok = (est_list[0].get("reporte_token") or "").strip()
-    _logout(client)
+    doc, clave = _doc_y_clave_portal_default_tras_reset(client)
     rv = client.post(
         "/api/reportes-convivencia",
         json={
             "colegio_id": 1,
-            "token": tok,
+            "documento_identidad": doc,
+            "contrasena": clave,
             "categoria_visual": "mal",
             "a_quien": "yo",
             "descripcion": "Otra prueba para validar nota mínima en cambio de estado.",
@@ -134,15 +142,13 @@ def test_reporte_patch_requiere_nota_10(client):
 
 
 def test_reporte_bitacora_despues_de_patch(client):
-    _login(client, "admin", "admin123")
-    est_list = client.get("/api/estudiantes").get_json()
-    tok = (est_list[0].get("reporte_token") or "").strip()
-    _logout(client)
+    doc, clave = _doc_y_clave_portal_default_tras_reset(client)
     rv = client.post(
         "/api/reportes-convivencia",
         json={
             "colegio_id": 1,
-            "token": tok,
+            "documento_identidad": doc,
+            "contrasena": clave,
             "categoria_visual": "mal_colegio",
             "a_quien": "amigo",
             "descripcion": "Prueba de bitácora: incidente reportado para seguimiento institucional.",

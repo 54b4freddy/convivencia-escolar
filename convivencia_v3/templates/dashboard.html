@@ -273,18 +273,14 @@
     <div class="fr fr1" style="margin-top:8px"><div><label class="fl">Barreras para el aprendizaje y la participación</label>
       <select id="eBarreras">{% for b in barreras_opciones %}<option>{{ b }}</option>{% endfor %}</select>
     </div></div>
-    <div class="fsec">PORTAL DEL ESTUDIANTE (documento + clave)</div>
+    <div class="fsec">PORTAL DEL ESTUDIANTE (alerta ciudadana)</div>
     <div class="fr fr1" style="margin-top:8px">
-      <div id="eRepLnkRow" class="mut" style="display:none;font-size:11px;line-height:1.45;margin-bottom:8px">
-        Enlace opcional (QR / sin clave del portal):<br>
-        <a id="eRepLnk" href="#" target="_blank" rel="noopener" style="word-break:break-all"></a>
+      <div class="fhint">El estudiante ingresa con su <strong>documento</strong> y contraseña: por defecto los <strong>4 últimos dígitos</strong> del documento (puede cambiarla al iniciar sesión). Si olvida la contraseña, use <strong>Restablecer</strong> (vuelve a los 4 últimos dígitos del documento).</div>
+      <div><label class="fl">Nueva contraseña del portal (opcional)</label>
+        <input id="eClaveEst" type="password" maxlength="80" autocomplete="new-password" placeholder="Solo si desea cambiarla al guardar; vacío = no cambiar">
       </div>
-      <div><label class="fl">Clave del portal estudiante (mín. 6 caracteres)</label>
-        <input id="eClaveEst" type="password" maxlength="80" autocomplete="new-password" placeholder="Solo al crear o cambiar; vacío = no cambiar">
-        <div class="fhint">En <strong>login</strong> marca «Soy estudiante», <strong>documento</strong> y esta clave. Si su documento estuviera en más de un colegio del sistema, pedirán el <strong>nombre de la institución</strong> (como en el carnet). Opcional: QR/PIN abajo.</div>
-      </div>
-      <div><label class="fl">PIN solo para página pública /reporte (4–8 dígitos, opcional)</label>
-        <input id="eRepPin" maxlength="8" inputmode="numeric" placeholder="Vacío = no cambiar">
+      <div id="eResetClaveRow" style="display:none;margin-top:10px">
+        <button type="button" class="btn btn-xs" onclick="resetClavePortalEstudiante()">Restablecer contraseña (4 últimos dígitos del documento)</button>
       </div>
     </div>
     <div class="fsec">DATOS DEL ACUDIENTE</div>

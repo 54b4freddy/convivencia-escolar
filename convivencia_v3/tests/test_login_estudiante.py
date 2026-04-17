@@ -16,46 +16,30 @@ def test_login_estudiante_documento_colegio(client):
     _login(client, "admin", "admin123")
     est = client.get("/api/estudiantes").get_json()
     doc = None
+    eid = None
     for row in est:
         d = (row.get("documento_identidad") or "").strip()
         if len(d) >= 5:
             doc = d
             eid = row["id"]
             break
-    assert doc, "seed estudiante con documento"
-    rv = client.patch(
-        f"/api/estudiantes/{eid}",
-        json={
-            "curso": next(r for r in est if r["id"] == eid)["curso"],
-            "tipo_doc_est": "CC",
-            "documento_identidad": doc,
-            "apellido1_est": next(r for r in est if r["id"] == eid).get("apellido1_est") or "Pérez",
-            "nombre1_est": next(r for r in est if r["id"] == eid).get("nombre1_est") or "Test",
-            "apellido1_acu": "García",
-            "nombre1_acu": "Acudiente",
-            "parentesco_acu": "Madre",
-            "cedula_acudiente": "12345678901",
-            "telefono": "3001234567",
-            "direccion": "Calle 1",
-            "barreras": "Ninguna identificada",
-            "clave_estudiante": "claveEst1",
-        },
-    )
-    assert rv.status_code == 200, rv.get_json()
+    assert doc and eid, "seed estudiante con documento"
     _logout(client)
 
     bad = _login(client, doc, "mala", colegio_id=1)
     assert bad.status_code == 401
 
-    ok = _login(client, doc, "claveEst1", colegio_id=1)
+    clave_def = doc[-4:]
+    ok = _login(client, doc, clave_def, colegio_id=1)
     assert ok.status_code == 200
     j = ok.get_json()
     assert j.get("ok") is True
     assert j.get("usuario", {}).get("rol") == "Estudiante"
     assert j.get("usuario", {}).get("estudiante_id") == eid
+    assert j.get("sugerir_cambio_clave_estudiante") is True
     _logout(client)
 
-    ok_sin_col = _login(client, doc, "claveEst1")
+    ok_sin_col = _login(client, doc, clave_def)
     assert ok_sin_col.status_code == 200
     assert ok_sin_col.get_json().get("usuario", {}).get("estudiante_id") == eid
     _logout(client)
@@ -168,3 +152,51 @@ def test_estudiante_desambigua_por_nombre_institucion(client):
     )
     assert bad.status_code == 401
     assert bad.get_json().get("need_institucion") is True
+
+
+def test_reset_clave_portal_estudiante(client):
+    _login(client, "admin", "admin123")
+    est = client.get("/api/estudiantes").get_json()
+    eid = est[0]["id"]
+    rv = client.post(f"/api/estudiantes/{eid}/reset-clave-portal", json={})
+    assert rv.status_code == 200
+    assert rv.get_json().get("ok") is True
+
+
+def test_cambiar_clave_estudiante_me(client):
+    _login(client, "admin", "admin123")
+    est = client.get("/api/estudiantes").get_json()
+    row = next(x for x in est if len((x.get("documento_identidad") or "").strip()) >= 5)
+    doc = row["documento_identidad"].strip()
+    eid = row["id"]
+    cur = row["curso"]
+    rv = client.patch(
+        f"/api/estudiantes/{eid}",
+        json={
+            "curso": cur,
+            "tipo_doc_est": "CC",
+            "documento_identidad": doc,
+            "apellido1_est": row.get("apellido1_est") or "Pérez",
+            "nombre1_est": row.get("nombre1_est") or "Test",
+            "apellido1_acu": "García",
+            "nombre1_acu": "Acudiente",
+            "parentesco_acu": "Madre",
+            "cedula_acudiente": "12345678901",
+            "telefono": "3001234567",
+            "direccion": "Calle 1",
+            "barreras": "Ninguna identificada",
+            "clave_estudiante": "miClaveNueva9",
+        },
+    )
+    assert rv.status_code == 200, rv.get_json()
+    _logout(client)
+
+    _login(client, doc, "miClaveNueva9")
+    rv2 = client.post(
+        "/api/me/cambiar-clave-estudiante",
+        json={"contrasena_actual": "miClaveNueva9", "contrasena_nueva": "otraMas123"},
+    )
+    assert rv2.status_code == 200, rv2.get_json()
+    _logout(client)
+    ok = client.post("/api/login", json={"usuario": doc, "contrasena": "otraMas123"})
+    assert ok.status_code == 200

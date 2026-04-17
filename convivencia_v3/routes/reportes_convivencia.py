@@ -39,41 +39,28 @@ def _get_form_or_json():
 
 
 def _resolve_estudiante(conn, colegio_id: int, d: dict):
-    """Identifica al estudiante por token (QR/enlace) o documento + PIN."""
+    """Identifica al estudiante por documento + contraseña del portal (misma que en login)."""
     p = ph()
-    token = (d.get("token") or "").strip()
     documento = solo_numeros(d.get("documento_identidad") or d.get("documento") or "")
-    pin = (d.get("pin") or "").strip()
-    if token:
-        row = execute(
-            conn,
-            f"SELECT * FROM estudiantes WHERE colegio_id={p} AND reporte_token={p}",
-            (colegio_id, token),
-            fetch="one",
-        )
-        if not row:
-            return None, "El enlace no es válido para esta institución. Pide ayuda a orientación."
-        return row, None
-    if documento and pin:
-        row = execute(
-            conn,
-            f"SELECT * FROM estudiantes WHERE colegio_id={p} AND documento_identidad={p}",
-            (colegio_id, documento),
-            fetch="one",
-        )
-        if not row:
-            return None, "No encontramos ese documento en esta institución."
-        ph_pin = (row.get("reporte_pin_hash") or "").strip()
-        if not ph_pin:
-            return None, "Tu colegio aún no activó el PIN para tu documento. Usa el enlace personal (QR) o pregunta en secretaría."
-        if hpwd(pin) != ph_pin:
-            return None, "PIN incorrecto."
-        return row, None
-    return None, "Identifícate con tu enlace personal (QR) o con tu documento y PIN."
+    pwd = (d.get("contrasena") or d.get("password") or "").strip()
+    if len(documento) < 5:
+        return None, "Indique su documento (sin puntos) y la contraseña del portal."
+    if not pwd:
+        return None, "Indique su documento (sin puntos) y la contraseña del portal."
+    row = execute(
+        conn,
+        f"SELECT e.* FROM usuarios u JOIN estudiantes e ON e.id = u.estudiante_id "
+        f"WHERE u.rol = 'Estudiante' AND e.colegio_id = {p} AND e.documento_identidad = {p} AND u.contrasena = {p}",
+        (colegio_id, documento, hpwd(pwd)),
+        fetch="one",
+    )
+    if not row:
+        return None, "Documento o contraseña incorrectos."
+    return row, None
 
 
 def _resolve_estudiante_o_sesion(conn, colegio_id: int, d: dict):
-    """Sesión rol Estudiante (login con documento) o flujos públicos token/PIN."""
+    """Sesión rol Estudiante (login con documento) o identificación pública documento + contraseña del portal."""
     su = session.get("usuario")
     if su and su.get("rol") == "Estudiante":
         eid = su.get("estudiante_id")

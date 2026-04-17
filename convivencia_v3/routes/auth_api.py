@@ -4,7 +4,7 @@ import os
 from flask import Blueprint, jsonify, request, session
 
 from ce_db import commit, execute, get_db, ph
-from ce_utils import hpwd, solo_numeros
+from ce_utils import clave_portal_estudiante_por_defecto, hpwd, solo_numeros
 from routes.authz import cu, login_required
 
 bp = Blueprint("auth_api", __name__)
@@ -36,7 +36,7 @@ def _login_estudiante_por_documento(conn, d):
     pwd_h = hpwd(d.get("contrasena") or "")
     p = ph()
     base = (
-        f"SELECT u.*, c.nombre AS col_nom FROM usuarios u "
+        f"SELECT u.*, c.nombre AS col_nom, e.documento_identidad AS est_documento FROM usuarios u "
         f"JOIN estudiantes e ON e.id = u.estudiante_id "
         f"LEFT JOIN colegios c ON c.id = u.colegio_id "
         f"WHERE u.rol = 'Estudiante' AND e.documento_identidad = {p} AND u.contrasena = {p}"
@@ -127,7 +127,13 @@ def api_login():
         "asignatura": u.get("asignatura") or "",
         "telefono": u.get("telefono") or "",
     }
-    return jsonify({"ok": True, "usuario": session["usuario"]})
+    out = {"ok": True, "usuario": session["usuario"]}
+    if u.get("rol") == "Estudiante":
+        doc_est = solo_numeros(str(u.get("est_documento") or ""))
+        ch = str(u.get("contrasena") or "")
+        if doc_est and ch == hpwd(clave_portal_estudiante_por_defecto(doc_est)):
+            out["sugerir_cambio_clave_estudiante"] = True
+    return jsonify(out)
 
 
 @bp.route("/api/logout", methods=["POST"])
@@ -180,4 +186,47 @@ def api_registrar_usuario():
 def api_me():
     u = dict(cu())
     u["colegio_id"] = _norm_colegio_id(u.get("colegio_id"))
+    if u.get("rol") == "Estudiante" and u.get("estudiante_id"):
+        conn = get_db()
+        p = ph()
+        row = execute(
+            conn,
+            f"SELECT u.contrasena, e.documento_identidad FROM usuarios u "
+            f"JOIN estudiantes e ON e.id = u.estudiante_id WHERE u.id = {p} AND u.rol = 'Estudiante'",
+            (int(u["id"]),),
+            fetch="one",
+        )
+        conn.close()
+        if row:
+            doc_est = solo_numeros(str(row.get("documento_identidad") or ""))
+            ch = str(row.get("contrasena") or "")
+            u["sugerir_cambio_clave_estudiante"] = bool(
+                doc_est and ch == hpwd(clave_portal_estudiante_por_defecto(doc_est))
+            )
     return jsonify(u)
+
+
+@bp.route("/api/me/cambiar-clave-estudiante", methods=["POST"])
+@login_required
+def api_me_cambiar_clave_estudiante():
+    """Solo rol Estudiante: cambiar contraseña del portal (mín. 4 caracteres)."""
+    me = cu()
+    if me.get("rol") != "Estudiante":
+        return jsonify({"ok": False, "error": "Solo aplica a sesión de estudiante."}), 403
+    d = request.json or {}
+    actual = d.get("contrasena_actual") or ""
+    nueva = (d.get("contrasena_nueva") or "").strip()
+    if len(nueva) < 4:
+        return jsonify({"ok": False, "error": "La nueva contraseña debe tener al menos 4 caracteres."}), 400
+    if len(nueva) > 80:
+        return jsonify({"ok": False, "error": "Contraseña demasiado larga."}), 400
+    conn = get_db()
+    p = ph()
+    row = execute(conn, f"SELECT id, contrasena FROM usuarios WHERE id={p} AND rol='Estudiante'", (int(me["id"]),), fetch="one")
+    if not row or row.get("contrasena") != hpwd(actual):
+        conn.close()
+        return jsonify({"ok": False, "error": "Contraseña actual incorrecta."}), 400
+    execute(conn, f"UPDATE usuarios SET contrasena={p} WHERE id={p}", (hpwd(nueva), int(me["id"])))
+    commit(conn)
+    conn.close()
+    return jsonify({"ok": True})

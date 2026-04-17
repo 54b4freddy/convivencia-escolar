@@ -1031,8 +1031,6 @@ async function renderReportesEst(tab) {
     return;
   }
   const list = Array.isArray(rows) ? rows : [];
-  const cid = CU.colegio_id || 1;
-  const base = `${location.origin}/reporte/${cid}`;
   const tbody = list.length
     ? list
         .map((r) => {
@@ -1070,9 +1068,7 @@ async function renderReportesEst(tab) {
     <div class="card">
       <div class="ch"><h3>Cómo entra el estudiante</h3></div>
       <div class="mb" style="padding:12px 14px;font-size:13px;line-height:1.55;color:var(--mut)">
-        <p style="margin:0 0 8px"><strong>1) Recomendado: documento + clave</strong> — en «Estudiantes» defina la <strong>clave del portal estudiante</strong> (mín. 6 caracteres). En login: <strong>«Soy estudiante»</strong>, documento y clave. Si el documento está en más de un colegio, el sistema pide el <strong>nombre de la I.E.</strong> (como en el carnet), no un código numérico.</p>
-        <p style="margin:0 0 8px"><strong>2) QR / enlace con token</strong> — enlace <code style="font-size:11px;word-break:break-all">${base}/t/<em>token</em></code> (token en datos del estudiante).</p>
-        <p style="margin:0 0 8px"><strong>3) PIN en página pública</strong> — <code>${base}</code> + documento + PIN de 4–8 dígitos (campo opcional al editar).</p>
+        <p style="margin:0 0 8px"><strong>Cómo entra el estudiante</strong> — con <strong>documento</strong> y contraseña del portal (por defecto los <strong>4 últimos dígitos</strong> del documento). En login marca <strong>«Soy estudiante»</strong>. Si el documento está en más de un colegio, el sistema pide el <strong>nombre de la I.E.</strong> (como en el carnet). La página pública <code>/reporte/&lt;institución&gt;</code> usa el mismo documento y contraseña. Si olvida la contraseña, en <strong>Editar estudiante</strong> use <strong>Restablecer</strong>.</p>
         <p style="margin:0">Las alertas <strong>no crean falta</strong> solas: quedan pendientes hasta que usted elija abrir caso, orientación o descartar. Cada cambio de estado exige una <strong>nota de al menos 10 caracteres</strong> y queda registrada en la <strong>bitácora</strong> del reporte.</p>
       </div>
     </div>
@@ -1693,9 +1689,8 @@ function openNuevoEst(){
   _IDS_EST.forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.classList.remove('ok','err-inp');}});
   document.getElementById('eCurso').value='';
   document.getElementById('eErr').textContent='';
-  const erp=document.getElementById('eRepPin');if(erp)erp.value='';
   const ecl=document.getElementById('eClaveEst');if(ecl)ecl.value='';
-  const rlr=document.getElementById('eRepLnkRow');if(rlr)rlr.style.display='none';
+  const rst=document.getElementById('eResetClaveRow');if(rst)rst.style.display='none';
   ['eCedErr','eTelErr'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   openOv('ov-est');
 }
@@ -1722,16 +1717,19 @@ function editarEst(id){
   document.getElementById('eCed').value=e.cedula_acudiente||'';
   document.getElementById('eTel').value=e.telefono||'';
   document.getElementById('eDir').value=e.direccion||'';
-  const rlr=document.getElementById('eRepLnkRow');const rla=document.getElementById('eRepLnk');const erp=document.getElementById('eRepPin');const ecl=document.getElementById('eClaveEst');
-  if(erp)erp.value='';
+  const ecl=document.getElementById('eClaveEst');
   if(ecl)ecl.value='';
-  if(rlr&&rla&&(e.reporte_token||'').trim()){
-    rlr.style.display='block';
-    const cid=e.colegio_id||CU.colegio_id||1;
-    const u=`${location.origin}/reporte/${cid}/t/${encodeURIComponent(e.reporte_token)}`;
-    rla.href=u;rla.textContent=u;
-  }else if(rlr)rlr.style.display='none';
+  const rst=document.getElementById('eResetClaveRow');
+  if(rst)rst.style.display=(CU.rol==='Coordinador'||CU.rol==='Superadmin'||CU.rol==='Director')?'block':'none';
   openOv('ov-est');
+}
+
+async function resetClavePortalEstudiante(){
+  if(!editEstId)return;
+  if(!confirm('¿Restablecer la contraseña del estudiante a los 4 últimos dígitos de su documento?'))return;
+  const r=await api(`/api/estudiantes/${editEstId}/reset-clave-portal`,{method:'POST',body:'{}'});
+  if(r.ok)toast('Contraseña restablecida');
+  else toast(r.error||'Error','e');
 }
 
 async function guardarEstudiante(){
@@ -1763,12 +1761,6 @@ async function guardarEstudiante(){
     parentesco_acu:document.getElementById('eParentescoAcu').value.trim(),
     cedula_acudiente:cedula,telefono:tel,direccion:document.getElementById('eDir').value.trim(),
   };
-  const erp=document.getElementById('eRepPin');
-  if(erp){
-    const pn=erp.value.replace(/\D/g,'');
-    if(pn&&(pn.length<4||pn.length>8)){err.textContent='PIN de reporte: entre 4 y 8 dígitos, o vacío';return;}
-    if(pn)body.reporte_pin=pn;
-  }
   const ecl=document.getElementById('eClaveEst');
   if(ecl&&ecl.value.trim())body.clave_estudiante=ecl.value.trim();
   const url=editEstId?`/api/estudiantes/${editEstId}`:'/api/estudiantes';

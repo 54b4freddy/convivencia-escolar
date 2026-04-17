@@ -1,12 +1,12 @@
 """CRUD e importación masiva de estudiantes."""
 import csv
-import secrets
 from io import StringIO
+from typing import Optional
 
 from flask import Blueprint, jsonify, request
 
 from ce_db import USE_PG, commit, execute, get_db, ph
-from ce_utils import hpwd, nombre_desde_partes, solo_letras, solo_numeros
+from ce_utils import clave_portal_estudiante_por_defecto, hpwd, nombre_desde_partes, solo_letras, solo_numeros
 from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("estudiantes", __name__)
@@ -17,15 +17,24 @@ def _usuario_interno_estudiante(est_id: int) -> str:
     return f"est_{int(est_id)}"
 
 
-def _sync_usuario_estudiante(conn, est_id: int, col_id: int, nombre: str, curso: str, clave: str):
-    """Crea o actualiza usuario con rol Estudiante (acceso documento + clave en /api/login)."""
-    clave = (clave or "").strip()
-    if len(clave) < 6:
-        return False, "La clave del portal estudiante debe tener al menos 6 caracteres."
+def _sync_usuario_estudiante(conn, est_id: int, col_id: int, nombre: str, curso: str, documento_identidad: str, clave: Optional[str] = None):
+    """Crea o actualiza usuario con rol Estudiante (documento + contraseña en /api/login y /reporte).
+
+    Si `clave` está vacío, usa los 4 últimos dígitos del documento. Si se indica clave, mínimo 4 caracteres.
+    """
+    doc = solo_numeros(str(documento_identidad or ""))
+    raw = (clave or "").strip()
+    effective = raw if raw else clave_portal_estudiante_por_defecto(doc)
+    if not solo_numeros(doc):
+        return False, "El documento del estudiante debe incluir dígitos para generar la contraseña inicial."
+    if len(effective) < 4:
+        return False, "La contraseña del portal estudiante debe tener al menos 4 caracteres."
+    if len(effective) > 80:
+        return False, "La contraseña del portal estudiante es demasiado larga."
     p = ph()
     uinterno = _usuario_interno_estudiante(est_id)
     ex = execute(conn, f"SELECT id FROM usuarios WHERE estudiante_id={p} AND rol='Estudiante'", (est_id,), fetch="one")
-    h = hpwd(clave)
+    h = hpwd(effective)
     if ex:
         execute(
             conn,
@@ -107,7 +116,6 @@ def _import_insert_estudiante(
     parentesco,
 ):
     p = ph()
-    rtok = secrets.token_urlsafe(24)
     execute(
         conn,
         f"INSERT INTO estudiantes (documento_identidad,nombre,curso,discapacidad,acudiente,cedula_acudiente,telefono,direccion,colegio_id,"
@@ -135,7 +143,7 @@ def _import_insert_estudiante(
             n1a,
             n2a,
             parentesco[:60],
-            rtok,
+            "",
             "",
         ),
     )
@@ -145,6 +153,13 @@ def _import_insert_estudiante(
         eid = execute(conn, "SELECT last_insert_rowid() as lid", fetch="one")["lid"]
     if cedula:
         _crear_acudiente(conn, cedula, acudiente, curso, col_id, eid)
+    dnum = solo_numeros(doc_id)
+    if len(dnum) >= 5:
+        ok_m, err_m = _sync_usuario_estudiante(conn, eid, col_id, nombre, curso, dnum, None)
+        if not ok_m:
+            execute(conn, f"DELETE FROM usuarios WHERE estudiante_id={p}", (eid,))
+            execute(conn, f"DELETE FROM estudiantes WHERE id={p}", (eid,))
+            raise ValueError(err_m or "No se pudo crear usuario portal estudiante")
     return eid
 
 
@@ -205,7 +220,11 @@ def api_estudiante_crear():
     if not acudiente or not cedula or len(cedula) < 5:
         conn.close()
         return jsonify({"ok": False, "error": "Datos completos del acudiente (nombres y documento) son obligatorios"}), 400
-    rtok = secrets.token_urlsafe(24)
+    if len(doc_id) < 5:
+        conn.close()
+        return jsonify(
+            {"ok": False, "error": "El documento del estudiante debe tener al menos 5 dígitos (sin puntos) para el acceso al portal."}
+        ), 400
     execute(
         conn,
         f"INSERT INTO estudiantes (documento_identidad,nombre,curso,discapacidad,acudiente,cedula_acudiente,telefono,direccion,colegio_id,"
@@ -233,7 +252,7 @@ def api_estudiante_crear():
             solo_letras(d.get("nombre1_acu", "")),
             solo_letras(d.get("nombre2_acu", "")),
             solo_letras(d.get("parentesco_acu", d.get("parentesco", "")))[:60],
-            rtok,
+            "",
             "",
         ),
     )
@@ -242,23 +261,11 @@ def api_estudiante_crear():
     else:
         eid = execute(conn, "SELECT last_insert_rowid() as lid", fetch="one")["lid"]
     _crear_acudiente(conn, cedula, acudiente, d["curso"], col_id, eid)
-    pin = solo_numeros(str(d.get("reporte_pin") or ""))
-    if pin and 4 <= len(pin) <= 8:
-        execute(conn, f"UPDATE estudiantes SET reporte_pin_hash={p} WHERE id={p}", (hpwd(pin), eid))
-    clave_est = (d.get("clave_estudiante") or "").strip()
-    if clave_est:
-        est_row = execute(conn, f"SELECT nombre, curso, documento_identidad FROM estudiantes WHERE id={p}", (eid,), fetch="one")
-        ok_m, err_m = _sync_usuario_estudiante(
-            conn,
-            eid,
-            col_id,
-            (est_row or {}).get("nombre") or nombre,
-            (est_row or {}).get("curso") or d["curso"],
-            clave_est,
-        )
-        if not ok_m:
-            conn.close()
-            return jsonify({"ok": False, "error": err_m}), 400
+    clave_opt = (d.get("clave_estudiante") or "").strip() or None
+    ok_m, err_m = _sync_usuario_estudiante(conn, eid, col_id, nombre, d["curso"], doc_id, clave_opt)
+    if not ok_m:
+        conn.close()
+        return jsonify({"ok": False, "error": err_m}), 400
     commit(conn)
     conn.close()
     return jsonify({"ok": True, "id": eid})
@@ -321,30 +328,53 @@ def api_estudiante_editar(eid):
         _crear_acudiente(conn, cedula, acudiente, d["curso"], est.get("colegio_id", 1), eid)
     elif cedula:
         execute(conn, f"UPDATE usuarios SET nombre={p} WHERE usuario={p} AND rol='Acudiente'", (acudiente, cedula))
-    if "reporte_pin" in d:
-        pin = solo_numeros(str(d.get("reporte_pin") or ""))
-        if not pin:
-            execute(conn, f"UPDATE estudiantes SET reporte_pin_hash={p} WHERE id={p}", ("", eid))
-        elif len(pin) < 4 or len(pin) > 8:
-            conn.close()
-            return jsonify({"ok": False, "error": "PIN de reporte: entre 4 y 8 dígitos, o vacío para quitar."}), 400
-        else:
-            execute(conn, f"UPDATE estudiantes SET reporte_pin_hash={p} WHERE id={p}", (hpwd(pin), eid))
-    if d.get("regenerar_reporte_token"):
-        execute(conn, f"UPDATE estudiantes SET reporte_token={p} WHERE id={p}", (secrets.token_urlsafe(24), eid))
+    col_e = int(est.get("colegio_id") or tenant_id)
     clave_est = (d.get("clave_estudiante") or "").strip()
     if clave_est:
-        ok_m, err_m = _sync_usuario_estudiante(
-            conn,
-            eid,
-            int(est.get("colegio_id") or tenant_id),
-            nombre,
-            d["curso"],
-            clave_est,
-        )
+        ok_m, err_m = _sync_usuario_estudiante(conn, eid, col_e, nombre, d["curso"], doc_id, clave_est)
         if not ok_m:
             conn.close()
             return jsonify({"ok": False, "error": err_m}), 400
+    commit(conn)
+    conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/api/estudiantes/<int:eid>/reset-clave-portal", methods=["POST"])
+@roles("Superadmin", "Coordinador", "Director")
+def api_estudiante_reset_clave_portal(eid):
+    """Deja la contraseña del portal estudiante en los 4 últimos dígitos del documento."""
+    u = cu()
+    tenant_id, terr = resolve_colegio_id(u)
+    if terr:
+        return jsonify({"ok": False, "error": terr}), 400
+    conn = get_db()
+    p = ph()
+    est2 = execute(
+        conn,
+        f"SELECT id, documento_identidad, nombre, curso, colegio_id FROM estudiantes WHERE id={p}",
+        (eid,),
+        fetch="one",
+    )
+    if not est2 or int(est2.get("colegio_id") or 0) != int(tenant_id):
+        conn.close()
+        return jsonify({"ok": False, "error": "No encontrado"}), 404
+    doc = solo_numeros((est2.get("documento_identidad") or ""))
+    if len(doc) < 5:
+        conn.close()
+        return jsonify({"ok": False, "error": "El documento del estudiante debe tener al menos 5 dígitos."}), 400
+    ok_m, err_m = _sync_usuario_estudiante(
+        conn,
+        eid,
+        int(est2.get("colegio_id") or tenant_id),
+        (est2.get("nombre") or "")[:120],
+        (est2.get("curso") or "")[:80],
+        doc,
+        None,
+    )
+    if not ok_m:
+        conn.close()
+        return jsonify({"ok": False, "error": err_m}), 400
     commit(conn)
     conn.close()
     return jsonify({"ok": True})
@@ -420,29 +450,33 @@ def api_importar_estudiantes():
             if not acudiente or len(cedula) < 5:
                 errores.append(f"Línea {i}: acudiente (nombres) y documento (mín. 5 dígitos) obligatorios")
                 continue
-            _import_insert_estudiante(
-                conn,
-                col_id,
-                curso,
-                doc_id,
-                nombre,
-                barr,
-                acudiente,
-                cedula,
-                telefono,
-                direccion,
-                tipo_doc_est,
-                ap1e,
-                ap2e,
-                n1e,
-                n2e,
-                tipo_doc_acu,
-                ap1a,
-                ap2a,
-                n1a,
-                n2a,
-                parentesco,
-            )
+            try:
+                _import_insert_estudiante(
+                    conn,
+                    col_id,
+                    curso,
+                    doc_id,
+                    nombre,
+                    barr,
+                    acudiente,
+                    cedula,
+                    telefono,
+                    direccion,
+                    tipo_doc_est,
+                    ap1e,
+                    ap2e,
+                    n1e,
+                    n2e,
+                    tipo_doc_acu,
+                    ap1a,
+                    ap2a,
+                    n1a,
+                    n2a,
+                    parentesco,
+                )
+            except ValueError as ex:
+                errores.append(f"Línea {i}: {ex}")
+                continue
             count += 1
             continue
         nombre = solo_letras(pts[0]) if pts else ""
@@ -461,9 +495,13 @@ def api_importar_estudiantes():
         if not acudiente or len(cedula) < 5:
             errores.append(f"Línea {i}: acudiente y documento del acudiente (mín. 5 dígitos) obligatorios")
             continue
-        _import_insert_estudiante(
-            conn, col_id, curso, doc_id, nombre, barr, acudiente, cedula, telefono, direccion, "", "", "", "", "", "", "", "", "", "", ""
-        )
+        try:
+            _import_insert_estudiante(
+                conn, col_id, curso, doc_id, nombre, barr, acudiente, cedula, telefono, direccion, "", "", "", "", "", "", "", "", "", "", ""
+            )
+        except ValueError as ex:
+            errores.append(f"Línea {i}: {ex}")
+            continue
         count += 1
     commit(conn)
     conn.close()

@@ -279,7 +279,7 @@
         ¿Sin cuenta? <a href="#" onclick="abrirRegistro()">Regístrate aquí</a>
       </p>
       <p class="register-link" style="margin-top:14px;font-size:0.78rem;color:var(--muted);line-height:1.45">
-        Acceso alternativo sin clave del portal: <a href="/reporte/1" style="color:var(--gold)">reporte con PIN o QR</a> (si el colegio lo activó).
+        Reporte sin iniciar sesión en el sistema (mismo documento y contraseña del portal): <a href="/reporte/1" style="color:var(--gold)">alerta ciudadana</a> (ajuste el número si su colegio no es el 1).
       </p>
     </div>
   </div>
@@ -344,6 +344,8 @@
       if (nm) nm.value = '';
       document.getElementById('lblUsuario').textContent = on ? 'Documento (sin puntos)' : 'Usuario';
       document.getElementById('usuario').placeholder = on ? 'Ej. 1001234567' : 'Ingrese su usuario';
+      const pc = document.getElementById('contrasena');
+      if (pc) pc.placeholder = on ? 'Por defecto: 4 últimos dígitos del documento' : '••••••••';
     }
 
     async function iniciarSesion() {

@@ -90,18 +90,37 @@
   <p style="text-align:right;margin:-4px 0 10px"><button type="button" class="back" style="border:none;background:none;cursor:pointer;font:inherit;padding:0" onclick="cerrarSesionEst()">Cerrar sesión</button></p>
   {% endif %}
 
+  <div id="vSugerirClave" class="card" style="display:none">
+    <p class="step-h">Tu contraseña del portal</p>
+    <p class="muted" style="margin-top:0">Ahora es la misma que los <strong>4 últimos dígitos</strong> de tu documento. Puedes <strong>dejarla así</strong> o cambiarla abajo. Si más adelante la olvidas, pide a tu director de grupo o coordinación que la restablezcan.</p>
+    <div class="row">
+      <label class="lbl" for="claveActualHint">Contraseña actual</label>
+      <input class="inp" id="claveActualHint" type="password" maxlength="80" autocomplete="current-password" placeholder="Los 4 últimos dígitos de tu documento si no la cambiaste">
+    </div>
+    <div class="row">
+      <label class="lbl" for="nuevaClave1">Nueva contraseña (mín. 4 caracteres)</label>
+      <input class="inp" id="nuevaClave1" type="password" maxlength="80" autocomplete="new-password" placeholder="Opcional">
+    </div>
+    <div class="row">
+      <label class="lbl" for="nuevaClave2">Repetir nueva contraseña</label>
+      <input class="inp" id="nuevaClave2" type="password" maxlength="80" autocomplete="new-password">
+    </div>
+    <p id="errClaveHint" class="err" style="display:none"></p>
+    <button type="button" class="btn btn-soft" id="btnMantenerClave">Mantener la contraseña actual (4 últimos dígitos)</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarClave" style="margin-top:8px">Guardar nueva contraseña</button>
+  </div>
+
   <div id="vIdent" class="card" style="display:none">
     <p class="step-h">Antes de empezar</p>
-    <p class="muted" style="margin-top:0">Si ya ingresaste con <strong>documento y clave</strong> en la página principal del colegio, vuelve allí. Aquí puedes usar <strong>enlace personal</strong> (QR) o documento + PIN si el colegio lo configuró.</p>
+    <p class="muted" style="margin-top:0">Ingresa con el mismo <strong>documento</strong> y <strong>contraseña del portal</strong> que usas en el inicio de sesión del colegio (por defecto, los <strong>4 últimos dígitos</strong> de tu documento). Si no recuerdas la contraseña, pide ayuda a tu director de grupo o a coordinación.</p>
     <div class="row">
       <label class="lbl" for="docId">Tu documento (sin puntos)</label>
       <input class="inp" id="docId" inputmode="numeric" autocomplete="username" placeholder="Ej. 1001234567">
     </div>
     <div class="row">
-      <label class="lbl" for="pinRep">PIN que te dio el colegio</label>
-      <input class="inp" id="pinRep" type="password" maxlength="8" inputmode="numeric" autocomplete="current-password" placeholder="4 a 8 dígitos">
+      <label class="lbl" for="pwdRep">Contraseña del portal</label>
+      <input class="inp" id="pwdRep" type="password" maxlength="80" autocomplete="current-password" placeholder="Por defecto: 4 últimos dígitos del documento">
     </div>
-    <p class="muted">Si no tienes PIN, pide en secretaría o a orientación que te activen el acceso.</p>
     <button type="button" class="btn btn-primary" id="btnIdOk">Continuar</button>
   </div>
 
@@ -191,7 +210,6 @@
 (function(){
   const CID = {{ colegio_id|int }};
   const SESION = {{ sesion_estudiante|default(false)|tojson }};
-  let TOKEN = {{ (reporte_token or '')|tojson }};
   let cat = '', quien = '', lugar = '', urgencia = '';
 
   const $ = id => document.getElementById(id);
@@ -212,9 +230,11 @@
   }
 
   if (SESION) {
-    show('vPaso1');
-    prog(22);
-  } else if (TOKEN) {
+    fetch('/api/me', { credentials: 'same-origin' }).then(function(r){ return r.json(); }).then(function(me){
+      if (me && me.sugerir_cambio_clave_estudiante && !sessionStorage.getItem('conviv_skip_pw_hint')) {
+        $('vSugerirClave').style.display = 'block';
+      }
+    }).catch(function(){});
     show('vPaso1');
     prog(22);
   } else {
@@ -222,13 +242,42 @@
     prog(10);
   }
 
+  $('btnMantenerClave').onclick = function(){
+    sessionStorage.setItem('conviv_skip_pw_hint', '1');
+    $('vSugerirClave').style.display = 'none';
+  };
+  $('btnGuardarClave').onclick = async function(){
+    const err = $('errClaveHint');
+    err.style.display = 'none';
+    const a = ($('nuevaClave1').value || '').trim();
+    const b = ($('nuevaClave2').value || '').trim();
+    const actual = ($('claveActualHint').value || '');
+    if (!actual) { err.textContent = 'Escriba su contraseña actual.'; err.style.display = 'block'; return; }
+    if (a.length < 4) { err.textContent = 'La nueva contraseña debe tener al menos 4 caracteres.'; err.style.display = 'block'; return; }
+    if (a !== b) { err.textContent = 'Las contraseñas no coinciden.'; err.style.display = 'block'; return; }
+    try {
+      const res = await fetch('/api/me/cambiar-clave-estudiante', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ contrasena_actual: actual, contrasena_nueva: a })
+      });
+      const j = await res.json();
+      if (!j.ok) { err.textContent = j.error || 'No se pudo cambiar.'; err.style.display = 'block'; return; }
+      sessionStorage.setItem('conviv_skip_pw_hint', '1');
+      $('vSugerirClave').style.display = 'none';
+    } catch (e) {
+      err.textContent = 'Error de conexión.';
+      err.style.display = 'block';
+    }
+  };
+
   $('btnIdOk').onclick = () => {
     const doc = ($('docId').value || '').replace(/\D/g, '');
-    const pin = ($('pinRep').value || '').trim();
-    if (doc.length < 5 || pin.length < 4) { alert('Documento y PIN completos, por favor.'); return; }
-    TOKEN = ''; // usar doc+pin vía FormData sin token
+    const pwd = ($('pwdRep').value || '');
+    if (doc.length < 5 || pwd.length < 4) { alert('Documento y contraseña completos, por favor.'); return; }
     window.__repDoc = doc;
-    window.__repPin = pin;
+    window.__repPwd = pwd;
     show('vPaso1');
     prog(22);
   };
@@ -281,10 +330,9 @@
     err.style.display = 'none';
     const fd = new FormData();
     fd.append('colegio_id', String(CID));
-    if (TOKEN) fd.append('token', TOKEN);
-    else {
+    if (!SESION) {
       fd.append('documento_identidad', window.__repDoc || '');
-      fd.append('pin', window.__repPin || '');
+      fd.append('contrasena', window.__repPwd || '');
     }
     fd.append('categoria_visual', cat);
     fd.append('a_quien', quien);

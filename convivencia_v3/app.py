@@ -76,7 +76,7 @@ def estudiante_reportar():
 
 @app.route('/reporte/<int:colegio_id>')
 def reporte_estudiante_pagina(colegio_id):
-    """Canal estudiantil opcional: PIN o enlace con token (sin sesión)."""
+    """Canal estudiantil público: documento + contraseña del portal (sin sesión)."""
     return render_template(
         'reporte_estudiante.html', colegio_id=colegio_id, reporte_token='', sesion_estudiante=False
     )
@@ -84,9 +84,8 @@ def reporte_estudiante_pagina(colegio_id):
 
 @app.route('/reporte/<int:colegio_id>/t/<path:reporte_token>')
 def reporte_estudiante_con_token(colegio_id, reporte_token):
-    return render_template(
-        'reporte_estudiante.html', colegio_id=colegio_id, reporte_token=reporte_token or '', sesion_estudiante=False
-    )
+    """Enlaces con token quedaron obsoletos: se redirige al formulario con documento y contraseña."""
+    return redirect(url_for('reporte_estudiante_pagina', colegio_id=colegio_id))
 
 
 @app.route('/health')
