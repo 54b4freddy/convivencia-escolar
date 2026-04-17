@@ -209,6 +209,20 @@ def api_falta_crear():
     if not est_nom:
         conn.close()
         return jsonify({"ok": False, "error": "Estudiante no válido"}), 400
+    lugar = (d.get("lugar") or "").strip()[:80]
+    afectados_in = d.get("afectados") or []
+    if not isinstance(afectados_in, list):
+        conn.close()
+        return jsonify({"ok": False, "error": "afectados debe ser lista"}), 400
+    lim_af = []
+    for a in afectados_in[:20]:
+        s = str(a or "").strip()
+        if s:
+            lim_af.append(s[:60])
+    try:
+        afectados_json = json.dumps(lim_af, ensure_ascii=False)
+    except Exception:
+        afectados_json = "[]"
     cat = execute(
         conn,
         f"SELECT protocolo,sancion FROM catalogo_faltas WHERE descripcion={p} AND colegio_id={p}",
@@ -218,8 +232,8 @@ def api_falta_crear():
     execute(
         conn,
         f"INSERT INTO faltas (anio,fecha,curso,estudiante,estudiante_id,tipo_falta,falta_especifica,"
-        f"descripcion,proceso_inicial,protocolo_aplicado,sancion_aplicada,docente,colegio_id) "
-        f"VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
+        f"descripcion,proceso_inicial,protocolo_aplicado,sancion_aplicada,docente,colegio_id,lugar,afectados_json) "
+        f"VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
         (
             anio,
             datetime.now().strftime("%Y-%m-%d"),
@@ -234,6 +248,8 @@ def api_falta_crear():
             cat.get("sancion", "") if cat else "",
             u["nombre"],
             cid,
+            lugar,
+            afectados_json,
         ),
     )
     if USE_PG:

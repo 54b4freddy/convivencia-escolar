@@ -1288,7 +1288,13 @@ async function verFalta(id){
   document.getElementById('vFecha').value=f.fecha;document.getElementById('vEst').value=f.estudiante;
   document.getElementById('vCurso').value=f.curso;document.getElementById('vTipo').value=f.tipo_falta;
   document.getElementById('vEsp').value=f.falta_especifica;document.getElementById('vDesc').value=f.descripcion;
-  fillAnaliticaFalta(f);
+  const lro=document.getElementById('vLugarRo');
+  const aro=document.getElementById('vAfectRo');
+  if(lro)lro.value=(f.lugar||'').trim()||'—';
+  if(aro){
+    const aj=_parseAfectadosJson(f.afectados_json||'');
+    aro.value=aj.length?aj.join(', '):'—';
+  }
   const ps=document.getElementById('vProtoSec');
   if(f.protocolo_aplicado||f.sancion_aplicada){
     ps.style.display='block';
@@ -1364,71 +1370,53 @@ async function verFalta(id){
   openOv('ov-ver');
 }
 
-// ── Datos analíticos (lugar / afectados) ──────────────────────────────────────
-function toggleVLugarOtro(){
-  const sel=document.getElementById('vLugar');
-  const ot=document.getElementById('vLugarOtro');
-  if(!sel||!ot)return;
-  ot.style.display=sel.value==='Otro'?'block':'none';
-}
 function _parseAfectadosJson(s){
   try{
     const a=JSON.parse(s||'[]');
     return Array.isArray(a)?a:[];
   }catch{ return []; }
 }
-function _renderVAfect(){
-  const wrap=document.getElementById('vAfectChips');
-  if(!wrap)return;
-  const arr=window._vAfectArr||[];
-  wrap.innerHTML=arr.map((n,i)=>`<span class="reit-chip" style="cursor:pointer" title="Quitar" onclick="rmVAfect(${i})">${escHtml(n)} <strong>×</strong></span>`).join('')||'<span class="mut">Sin registros</span>';
+function _normListaNombre(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
-function addVAfect(){
-  const inp=document.getElementById('vAfectInp');
+// ── Lugar y personas afectadas (registro inicial de falta) ────────────────────
+function toggleRLugarOtro(){
+  const sel=document.getElementById('rLugar');
+  const ot=document.getElementById('rLugarOtro');
+  if(!sel||!ot)return;
+  ot.style.display=sel.value==='Otro'?'block':'none';
+}
+function _renderRAfect(){
+  const wrap=document.getElementById('rAfectChips');
+  if(!wrap)return;
+  const arr=window._rAfectArr||[];
+  wrap.innerHTML=arr.map((n,i)=>`<span class="reit-chip" style="cursor:pointer" title="Quitar" onclick="rmRAfect(${i})">${escHtml(n)} <strong>×</strong></span>`).join('');
+}
+function addRAfect(){
+  const inp=document.getElementById('rAfectInp');
   if(!inp)return;
   const v=(inp.value||'').trim();
   if(!v)return;
-  window._vAfectArr=window._vAfectArr||[];
-  if(window._vAfectArr.length>=20){toast('Máximo 20 afectados','e');return;}
-  if(!window._vAfectArr.some(x=>_normTxt(x)===_normTxt(v))) window._vAfectArr.push(v);
+  window._rAfectArr=window._rAfectArr||[];
+  if(window._rAfectArr.length>=20){toast('Máximo 20 personas afectadas','e');return;}
+  if(!window._rAfectArr.some(x=>_normListaNombre(x)===_normListaNombre(v))) window._rAfectArr.push(v);
   inp.value='';
-  _renderVAfect();
+  _renderRAfect();
 }
-function rmVAfect(i){
-  window._vAfectArr=window._vAfectArr||[];
-  window._vAfectArr.splice(i,1);
-  _renderVAfect();
+function rmRAfect(i){
+  window._rAfectArr=window._rAfectArr||[];
+  window._rAfectArr.splice(i,1);
+  _renderRAfect();
 }
-function fillAnaliticaFalta(f){
-  const l=(f&&f.lugar)||'';
-  const sel=document.getElementById('vLugar');
-  const ot=document.getElementById('vLugarOtro');
-  const inp=document.getElementById('vAfectInp');
-  if(sel){
-    const opts=Array.from(sel.options).map(o=>o.value);
-    if(l && !opts.includes(l)){sel.value='Otro'; if(ot){ot.value=l;}}
-    else{sel.value=l||''; if(ot)ot.value='';}
-  }
-  toggleVLugarOtro();
-  window._vAfectArr=_parseAfectadosJson((f&&f.afectados_json)||'');
-  _renderVAfect();
+function resetRegFaltaLugar(){
+  window._rAfectArr=[];
+  const s=document.getElementById('rLugar');
+  const o=document.getElementById('rLugarOtro');
+  const inp=document.getElementById('rAfectInp');
+  if(s)s.value='';
+  if(o){o.value='';o.style.display='none';}
   if(inp)inp.value='';
-}
-async function guardarAnaliticaFalta(){
-  if(!verFId)return;
-  const sel=document.getElementById('vLugar');
-  const ot=document.getElementById('vLugarOtro');
-  let lugar=(sel&&sel.value)||'';
-  if(lugar==='Otro') lugar=(ot&&ot.value||'').trim();
-  const afectados=(window._vAfectArr||[]).slice(0,20);
-  const r=await api(`/api/faltas/${verFId}/analitica`,{method:'PATCH',body:JSON.stringify({lugar,afectados})});
-  if(r.ok){
-    toast('Datos guardados');
-    if(window.verFObj){
-      window.verFObj.lugar=r.lugar||lugar;
-      window.verFObj.afectados_json=r.afectados_json||'';
-    }
-  } else toast(r.error||'Error','e');
+  _renderRAfect();
 }
 
 function openOvGestion(){
@@ -1660,7 +1648,12 @@ async function guardarFalta(){
   const citar=document.getElementById('rCitarAcu')?.checked;
   const citaDt=(document.getElementById('rCitaDt')?.value||'').trim();
   if(citar&&!citaDt){toast('Indique fecha y hora de la cita o desactive «Citar a acudiente»','e');return;}
-  const body={anio:getAnio(),curso,estudiante_id:Number(eid),estudiante:est,tipo_falta:tipo,falta_especifica:esp,descripcion:desc,proceso_inicial:proc};
+  const rLug=document.getElementById('rLugar');
+  const rLot=document.getElementById('rLugarOtro');
+  let lugar=(rLug&&rLug.value)||'';
+  if(lugar==='Otro')lugar=(rLot&&rLot.value||'').trim();
+  const afectados=(window._rAfectArr||[]).slice(0,20);
+  const body={anio:getAnio(),curso,estudiante_id:Number(eid),estudiante:est,tipo_falta:tipo,falta_especifica:esp,descripcion:desc,proceso_inicial:proc,lugar,afectados};
   if(citar&&citaDt)body.cita_acudiente={activar:true,fecha_hora:citaDt};
   const r=await api('/api/faltas',{method:'POST',body:JSON.stringify(body)});
   if(r.ok){
@@ -1674,6 +1667,7 @@ async function guardarFalta(){
     }
     closeOv('ov-falta');
     toast(citar?'Falta registrada con citación al acudiente':'Falta registrada');
+    resetRegFaltaLugar();
     ['rCurso','rEst','rTipo','rFaltaEsp','rDesc','rProc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     const rFile2=document.getElementById('rAdjFile');if(rFile2)rFile2.value='';
     const rCat2=document.getElementById('rAdjCat');if(rCat2)rCat2.value='descargos_inicial';
@@ -1948,7 +1942,10 @@ async function ejecutarImport(){
 }
 
 // ── Overlays & Toast ──────────────────────────────────────────────────────────
-function openOv(id){document.getElementById(id)?.classList.add('open');}
+function openOv(id){
+  document.getElementById(id)?.classList.add('open');
+  if(id==='ov-falta')resetRegFaltaLugar();
+}
 function closeOv(id){document.getElementById(id)?.classList.remove('open');}
 document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 

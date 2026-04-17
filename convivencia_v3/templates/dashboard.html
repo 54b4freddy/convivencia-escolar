@@ -74,8 +74,29 @@
     <div class="step">
       <div class="sn">3</div>
       <div class="sb2">
+        <div class="fr" style="gap:14px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px">
+          <div style="min-width:200px;flex:1">
+            <select id="rLugar" style="width:100%;max-width:280px;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px" onchange="toggleRLugarOtro()">
+              <option value="">— Lugar —</option>
+              <option value="Baños">Baños</option>
+              <option value="Patio">Patio</option>
+              <option value="Aula">Aula</option>
+              <option value="Cancha">Cancha</option>
+              <option value="Cafetería">Cafetería</option>
+              <option value="Pasillo">Pasillo</option>
+              <option value="Entrada/Salida">Entrada/Salida</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Otro">Otro…</option>
+            </select>
+            <input id="rLugarOtro" placeholder="Ej: Aula 201" style="display:none;margin-top:8px;width:100%;max-width:280px;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px" maxlength="80">
+          </div>
+          <div style="min-width:220px;flex:1.2">
+            <input id="rAfectInp" style="width:100%;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px" placeholder="Persona afectada (opcional). Enter para añadir." maxlength="60" onkeydown="if(event.key==='Enter'){event.preventDefault();addRAfect();}">
+            <div id="rAfectChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+          </div>
+        </div>
         <div class="st">¿Qué ocurrió?</div>
-        <div class="fr fr1"><div><label class="fl">Descripción detallada de la situación</label><textarea id="rDesc" rows="3" placeholder="Hora, lugar, personas involucradas, contexto exacto..."></textarea></div></div>
+        <div class="fr fr1"><div><label class="fl">Descripción detallada de la situación</label><textarea id="rDesc" rows="3" placeholder="Contexto, testigos, cómo se enteró…"></textarea></div></div>
       </div>
     </div>
     <div class="step">
@@ -150,6 +171,8 @@
         <div><label class="fl">Curso</label><input id="vCurso" readonly></div>
         <div><label class="fl">Tipo</label><input id="vTipo" readonly></div>
         <div style="grid-column:span 2"><label class="fl">Falta específica</label><input id="vEsp" readonly></div>
+        <div><label class="fl">Lugar del incidente</label><input id="vLugarRo" readonly></div>
+        <div style="grid-column:span 2"><label class="fl">Personas afectadas</label><input id="vAfectRo" readonly></div>
         <div style="grid-column:1 / -1"><label class="fl">Descripción</label><textarea id="vDesc" readonly rows="2"></textarea></div>
       </div>
     </div>
@@ -181,35 +204,6 @@
             <div><label class="fl">Nombre</label><input id="vAcu" readonly></div>
             <div><label class="fl">Cédula</label><input id="vCed" readonly></div>
             <div><label class="fl">Teléfono</label><input id="vTel" readonly></div>
-          </div>
-        </div>
-        <div id="vAnalitSec" style="margin-bottom:13px">
-          <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">DATOS PARA ANÁLISIS (OPCIONAL)</div>
-          <div class="fr">
-            <div>
-              <label class="fl">Lugar</label>
-              <select id="vLugar" onchange="toggleVLugarOtro()">
-                <option value="">—</option>
-                <option value="Baños">Baños</option>
-                <option value="Patio">Patio</option>
-                <option value="Aula">Aula</option>
-                <option value="Cancha">Cancha</option>
-                <option value="Cafetería">Cafetería</option>
-                <option value="Pasillo">Pasillo</option>
-                <option value="Entrada/Salida">Entrada/Salida</option>
-                <option value="Transporte">Transporte</option>
-                <option value="Otro">Otro…</option>
-              </select>
-              <input id="vLugarOtro" placeholder="Ej: Aula 201" style="display:none;margin-top:6px" maxlength="80">
-            </div>
-            <div>
-              <label class="fl">Afectados / víctimas (enter para agregar)</label>
-              <input id="vAfectInp" placeholder="Nombre o identificador" maxlength="60" onkeydown="if(event.key==='Enter'){event.preventDefault();addVAfect();}">
-              <div id="vAfectChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-              <div style="display:flex;justify-content:flex-end;margin-top:8px">
-                <button type="button" class="btn btn-xs btn-i" onclick="guardarAnaliticaFalta()">Guardar datos</button>
-              </div>
-            </div>
           </div>
         </div>
         <div id="verAnotSec" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)">
