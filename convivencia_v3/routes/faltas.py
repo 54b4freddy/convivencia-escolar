@@ -209,6 +209,7 @@ def api_falta_crear():
     if not est_nom:
         conn.close()
         return jsonify({"ok": False, "error": "Estudiante no válido"}), 400
+    # lugar y afectados_json alimentan Prevención (Conductas de riesgo: reiteración, focos, víctimas).
     lugar = (d.get("lugar") or "").strip()[:80]
     afectados_in = d.get("afectados") or []
     if not isinstance(afectados_in, list):

@@ -38,11 +38,11 @@ def _afectados_list(aj: str):
 @login_required
 def api_prevencion_reiteracion():
     """
-    Retorna rankings por rango de fechas:
+    Retorna rankings por rango de fechas (panel Conductas de riesgo → Reiteración y focos):
       - ausencias (>=3) por estudiante
       - Tipo I (>=3) por estudiante
-      - lugares (>=3) por lugar
-      - víctimas (>=2) por nombre
+      - lugares (>=3) por lugar (columna lugar en faltas, típicamente en el alta)
+      - víctimas (>=2) por nombre (afectados_json en faltas, típicamente en el alta)
     Director ve solo su curso; coordinación/orientación ven todo el colegio.
     """
     u = cu()

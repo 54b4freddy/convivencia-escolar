@@ -507,7 +507,7 @@ async function refreshPrevencionReiteracion(){
   ]);
   const scope=j.scope&&j.scope.curso?`<span class="bdg bg">Curso: ${escHtml(j.scope.curso)}</span>`:'<span class="bdg bg">Todos los cursos</span>';
   const na=(j.rank_ausencias||[]).length,nt=(j.rank_tipoI||[]).length,nl=(j.rank_lugares||[]).length,nv=(j.rank_victimas||[]).length;
-  const emptyHint=(na+nt+nl+nv===0)?`<div class="abanner ab-i" style="font-size:12px;line-height:1.5;margin-bottom:10px">En este rango no hay filas por encima de los umbrales. Los datos provienen de <strong>asistencia</strong> (inasistencias por estudiante) y de <strong>faltas disciplinarias</strong> (Tipo I por estudiante; <em>lugar</em> y <em>afectados</em> en JSON para focos y víctimas). Amplíe fechas con <strong>Año académico</strong> o registre tomas de asistencia y faltas con esos campos.</div>`:'';
+  const emptyHint=(na+nt+nl+nv===0)?`<div class="abanner ab-i" style="font-size:12px;line-height:1.5;margin-bottom:10px">En este rango no hay filas por encima de los umbrales. Los datos provienen de <strong>asistencia</strong> (inasistencias por estudiante) y de <strong>faltas disciplinarias</strong> (Tipo I por estudiante; <em>lugar</em> y <em>personas afectadas</em> indicados al <strong>registrar la falta</strong>, para las tablas de focos y víctimas en Conductas de riesgo). Amplíe fechas con <strong>Año académico</strong> o registre tomas de asistencia y faltas con esos campos.</div>`:'';
   box.innerHTML=`
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
       ${scope}
