@@ -252,13 +252,13 @@
 <div class="modal modal-lg" style="margin-top:14px">
   <div class="mh">
     <div class="mh-l" style="flex:1;min-width:0">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;row-gap:6px">
-        <h3 id="estTit" style="margin:0">Nuevo estudiante</h3>
-        <button type="button" class="btn btn-xs btn-i" id="eResetClaveBtn" style="display:none" onclick="resetClavePortalEstudiante()">Restablecer contraseña del portal (4 últimos dígitos del documento)</button>
-      </div>
-      <small id="estSubHint">El acudiente accederá con el documento indicado como usuario y contraseña inicial</small>
+      <h3 id="estTit" style="margin:0">Nuevo estudiante</h3>
+      <small>El acudiente accederá con el documento indicado como usuario y contraseña inicial</small>
     </div>
-    <button type="button" onclick="closeOv('ov-est')">×</button>
+    <div class="mh-actions">
+      <button type="button" class="btn btn-p btn-est-reset" id="eResetClaveBtn" style="display:none" onclick="resetClavePortalEstudiante()">Restablecer contraseña</button>
+      <button type="button" class="mh-ghost-close" onclick="closeOv('ov-est')">×</button>
+    </div>
   </div>
   <div class="mb">
     <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:9px">DATOS DEL ESTUDIANTE</div>

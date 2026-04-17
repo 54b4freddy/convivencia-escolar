@@ -1680,7 +1680,6 @@ async function guardarFalta(){
 const _IDS_EST=['eTipoDocEst','eDocId','eAp1Est','eAp2Est','eNom1Est','eNom2Est','eBarreras','eTipoDocAcu','eAp1Acu','eAp2Acu','eNom1Acu','eNom2Acu','eParentescoAcu','eCed','eTel','eDir'];
 function openNuevoEst(){
   editEstId=null;document.getElementById('estTit').textContent='Nuevo estudiante';
-  const h=document.getElementById('estSubHint');if(h)h.textContent='El acudiente accederá con el documento indicado como usuario y contraseña inicial';
   _IDS_EST.forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.classList.remove('ok','err-inp');}});
   document.getElementById('eCurso').value='';
   document.getElementById('eErr').textContent='';
@@ -1692,7 +1691,6 @@ function openNuevoEst(){
 function editarEst(id){
   const e=(window._ec||[]).find(x=>x.id===id);if(!e)return;
   editEstId=id;document.getElementById('estTit').textContent='Editar estudiante';
-  const h=document.getElementById('estSubHint');if(h)h.textContent='El acudiente accede con su documento; el estudiante con el documento del estudiante. Contraseña: use Restablecer si hace falta.';
   document.getElementById('eCurso').value=e.curso;
   document.getElementById('eTipoDocEst').value=e.tipo_doc_est||'';
   document.getElementById('eDocId').value=e.documento_identidad||'';
