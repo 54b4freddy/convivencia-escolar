@@ -1,8 +1,9 @@
 """
 Capa de acceso a datos: PostgreSQL (DATABASE_URL) o SQLite local.
 """
+import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from ce_utils import clave_portal_estudiante_por_defecto, hpwd, solo_numeros
 
@@ -883,17 +884,34 @@ def init_db():
 
     cnt = execute(conn, "SELECT COUNT(*) as c FROM faltas", fetch="one")
     if (cnt or {}).get("c", 0) == 0:
-        _y = datetime.now().year
+        today = datetime.now().date()
+        _y = today.year
+
+        def _d(off: int) -> str:
+            return (today + timedelta(days=off)).isoformat()
+
+        doc_nom = "María Docente"
+        doc_row = execute(conn, "SELECT nombre FROM usuarios WHERE usuario='docente1'", fetch="one")
+        if doc_row and doc_row.get("nombre"):
+            doc_nom = str(doc_row["nombre"])[:120]
+
+        vic_isa = json.dumps(["Isabella López"], ensure_ascii=False)
+        vic_pair = json.dumps(["Isabella López", "Samuel Hernández"], ensure_ascii=False)
+        vic_val = json.dumps(["Valentina Torres"], ensure_ascii=False)
+
+        # Faltas con fechas relativas a hoy para que «últimos 30 días» muestre reiteración/lugares/víctimas en demo.
         for f in [
-            (_y, f"{_y}-02-10", "6A", "Alejandro Pérez", 1, "Tipo I", "Llegar tarde al aula de clase", "Llegó 20 minutos tarde.", "Llamado verbal.", "", "", "María Docente", 1),
-            (_y, f"{_y}-02-20", "6A", "Alejandro Pérez", 1, "Tipo I", "Uso inadecuado del celular en clase", "Usando celular en clase.", "Se retuvo el celular.", "", "", "María Docente", 1),
-            (_y, f"{_y}-03-05", "6A", "Alejandro Pérez", 1, "Tipo I", "Vocabulario inapropiado", "Usó palabras soeces.", "Reflexión y compromiso verbal.", "", "", "María Docente", 1),
-            (_y, f"{_y}-03-15", "6A", "Valentina Torres", 2, "Tipo II", "Agresión verbal a compañeros", "Discusión fuerte en recreo.", "Llamado escrito.", "Intervención del director. Citación al acudiente.", "Llamado escrito con firma. Compromiso de convivencia.", "María Docente", 1),
-            (_y, f"{_y}-03-20", "6B", "Daniela Martínez", 4, "Tipo III", "Agresión física", "Golpeó a compañero.", "Se notificó coordinación.", "Activación RAI.", "Suspensión 3 días. Comité de Convivencia.", "Carlos Director", 1),
+            (_y, _d(0), "6A", "Alejandro Pérez", 1, "Tipo I", "Llegar tarde al aula de clase", "Llegó tarde.", "Llamado verbal.", "", "", doc_nom, 1, "Patio", vic_isa),
+            (_y, _d(-1), "6A", "Alejandro Pérez", 1, "Tipo I", "Uso inadecuado del celular en clase", "Celular en clase.", "Retención.", "", "", doc_nom, 1, "Patio", vic_isa),
+            (_y, _d(-2), "6A", "Alejandro Pérez", 1, "Tipo I", "Vocabulario inapropiado", "Palabras soeces.", "Reflexión.", "", "", doc_nom, 1, "Patio", vic_isa),
+            (_y, _d(-3), "6A", "Alejandro Pérez", 1, "Tipo I", "No portar el uniforme completo", "Sin chaleco.", "Diálogo formativo.", "", "", doc_nom, 1, "Patio", "[]"),
+            (_y, _d(-4), "6A", "Alejandro Pérez", 1, "Tipo I", "Llegar tarde al aula de clase", "Reincidencia.", "Llamado escrito.", "", "", doc_nom, 1, "Salón de clase", "[]"),
+            (_y, _d(-6), "6A", "Valentina Torres", 2, "Tipo II", "Agresión verbal a compañeros", "Discusión en recreo.", "Llamado escrito.", "Intervención del director.", "Compromiso de convivencia.", doc_nom, 1, "Baños", vic_pair),
+            (_y, _d(-8), "6B", "Daniela Martínez", 4, "Tipo III", "Agresión física", "Incidente grave.", "Coordinación.", "RAI.", "Suspensión y comité.", "Carlos Director", 1, "Patio", vic_val),
         ]:
             cur3 = execute(
                 conn,
-                f"INSERT INTO faltas (anio,fecha,curso,estudiante,estudiante_id,tipo_falta,falta_especifica,descripcion,proceso_inicial,protocolo_aplicado,sancion_aplicada,docente,colegio_id) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
+                f"INSERT INTO faltas (anio,fecha,curso,estudiante,estudiante_id,tipo_falta,falta_especifica,descripcion,proceso_inicial,protocolo_aplicado,sancion_aplicada,docente,colegio_id,lugar,afectados_json) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
                 f,
             )
             if USE_PG:
@@ -903,17 +921,39 @@ def init_db():
                 fid = cur3.lastrowid
             if f[5] == "Tipo II":
                 for a in [
-                    (fid, "Director", "Carlos Director", f"{_y}-03-16", "Se citó al acudiente. Reunión realizada. Compromiso firmado."),
-                    (fid, "Coordinador", "Ana Coordinadora", f"{_y}-03-18", "Reunión con acudiente exitosa. Seguimiento mensual."),
-                    (fid, "Orientador", "Pilar Orientadora", f"{_y}-03-19", "Primera sesión. Conflicto con grupo de pares identificado."),
+                    (fid, "Director", "Carlos Director", _d(-5), "Se citó al acudiente. Reunión realizada. Compromiso firmado."),
+                    (fid, "Coordinador", "Ana Coordinadora", _d(-4), "Reunión con acudiente exitosa. Seguimiento mensual."),
+                    (fid, "Orientador", "Pilar Orientadora", _d(-3), "Primera sesión. Conflicto con grupo de pares identificado."),
                 ]:
                     execute(conn, f"INSERT INTO anotaciones (falta_id,rol,autor,fecha,texto) VALUES ({p},{p},{p},{p},{p})", a)
             elif f[5] == "Tipo III":
                 for a in [
-                    (fid, "Coordinador", "Ana Coordinadora", f"{_y}-03-20", "RAI activada. Padres notificados."),
-                    (fid, "Orientador", "Pilar Orientadora", f"{_y}-03-21", "Sesión de crisis. Remisión a psicología externa."),
+                    (fid, "Coordinador", "Ana Coordinadora", _d(-7), "RAI activada. Padres notificados."),
+                    (fid, "Orientador", "Pilar Orientadora", _d(-6), "Sesión de crisis. Remisión a psicología externa."),
                 ]:
                     execute(conn, f"INSERT INTO anotaciones (falta_id,rol,autor,fecha,texto) VALUES ({p},{p},{p},{p},{p})", a)
+
+    cnt_at = execute(conn, "SELECT COUNT(*) as c FROM asistencia_toma", fetch="one")
+    if (cnt_at or {}).get("c", 0) == 0:
+        tday = datetime.now().date()
+        creado_en = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        p = ph()
+        de = execute(conn, "SELECT id, nombre FROM usuarios WHERE usuario='docente1'", fetch="one")
+        docente_id = int(de["id"]) if de and de.get("id") is not None else None
+        docente_nom = str((de or {}).get("nombre") or "María Docente")[:120]
+        for off in (0, -2, -4, -6):
+            fecha_t = (tday + timedelta(days=off)).isoformat()
+            tid = execute(
+                conn,
+                f"INSERT INTO asistencia_toma (colegio_id,fecha,curso,asignatura,docente_id,docente_nombre,creado_en) VALUES ({p},{p},{p},{p},{p},{p},{p})",
+                (1, fecha_t, "6A", "Matemáticas", docente_id, docente_nom, creado_en),
+                fetch="lastid",
+            )
+            execute(
+                conn,
+                f"INSERT INTO asistencia_detalle (toma_id,estudiante_id,estudiante_nombre,ausente,justificada) VALUES ({p},{p},{p},{p},{p})",
+                (tid, 1, "Alejandro Pérez", 1, 0),
+            )
     _backfill_reporte_tokens(conn)
     _backfill_estudiante_portal_usuarios(conn)
     commit(conn)

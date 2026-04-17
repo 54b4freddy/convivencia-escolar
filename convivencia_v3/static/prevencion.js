@@ -357,7 +357,7 @@ async function renderSenales(tab){
   const btnNueva=canNew?`<button type="button" class="btn btn-p btn-xs" onclick="openOvSenal()">+ Nueva conducta</button>`:'';
   tab.innerHTML=`
     <div class="abanner ab-i" style="font-size:12px;line-height:1.55;max-width:920px;padding:12px 14px">
-      <p style="margin:0 0 8px"><strong>Conductas de riesgo</strong> — Área de convivencia. Use la tarjeta siguiente para revisar <strong>alertas del estudiantado</strong> y la <strong>tabla de conductas</strong> según la pestaña activa.</p>
+      <p style="margin:0 0 8px"><strong>Conductas de riesgo</strong> — Área de convivencia. Revise <strong>alertas del estudiantado</strong> y la <strong>tabla de conductas</strong> según la pestaña; más abajo, el panel de <strong>reiteración y focos</strong> (faltas y asistencia en el rango elegido).</p>
       <ul style="margin:0;padding-left:1.15rem">
         <li style="margin-bottom:4px"><strong>Alertas ciudadanas:</strong> mensajes del canal estudiantil (Ley 1620). No crean falta hasta validación del equipo.</li>
         <li><strong>Conductas de riesgo:</strong> registros formales (tipo I, II o III) ingresados por coordinación, orientación, dirección o docentes.</li>
@@ -382,17 +382,6 @@ async function renderSenales(tab){
         <div id="repEstPrevCiudadana" class="prev-est-pane"></div>
         <div id="repEstPrevConductas" class="prev-est-pane" style="display:none;padding-top:4px"><div style="overflow:auto">${_senalesRowsHtml(conductaRows,canSeg)}</div></div>
       </div>
-    </div>
-    <div class="card" id="repPatronesCard" style="margin-bottom:12px">
-      <div class="ch">
-        <h3>Patrones — canal ciudadano</h3>
-        <div class="ch-r" style="gap:8px;flex-wrap:wrap;align-items:center">
-          <label class="mut" style="font-size:11px">Desde <input type="date" id="repPatDesde" class="inp-sm" style="padding:4px 8px" /></label>
-          <label class="mut" style="font-size:11px">Hasta <input type="date" id="repPatHasta" class="inp-sm" style="padding:4px 8px" /></label>
-          <button type="button" class="btn btn-xs" onclick="refreshRepPatrones()">Actualizar</button>
-        </div>
-      </div>
-      <div id="repPatBody" style="padding:10px"><div class="mut">Pulse Actualizar para ver agregados por fecha de recepción.</div></div>
     </div>`:''}
     ${canPrev?`
     <div class="card" style="margin-bottom:12px">
@@ -400,8 +389,8 @@ async function renderSenales(tab){
         <h3>Prevención — Reiteración y focos</h3>
         <div class="ch-r" style="gap:8px">
           <select id="prevRango" style="font-size:12px;padding:5px 9px" onchange="refreshPrevencionReiteracion()">
-            <option value="30d">Últimos 30 días</option>
-            <option value="anio">Año académico (según selector superior)</option>
+            <option value="30d" selected>Últimos 30 días</option>
+            <option value="anio">Año académico (selector superior)</option>
           </select>
           <button type="button" class="btn btn-xs" onclick="refreshPrevencionReiteracion()">Actualizar</button>
         </div>
@@ -415,7 +404,6 @@ async function renderSenales(tab){
   if(canRepPrev){
     _wirePrevEstTabs();
     refreshAlertasEstPrev();
-    refreshRepPatrones();
   }
   if(canPrev) refreshPrevencionReiteracion();
 }
@@ -475,64 +463,6 @@ async function refreshAlertasEstPrev(){
   `;
 }
 
-async function refreshRepPatrones(){
-  const box=document.getElementById('repPatBody');
-  if(!box)return;
-  let d1=document.getElementById('repPatDesde')?.value||'';
-  let d2=document.getElementById('repPatHasta')?.value||'';
-  if(!d1||!d2){
-    d2=_hoyIso();
-    d1=_isoDateNDaysAgo(30);
-    const i1=document.getElementById('repPatDesde');
-    const i2=document.getElementById('repPatHasta');
-    if(i1)i1.value=d1;
-    if(i2)i2.value=d2;
-  }
-  box.innerHTML='<div class="mut">Cargando patrones…</div>';
-  let url=`/api/reportes-convivencia/patrones?desde=${encodeURIComponent(d1)}&hasta=${encodeURIComponent(d2)}`;
-  if(CU.rol==='Superadmin'&&CU.colegio_id) url+=`&colegio_id=${encodeURIComponent(String(CU.colegio_id))}`;
-  const j=await api(url);
-  if(j&&j.error){box.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;return;}
-  const urgLbl={normal:'Puede esperar',urgente:'Urgente'};
-  const quienLbl={yo:'Yo',amigo:'Amigo/a',grupo:'Grupo'};
-  const catRows=Object.entries(j.por_categoria||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[
-    `<span style="font-size:12px">${escHtml(REP_CAT_LBL[k]||k)}</span>`,`<strong>${v}</strong>`
-  ]);
-  const lugRows=Object.entries(j.por_lugar||{}).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>[
-    `<span style="font-size:12px">${escHtml(REP_LUG_LBL[k]||k)}</span>`,`<strong>${v}</strong>`
-  ]);
-  const qRows=Object.entries(j.por_a_quien||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[
-    `<span style="font-size:12px">${escHtml(quienLbl[k]||k)}</span>`,`<strong>${v}</strong>`
-  ]);
-  const uRows=Object.entries(j.por_urgencia||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[
-    `<span style="font-size:12px">${escHtml(urgLbl[k]||k)}</span>`,`<strong>${v}</strong>`
-  ]);
-  const eRows=Object.entries(j.por_estado||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[
-    `<span style="font-size:12px">${escHtml(k)}</span>`,`<strong>${v}</strong>`
-  ]);
-  const topC=(j.top_cursos||[]).map(x=>[
-    `<span style="font-size:12px">${escHtml(x.curso||'—')}</span>`,`<strong>${x.n||0}</strong>`
-  ]);
-  const topE=(j.top_estudiantes||[]).map(x=>[
-    `<span style="font-size:12px">${escHtml(x.nombre||'—')}</span><div class="mut">id ${escHtml(String(x.estudiante_id||''))}</div>`,
-    `<strong>${x.n||0}</strong>`
-  ]);
-  box.innerHTML=`
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      <span class="bdg bg">Total en rango: <strong>${j.total||0}</strong></span>
-      <span class="bdg bg">${escHtml(j.desde||'')} → ${escHtml(j.hasta||'')}</span>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
-      ${_tblRank('Por tema (categoría)', ['Tema','Alertas'], catRows, 'Sin datos en el rango')}
-      ${_tblRank('Por lugar', ['Lugar','Alertas'], lugRows, 'Sin datos')}
-      ${_tblRank('Por a quién le pasó', ['Ámbito','Alertas'], qRows, 'Sin datos')}
-      ${_tblRank('Por urgencia declarada', ['Urgencia','Alertas'], uRows, 'Sin datos')}
-      ${_tblRank('Por estado del flujo', ['Estado','Cantidad'], eRows, 'Sin datos')}
-      ${_tblRank('Top cursos (por cantidad de alertas)', ['Curso','Alertas'], topC, 'Sin datos')}
-      ${_tblRank('Top estudiantes (más alertas en el rango)', ['Estudiante','Alertas'], topE, 'Sin datos')}
-    </div>`;
-}
-
 function _hoyIso(){return new Date().toISOString().slice(0,10);}
 function _rangoPrev(){
   const r=document.getElementById('prevRango')?.value||'30d';
@@ -576,12 +506,15 @@ async function refreshPrevencionReiteracion(){
     `<span class="reit-bdg warn">≥2</span> <strong>${Number(x.menciones||0)}</strong>`
   ]);
   const scope=j.scope&&j.scope.curso?`<span class="bdg bg">Curso: ${escHtml(j.scope.curso)}</span>`:'<span class="bdg bg">Todos los cursos</span>';
+  const na=(j.rank_ausencias||[]).length,nt=(j.rank_tipoI||[]).length,nl=(j.rank_lugares||[]).length,nv=(j.rank_victimas||[]).length;
+  const emptyHint=(na+nt+nl+nv===0)?`<div class="abanner ab-i" style="font-size:12px;line-height:1.5;margin-bottom:10px">En este rango no hay filas por encima de los umbrales. Los datos provienen de <strong>asistencia</strong> (inasistencias por estudiante) y de <strong>faltas disciplinarias</strong> (Tipo I por estudiante; <em>lugar</em> y <em>afectados</em> en JSON para focos y víctimas). Amplíe fechas con <strong>Año académico</strong> o registre tomas de asistencia y faltas con esos campos.</div>`:'';
   box.innerHTML=`
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
       ${scope}
       <span class="bdg bg">Rango: ${escHtml(j.desde||r.desde)} → ${escHtml(j.hasta||r.hasta)}</span>
-      <span class="bdg bg">Asistencia: ≥3/mes · Tipo I: ≥3 · Lugar: ≥3 · Víctima: ≥2</span>
+      <span class="bdg bg">Umbrales: ausencias ≥3 · Tipo I ≥3 · mismo lugar ≥3 · misma víctima ≥2</span>
     </div>
+    ${emptyHint}
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
       ${_tblRank('Top estudiantes — Ausencias (≥3)', ['Estudiante','Ausencias'], aus, 'Sin estudiantes que superen el umbral')}
       ${_tblRank('Top estudiantes — Faltas Tipo I (≥3)', ['Estudiante','Tipo I'], t1, 'Sin estudiantes que superen el umbral')}

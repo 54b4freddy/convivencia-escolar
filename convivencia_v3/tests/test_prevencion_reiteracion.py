@@ -24,6 +24,10 @@ def test_prevencion_reiteracion_ok(client):
     assert "rank_tipoI" in j
     assert "rank_lugares" in j
     assert "rank_victimas" in j
+    assert len(j.get("rank_tipoI") or []) >= 1
+    assert len(j.get("rank_lugares") or []) >= 1
+    assert len(j.get("rank_ausencias") or []) >= 1
+    assert len(j.get("rank_victimas") or []) >= 1
 
 
 def test_prevencion_reiteracion_detalle_ok(client):
@@ -34,4 +38,5 @@ def test_prevencion_reiteracion_detalle_ok(client):
     assert rv.status_code == 200, rv.get_json()
     j = rv.get_json()
     assert "items" in j
+    assert len(j.get("items") or []) >= 1
 
