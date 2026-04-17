@@ -19,19 +19,52 @@ def _parse_iso(s: str) -> str:
     return s if _ISO.match(s) else ""
 
 
-def _afectados_list(aj: str):
-    try:
-        arr = json.loads(aj or "[]")
-        if not isinstance(arr, list):
-            return []
-        out = []
-        for x in arr[:20]:
-            t = str(x or "").strip()
-            if t:
-                out.append(t[:60])
-        return out
-    except Exception:
+def _norm_vic_key(s: str) -> str:
+    return " ".join(str(s or "").strip().lower().split())
+
+
+def _afectados_list(aj):
+    """Nombres en afectados_json (lista JSON). Tolera string doble-codificado, dicts y lista separada por comas."""
+    if aj is None:
         return []
+    if isinstance(aj, (bytes, bytearray)):
+        try:
+            aj = aj.decode("utf-8", errors="replace")
+        except Exception:
+            return []
+    if isinstance(aj, list):
+        raw_items = aj
+    else:
+        s = str(aj).strip()
+        if not s:
+            return []
+        parsed = None
+        try:
+            parsed = json.loads(s)
+        except Exception:
+            if "," in s and "[" not in s and "{" not in s:
+                return [p.strip()[:60] for p in s.split(",") if p.strip()][:20]
+            return []
+        if isinstance(parsed, str):
+            try:
+                parsed = json.loads(parsed.strip())
+            except Exception:
+                t = parsed.strip()
+                return [t[:60]] if t else []
+        if not isinstance(parsed, list):
+            return []
+        raw_items = parsed
+    out = []
+    for x in raw_items[:20]:
+        if x is None:
+            continue
+        if isinstance(x, dict):
+            t = str(x.get("nombre") or x.get("name") or x.get("victima") or x.get("n") or "").strip()
+        else:
+            t = str(x).strip()
+        if t:
+            out.append(t[:60])
+    return out
 
 
 @bp.route("/api/prevencion/reiteracion")
@@ -83,6 +116,7 @@ def api_prevencion_reiteracion():
         est_info = {}  # id -> {nombre, curso}
         lugares = Counter()
         victimas = Counter()
+        victima_etiqueta = {}
 
         for f in faltas:
             eid = f.get("estudiante_id")
@@ -102,7 +136,11 @@ def api_prevencion_reiteracion():
             if lug:
                 lugares[lug] += 1
             for nom in _afectados_list(f.get("afectados_json") or ""):
-                victimas[nom] += 1
+                vk = _norm_vic_key(nom)
+                if not vk:
+                    continue
+                victimas[vk] += 1
+                victima_etiqueta.setdefault(vk, nom.strip()[:60])
 
         # --- Asistencia (ausencias) ---
         qa = (
@@ -169,7 +207,10 @@ def api_prevencion_reiteracion():
         top_tipoI.append({"estudiante_id": eid, **info, "tipoI": n})
 
     top_lug = [{"lugar": k, "faltas": n} for k, n in lugares.most_common(50) if n >= 3]
-    top_vic = [{"victima": k, "menciones": n} for k, n in victimas.most_common(50) if n >= 2]
+    # ≥1 mención: una sola falta con una víctima ya aparece; el umbral alto ocultaba datos reales con pocos registros.
+    top_vic = [
+        {"victima": victima_etiqueta.get(k, k), "menciones": n} for k, n in victimas.most_common(50) if n >= 1
+    ]
 
     return jsonify(
         {

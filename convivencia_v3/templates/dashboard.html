@@ -250,15 +250,15 @@
 <!-- OVERLAY: Estudiante -->
 <div class="ov" id="ov-est">
 <div class="modal modal-lg" style="margin-top:14px">
-  <div class="mh">
-    <div class="mh-l" style="flex:1;min-width:0">
+  <div class="mh est-mh">
+    <div class="est-mh-leading">
+      <button type="button" class="btn btn-p btn-est-reset" id="eResetClaveBtn" style="display:none" onclick="resetClavePortalEstudiante()">Restablecer contraseña</button>
+    </div>
+    <div class="mh-l est-mh-title">
       <h3 id="estTit" style="margin:0">Nuevo estudiante</h3>
       <small>El acudiente accederá con el documento indicado como usuario y contraseña inicial</small>
     </div>
-    <div class="mh-actions">
-      <button type="button" class="btn btn-p btn-est-reset" id="eResetClaveBtn" style="display:none" onclick="resetClavePortalEstudiante()">Restablecer contraseña</button>
-      <button type="button" class="mh-ghost-close" onclick="closeOv('ov-est')">×</button>
-    </div>
+    <button type="button" class="mh-ghost-close" onclick="closeOv('ov-est')">×</button>
   </div>
   <div class="mb">
     <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:9px">DATOS DEL ESTUDIANTE</div>
@@ -412,17 +412,19 @@
     </div>
     <button onclick="closeOv('ov-ayuda-prev')">×</button>
   </div>
-  <div class="mb" style="padding:14px 16px;line-height:1.55">
-    <div class="abanner ab-i" style="margin-bottom:10px">
-      Las <strong>alertas estudiantiles</strong> son un canal de reporte para cuidado y detección temprana. <strong>No crean una falta automáticamente</strong>.
-    </div>
-    <p style="margin:0 0 10px"><strong>Alertas estudiantiles</strong>: quedan en “Pendiente de validación” hasta que el comité decide si:</p>
-    <ul style="margin:0 0 12px 18px">
-      <li><strong>Abrir caso</strong> (iniciar proceso formal).</li>
-      <li><strong>Orientación</strong> (manejo privado/psicosocial).</li>
-      <li><strong>Descartar</strong> (si es broma o error; queda nota por auditoría).</li>
+  <div class="mb" style="padding:14px 16px;line-height:1.5">
+    <h4 style="margin:0 0 8px;font-size:13px;font-weight:600">Alertas ciudadanas (pestaña homónima)</h4>
+    <p style="margin:0 0 10px;font-size:12px;color:var(--ink)">Canal Ley 1620: el estudiante o la familia envía un reporte. <strong>No crea falta</strong> hasta que coordinación u orientación lo revisa.</p>
+    <p style="margin:0 0 6px;font-size:12px"><strong>Quién actúa:</strong> coordinador, orientador o director (validación, bitácora, abrir caso u orientación).</p>
+    <ul style="margin:0 0 14px 18px;font-size:12px;padding:0">
+      <li><strong>Abrir caso</strong> — proceso formal.</li>
+      <li><strong>Orientación</strong> — seguimiento psicosocial.</li>
+      <li><strong>Descartar</strong> — queda registro en auditoría.</li>
     </ul>
-    <p style="margin:0"><strong>Reiteración y focos</strong> (pestaña <strong>Conductas de riesgo</strong>): rankings por <strong>inasistencias</strong> y por <strong>faltas</strong> en el rango elegido (Tipo I por estudiante, focos por lugar, víctimas por nombre). El <strong>lugar</strong> y las <strong>personas afectadas</strong> se capturan al <strong>registrar la falta</strong>; con ellos se arman las tablas de lugares y víctimas de este panel.</p>
+    <h4 style="margin:0 0 8px;font-size:13px;font-weight:600">Conductas de riesgo (pestaña homónima)</h4>
+    <p style="margin:0 0 6px;font-size:12px;color:var(--ink)">Registros del observador con categoría formal (tipos I, II o III), ingresados por <strong>coordinación, orientación, dirección o docentes</strong> según permisos del sistema.</p>
+    <p style="margin:0 0 14px;font-size:12px;color:var(--ink)">Desde la misma sección, más abajo, <strong>Reiteración y focos</strong> resume inasistencias y faltas del rango de fechas (Tipo I por estudiante, lugares y personas afectadas indicadas al registrar la falta).</p>
+    <p style="margin:0;font-size:11px;color:var(--mut)">Tratamiento confidencial según política institucional.</p>
   </div>
 </div>
 </div>

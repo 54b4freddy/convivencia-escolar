@@ -356,14 +356,6 @@ async function renderSenales(tab){
   const canRepPrev=['Coordinador','Orientador','Director','Superadmin'].includes(CU.rol);
   const btnNueva=canNew?`<button type="button" class="btn btn-p btn-xs" onclick="openOvSenal()">+ Nueva conducta</button>`:'';
   tab.innerHTML=`
-    <div class="abanner ab-i" style="font-size:12px;line-height:1.55;max-width:920px;padding:12px 14px">
-      <p style="margin:0 0 8px"><strong>Conductas de riesgo</strong> — Área de convivencia. Revise <strong>alertas del estudiantado</strong> y la <strong>tabla de conductas</strong> según la pestaña; más abajo, el panel de <strong>reiteración y focos</strong> (faltas y asistencia en el rango elegido).</p>
-      <ul style="margin:0;padding-left:1.15rem">
-        <li style="margin-bottom:4px"><strong>Alertas ciudadanas:</strong> mensajes del canal estudiantil (Ley 1620). No crean falta hasta validación del equipo.</li>
-        <li><strong>Conductas de riesgo:</strong> registros formales (tipo I, II o III) ingresados por coordinación, orientación, dirección o docentes.</li>
-      </ul>
-      <p style="margin:8px 0 0;font-size:11px;opacity:0.92">Tratamiento confidencial según política institucional.</p>
-    </div>
     ${canRepPrev?`
     <div class="card" id="prevEstAlertasCard" style="margin-bottom:12px">
       <div class="ch">
@@ -503,23 +495,23 @@ async function refreshPrevencionReiteracion(){
   ]);
   const vic=(j.rank_victimas||[]).map(x=>[
     `<button type="button" class="btn btn-xs btn-i" style="padding:3px 8px" onclick="openPrevDet('victima','${String((x.victima||'').replace(/'/g,"&#39;"))}')">${escHtml(x.victima||'—')}</button>`,
-    `<span class="reit-bdg warn">≥2</span> <strong>${Number(x.menciones||0)}</strong>`
+    `<span class="reit-bdg warn">≥1</span> <strong>${Number(x.menciones||0)}</strong>`
   ]);
   const scope=j.scope&&j.scope.curso?`<span class="bdg bg">Curso: ${escHtml(j.scope.curso)}</span>`:'<span class="bdg bg">Todos los cursos</span>';
   const na=(j.rank_ausencias||[]).length,nt=(j.rank_tipoI||[]).length,nl=(j.rank_lugares||[]).length,nv=(j.rank_victimas||[]).length;
-  const emptyHint=(na+nt+nl+nv===0)?`<div class="abanner ab-i" style="font-size:12px;line-height:1.5;margin-bottom:10px">En este rango no hay filas por encima de los umbrales. Los datos provienen de <strong>asistencia</strong> (inasistencias por estudiante) y de <strong>faltas disciplinarias</strong> (Tipo I por estudiante; <em>lugar</em> y <em>personas afectadas</em> indicados al <strong>registrar la falta</strong>, para las tablas de focos y víctimas en Conductas de riesgo). Amplíe fechas con <strong>Año académico</strong> o registre tomas de asistencia y faltas con esos campos.</div>`:'';
+  const emptyHint=(na+nt+nl+nv===0)?`<p class="mut" style="font-size:11px;margin:0 0 10px;line-height:1.45">Sin filas que superen los umbrales en este rango. Pruebe <strong>Año académico</strong> o registre asistencia / faltas con lugar y personas afectadas en el alta.</p>`:'';
   box.innerHTML=`
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
       ${scope}
       <span class="bdg bg">Rango: ${escHtml(j.desde||r.desde)} → ${escHtml(j.hasta||r.hasta)}</span>
-      <span class="bdg bg">Umbrales: ausencias ≥3 · Tipo I ≥3 · mismo lugar ≥3 · misma víctima ≥2</span>
+      <span class="bdg bg">Umbrales: ausencias ≥3 · Tipo I ≥3 · lugar ≥3 · víctima ≥1 mención</span>
     </div>
     ${emptyHint}
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
       ${_tblRank('Top estudiantes — Ausencias (≥3)', ['Estudiante','Ausencias'], aus, 'Sin estudiantes que superen el umbral')}
       ${_tblRank('Top estudiantes — Faltas Tipo I (≥3)', ['Estudiante','Tipo I'], t1, 'Sin estudiantes que superen el umbral')}
       ${_tblRank('Ranking de lugares — Focos (≥3)', ['Lugar','Faltas'], lug, 'Sin lugares que superen el umbral')}
-      ${_tblRank('Ranking de víctimas — Posible acoso (≥2)', ['Víctima','Menciones'], vic, 'Sin víctimas con menciones repetidas')}
+      ${_tblRank('Ranking de víctimas (personas afectadas)', ['Víctima','Menciones'], vic, 'Sin víctimas en el rango (indique personas afectadas al registrar la falta)')}
     </div>`;
 }
 

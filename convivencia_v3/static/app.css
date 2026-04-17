@@ -169,6 +169,10 @@ textarea{resize:vertical;min-height:60px}
 .mh > button,.mh-ghost-close{background:none;border:none;font-size:21px;cursor:pointer;color:var(--mut);line-height:1;padding:0 2px;margin-top:-2px;font-family:inherit}
 .mh-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-top:-2px}
 .mh-actions .btn-est-reset{font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--r);letter-spacing:.02em;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mh.est-mh{align-items:flex-start;gap:12px}
+.mh.est-mh .est-mh-leading{flex:0 0 auto;padding-top:1px}
+.mh.est-mh .est-mh-title{flex:1;min-width:0}
+.mh.est-mh > .mh-ghost-close{flex-shrink:0}
 .mb{padding:16px 18px;overflow-y:auto;max-height:78vh}
 .mf{padding:11px 18px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:7px}
 

@@ -919,12 +919,17 @@ async function renderProto(tab){
   tab.innerHTML=`
     <div id="coProtoRoot" style="background:var(--surf);border:1px solid var(--brd);border-radius:var(--rl) var(--rl) 0 0;overflow:hidden">
       <div class="tbar">
-        <button type="button" class="tb-btn on" onclick="showP2('pp1',this)">Protocolos de atención</button>
+        <button type="button" class="tb-btn" onclick="showP2('pp1',this)">Protocolos de atención</button>
         <button type="button" class="tb-btn" onclick="showP2('pp2',this)">Procesos disciplinares</button>
-        <button type="button" class="tb-btn" onclick="showP2('pp3',this)">Protocolo por falta del catálogo</button>
+        <button type="button" class="tb-btn on" id="tbProtoP3" onclick="showP2('pp3',this)">Protocolo por falta del catálogo</button>
       </div>
     </div>
-    <div id="pp1" class="pgrid" style="margin-top:10px">
+    <div class="proto-toolstrip" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border:1px solid var(--brd);border-top:none;background:rgba(0,0,0,.02)">
+      <span style="font-size:11px;color:var(--mut);line-height:1.4;flex:1;min-width:200px">Las pestañas <strong>I / II / III</strong> son referencia general. La edición es por ítem del catálogo (tabla de abajo) o en <strong>Catálogo de faltas</strong>.</span>
+      <button type="button" class="btn btn-xs btn-i" onclick="showTab('co-cat',null)">Catálogo de faltas</button>
+      <button type="button" class="btn btn-xs btn-g" onclick="openOv('ov-cat-bulk')">Carga masiva al catálogo</button>
+    </div>
+    <div id="pp1" class="pgrid" style="margin-top:10px;display:none">
       <div class="pc"><div class="pc-h ph1">Protocolo Tipo I — Leve</div><div class="pc-b"><p>El docente reúne a las partes para mediar pedagógicamente.</p><p>• Fijar solución de manera imparcial.</p><p>• Diálogo con el director o coordinación.</p><p>• Con <strong>4 situaciones tipo I acumuladas</strong> se convoca el Comité de Convivencia y se activa proceso tipo II.</p></div></div>
       <div class="pc"><div class="pc-h ph2">Protocolo Tipo II — Grave</div><div class="pc-b"><p>• El director hace llamado formal además de las acciones tipo I.</p><p>• Atención en salud si la situación lo amerita.</p><p>• El coordinador rinde informe al rector.</p><p>• Citar e informar a acudientes inmediatamente.</p><p>• Remisión al Comité Escolar de Convivencia.</p></div></div>
       <div class="pc"><div class="pc-h ph3">Protocolo Tipo III — Muy grave</div><div class="pc-b"><p>• Garantizar atención inmediata en salud.</p><p>• Anotación en el observador firmada por el estudiante.</p><p>• Informar a padres o acudientes de manera inmediata.</p><p>• Remisión al Comité Escolar de Convivencia.</p><p>• Activación de la Ruta de Atención Integral (RAI).</p></div></div>
@@ -934,11 +939,11 @@ async function renderProto(tab){
       <div class="pc"><div class="pc-h ph2">Proceso — Tipo II</div><div class="pc-b"><p>• Trabajo pedagógico evaluado 3 días después del reintegro.</p><p>• El acudiente garantiza la reparación del daño.</p><p>• La desescolarización no aplica en tipos I o II.</p><p>• 4 situaciones tipo II = 1 situación tipo III.</p></div></div>
       <div class="pc"><div class="pc-h ph3">Proceso — Tipo III</div><div class="pc-b"><p>• En riesgo inminente: llamar a Policía Nacional.</p><p>• Informe inmediato al rector y convocatoria del Comité.</p><p>• Activación de la Ruta de Atención Integral.</p></div></div>
     </div>
-    <div id="pp3" style="display:none;margin-top:10px">
+    <div id="pp3" style="display:block;margin-top:10px">
       <div class="card">
         <div class="ch"><h3>Protocolo y sanción por ítem del catálogo</h3></div>
         <div class="mb" style="padding:12px 14px">
-          <div class="abanner ab-i" style="margin-bottom:10px">Este texto es el que se <strong>muestra al docente</strong> al registrar una falta (pasos 2 y 4). Las tarjetas superiores son referencia general por tipo.</div>
+          <p class="mut" style="font-size:11px;margin:0 0 10px;line-height:1.45">Texto que verá el docente al registrar una falta (pasos 2 y 4). Use <strong>Editar protocolo y sanción</strong> en cada fila.</p>
           <div class="table-wrap">
             <table><thead><tr><th>Descripción</th><th style="width:11%">Tipo</th><th>Protocolo</th><th>Sanción / medida</th><th style="width:130px"></th></tr></thead>
             <tbody id="tProtoCat">${htmlFilasProtoCat(cat)}</tbody></table>
