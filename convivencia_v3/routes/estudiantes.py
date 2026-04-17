@@ -114,6 +114,7 @@ def _import_insert_estudiante(
     n1a,
     n2a,
     parentesco,
+    clave_portal: Optional[str] = None,
 ):
     p = ph()
     execute(
@@ -155,7 +156,8 @@ def _import_insert_estudiante(
         _crear_acudiente(conn, cedula, acudiente, curso, col_id, eid)
     dnum = solo_numeros(doc_id)
     if len(dnum) >= 5:
-        ok_m, err_m = _sync_usuario_estudiante(conn, eid, col_id, nombre, curso, dnum, None)
+        clave_eff = (clave_portal or "").strip() or None
+        ok_m, err_m = _sync_usuario_estudiante(conn, eid, col_id, nombre, curso, dnum, clave_eff)
         if not ok_m:
             execute(conn, f"DELETE FROM usuarios WHERE estudiante_id={p}", (eid,))
             execute(conn, f"DELETE FROM estudiantes WHERE id={p}", (eid,))
@@ -442,6 +444,7 @@ def api_importar_estudiantes():
             parentesco = (pts[14] or "").strip()[:60] if len(pts) > 14 else ""
             telefono = solo_numeros(pts[15]) if len(pts) > 15 else ""
             direccion = pts[16].strip() if len(pts) > 16 else ""
+            clave_portal = (pts[17] or "").strip() if len(pts) > 17 else ""
             nombre = nombre_desde_partes(ap1e, ap2e, n1e, n2e)
             acudiente = nombre_desde_partes(ap1a, ap2a, n1a, n2a)
             if not ap1e or not n1e or not curso:
@@ -473,6 +476,7 @@ def api_importar_estudiantes():
                     n1a,
                     n2a,
                     parentesco,
+                    clave_portal or None,
                 )
             except ValueError as ex:
                 errores.append(f"Línea {i}: {ex}")
@@ -489,6 +493,7 @@ def api_importar_estudiantes():
         telefono = solo_numeros(pts[5]) if len(pts) > 5 else ""
         direccion = pts[6].strip() if len(pts) > 6 else ""
         doc_id = solo_numeros(pts[7]) if len(pts) > 7 else ""
+        clave_portal = (pts[8] or "").strip() if len(pts) > 8 else ""
         if not nombre or not curso:
             errores.append(f"Línea {i}: falta nombre completo o curso (o use formato extendido de 17 columnas)")
             continue
@@ -497,7 +502,28 @@ def api_importar_estudiantes():
             continue
         try:
             _import_insert_estudiante(
-                conn, col_id, curso, doc_id, nombre, barr, acudiente, cedula, telefono, direccion, "", "", "", "", "", "", "", "", "", "", ""
+                conn,
+                col_id,
+                curso,
+                doc_id,
+                nombre,
+                barr,
+                acudiente,
+                cedula,
+                telefono,
+                direccion,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                clave_portal or None,
             )
         except ValueError as ex:
             errores.append(f"Línea {i}: {ex}")

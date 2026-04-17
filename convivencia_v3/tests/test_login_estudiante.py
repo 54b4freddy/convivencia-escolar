@@ -200,3 +200,22 @@ def test_cambiar_clave_estudiante_me(client):
     _logout(client)
     ok = client.post("/api/login", json={"usuario": doc, "contrasena": "otraMas123"})
     assert ok.status_code == 200
+
+
+def test_import_estudiante_clave_portal_columna_opcional(client):
+    """Carga masiva extendida: columna 18 opcional fija la contraseña del portal estudiante."""
+    _login(client, "admin", "admin123")
+    doc = "9988776655443"
+    line = (
+        "CC,"
+        + doc
+        + ",ImpZ,ZZ,Alum,Test,6A,Ninguna identificada,"
+        "CC,11122233344,Garcia,Lopez,Papa,,Padre,3001112233,Calle 1,ClaveImp99"
+    )
+    rv = client.post("/api/estudiantes/importar", json={"texto": line, "curso_default": ""})
+    assert rv.status_code == 200, rv.get_json()
+    assert rv.get_json().get("insertados") == 1
+    _logout(client)
+    ok = _login(client, doc, "ClaveImp99", colegio_id=1)
+    assert ok.status_code == 200
+    assert ok.get_json().get("usuario", {}).get("rol") == "Estudiante"

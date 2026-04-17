@@ -250,7 +250,16 @@
 <!-- OVERLAY: Estudiante -->
 <div class="ov" id="ov-est">
 <div class="modal modal-lg" style="margin-top:14px">
-  <div class="mh"><div class="mh-l"><h3 id="estTit">Nuevo estudiante</h3><small>El acudiente accederá con el documento indicado como usuario y contraseña inicial</small></div><button onclick="closeOv('ov-est')">×</button></div>
+  <div class="mh">
+    <div class="mh-l" style="flex:1;min-width:0">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;row-gap:6px">
+        <h3 id="estTit" style="margin:0">Nuevo estudiante</h3>
+        <button type="button" class="btn btn-xs btn-i" id="eResetClaveBtn" style="display:none" onclick="resetClavePortalEstudiante()">Restablecer contraseña del portal (4 últimos dígitos del documento)</button>
+      </div>
+      <small id="estSubHint">El acudiente accederá con el documento indicado como usuario y contraseña inicial</small>
+    </div>
+    <button type="button" onclick="closeOv('ov-est')">×</button>
+  </div>
   <div class="mb">
     <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:9px">DATOS DEL ESTUDIANTE</div>
     <div class="fr">
@@ -267,16 +276,6 @@
     <div class="fr fr1" style="margin-top:8px"><div><label class="fl">Barreras para el aprendizaje y la participación</label>
       <select id="eBarreras">{% for b in barreras_opciones %}<option>{{ b }}</option>{% endfor %}</select>
     </div></div>
-    <div class="fsec">PORTAL DEL ESTUDIANTE (alerta ciudadana)</div>
-    <div class="fr fr1" style="margin-top:8px">
-      <div class="fhint">El estudiante ingresa con su <strong>documento</strong> y contraseña: por defecto los <strong>4 últimos dígitos</strong> del documento (puede cambiarla al iniciar sesión). Si olvida la contraseña, use <strong>Restablecer</strong> (vuelve a los 4 últimos dígitos del documento).</div>
-      <div><label class="fl">Nueva contraseña del portal (opcional)</label>
-        <input id="eClaveEst" type="password" maxlength="80" autocomplete="new-password" placeholder="Solo si desea cambiarla al guardar; vacío = no cambiar">
-      </div>
-      <div id="eResetClaveRow" style="display:none;margin-top:10px">
-        <button type="button" class="btn btn-xs" onclick="resetClavePortalEstudiante()">Restablecer contraseña (4 últimos dígitos del documento)</button>
-      </div>
-    </div>
     <div class="fsec">DATOS DEL ACUDIENTE</div>
     <div class="fr">
       <div><label class="fl">Tipo de documento</label><select id="eTipoDocAcu"><option value="">Seleccionar</option>{% for t in tipos_documento %}<option>{{ t }}</option>{% endfor %}</select></div>
@@ -346,7 +345,7 @@
 <!-- OVERLAY: Importar estudiantes -->
 <div class="ov" id="ov-import">
 <div class="modal modal-lg" style="margin-top:14px">
-  <div class="mh"><div class="mh-l"><h3>Carga masiva de estudiantes</h3><small><strong>Recomendado (17 columnas, CSV):</strong> tipo_doc_est, documento_est, apellido1, apellido2, nombre1, nombre2, curso, barreras, tipo_doc_acu, documento_acu, apellido1_acu, apellido2_acu, nombre1_acu, nombre2_acu, parentesco, teléfono, dirección. <strong>Legado (8):</strong> nombre completo estudiante, curso, barreras, nombre completo acudiente, doc. acudiente, tel, dir, doc. estudiante.</small></div><button onclick="closeOv('ov-import')">×</button></div>
+  <div class="mh"><div class="mh-l"><h3>Carga masiva de estudiantes</h3><small><strong>Recomendado (17 u 18 columnas, CSV):</strong> tipo_doc_est, documento_est, apellido1, apellido2, nombre1, nombre2, curso, barreras, tipo_doc_acu, documento_acu, apellido1_acu, apellido2_acu, nombre1_acu, nombre2_acu, parentesco, teléfono, dirección. <strong>Columna 18 (opcional):</strong> contraseña portal del estudiante; si va vacía, se usan los 4 últimos dígitos del documento. <strong>Legado (8 u 9 columnas):</strong> nombre completo estudiante, curso, barreras, nombre completo acudiente, doc. acudiente, tel, dir, doc. estudiante. <strong>Columna 9 (opcional):</strong> misma contraseña portal.</small></div><button onclick="closeOv('ov-import')">×</button></div>
   <div class="mb">
     <div class="abanner ab-i">
       <div>
@@ -358,7 +357,7 @@
     </div>
     <div style="margin-bottom:10px"><label class="fl">Curso por defecto (si no viene en la lista)</label><select id="impCurso" style="max-width:200px"><option value="">Seleccionar</option></select></div>
     <label class="fl">Lista de estudiantes</label>
-    <textarea id="impData" rows="10" style="font-family:monospace;font-size:12px;background:#faf8f4" placeholder="# Extendido (una fila ejemplo):&#10;Tarjeta de identidad (TI),1234567890,García,López,Ana,María,6A,Ninguna identificada,Cédula de ciudadanía (CC),9876543210,García,Pérez,Carlos,,Padre,3001234567,Calle 10 5-20&#10;# Legado:&#10;Alejandro Pérez, 6A, Ninguna identificada, Roberto Pérez, 1234567890, 3001234567, Calle 10, 1090123456"></textarea>
+    <textarea id="impData" rows="10" style="font-family:monospace;font-size:12px;background:#faf8f4" placeholder="# Extendido (17 cols; 18ª opcional = clave portal):&#10;Tarjeta de identidad (TI),1234567890,García,López,Ana,María,6A,Ninguna identificada,Cédula de ciudadanía (CC),9876543210,García,Pérez,Carlos,,Padre,3001234567,Calle 10 5-20,MiClaveOpc9&#10;# Legado (8 cols; 9ª opcional = clave portal):&#10;Alejandro Pérez, 6A, Ninguna identificada, Roberto Pérez, 1234567890, 3001234567, Calle 10, 1090123456"></textarea>
     <div id="impPreview" style="margin-top:8px"></div>
   </div>
   <div class="mf"><button class="btn" onclick="closeOv('ov-import')">Cancelar</button><button class="btn btn-g" onclick="previewImport()">Previsualizar</button><button class="btn btn-p" onclick="ejecutarImport()">Importar</button></div>

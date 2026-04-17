@@ -126,7 +126,7 @@ Opcionales:
 | Variable | Uso |
 |----------|-----|
 | `SESSION_COOKIE_SECURE` | Con HTTPS en Railway suele ser `1` (por defecto en producción ya puede aplicarse según el código) |
-| `REGISTRATION_OPEN` | `0` si quieres ocultar/cerrar el registro desde login |
+| `REGISTRATION_OPEN` | `1` solo si necesitas el endpoint legado `/api/registrar-usuario`; por defecto el registro público está cerrado |
 
 ### 4.5 Dominio público (URL para el móvil)
 

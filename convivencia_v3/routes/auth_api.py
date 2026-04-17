@@ -143,12 +143,13 @@ def api_logout():
 
 
 def _registro_publico_permitido():
-    return os.environ.get("REGISTRATION_OPEN", "1").lower() in ("1", "true", "yes", "on")
+    """Por defecto cerrado: los accesos se crean desde gestión (usuarios / estudiantes). REGISTRATION_OPEN=1 solo para entornos de prueba."""
+    return os.environ.get("REGISTRATION_OPEN", "0").lower() in ("1", "true", "yes", "on")
 
 
 @bp.route("/api/registrar-usuario", methods=["POST"])
 def api_registrar_usuario():
-    """Alta desde login (asigna al primer colegio). Desactivar en producción: REGISTRATION_OPEN=0."""
+    """Alta desde login (legado; desactivado por defecto). Activar solo con REGISTRATION_OPEN=1."""
     if not _registro_publico_permitido():
         return jsonify({"ok": False, "error": "El registro público está desactivado."}), 403
     d = request.json or {}

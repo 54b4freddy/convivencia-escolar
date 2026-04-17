@@ -1068,7 +1068,7 @@ async function renderReportesEst(tab) {
     <div class="card">
       <div class="ch"><h3>Cómo entra el estudiante</h3></div>
       <div class="mb" style="padding:12px 14px;font-size:13px;line-height:1.55;color:var(--mut)">
-        <p style="margin:0 0 8px"><strong>Cómo entra el estudiante</strong> — con <strong>documento</strong> y contraseña del portal (por defecto los <strong>4 últimos dígitos</strong> del documento). En login marca <strong>«Soy estudiante»</strong>. Si el documento está en más de un colegio, el sistema pide el <strong>nombre de la I.E.</strong> (como en el carnet). La página pública <code>/reporte/&lt;institución&gt;</code> usa el mismo documento y contraseña. Si olvida la contraseña, en <strong>Editar estudiante</strong> use <strong>Restablecer</strong>.</p>
+        <p style="margin:0 0 8px"><strong>Cómo entra el estudiante</strong> — debe existir su ficha en el colegio (alta o carga masiva), que crea el acceso al portal. En <code>/login</code> marca <strong>«Soy estudiante»</strong>, usuario = <strong>documento</strong> (sin puntos) y la contraseña que definió la institución (por defecto los <strong>4 últimos dígitos</strong> del documento si no se indicó otra). Si el documento está en más de un colegio, el sistema pide el <strong>nombre de la I.E.</strong> La página pública <code>/reporte/&lt;institución&gt;</code> usa el mismo documento y contraseña. El personal autorizado puede <strong>restablecer la contraseña</strong> desde <strong>Editar estudiante</strong>.</p>
         <p style="margin:0">Las alertas <strong>no crean falta</strong> solas: quedan pendientes hasta que usted elija abrir caso, orientación o descartar. Cada cambio de estado exige una <strong>nota de al menos 10 caracteres</strong> y queda registrada en la <strong>bitácora</strong> del reporte.</p>
       </div>
     </div>
@@ -1680,11 +1680,11 @@ async function guardarFalta(){
 const _IDS_EST=['eTipoDocEst','eDocId','eAp1Est','eAp2Est','eNom1Est','eNom2Est','eBarreras','eTipoDocAcu','eAp1Acu','eAp2Acu','eNom1Acu','eNom2Acu','eParentescoAcu','eCed','eTel','eDir'];
 function openNuevoEst(){
   editEstId=null;document.getElementById('estTit').textContent='Nuevo estudiante';
+  const h=document.getElementById('estSubHint');if(h)h.textContent='El acudiente accederá con el documento indicado como usuario y contraseña inicial';
   _IDS_EST.forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.classList.remove('ok','err-inp');}});
   document.getElementById('eCurso').value='';
   document.getElementById('eErr').textContent='';
-  const ecl=document.getElementById('eClaveEst');if(ecl)ecl.value='';
-  const rst=document.getElementById('eResetClaveRow');if(rst)rst.style.display='none';
+  const rb=document.getElementById('eResetClaveBtn');if(rb)rb.style.display='none';
   ['eCedErr','eTelErr'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   openOv('ov-est');
 }
@@ -1692,6 +1692,7 @@ function openNuevoEst(){
 function editarEst(id){
   const e=(window._ec||[]).find(x=>x.id===id);if(!e)return;
   editEstId=id;document.getElementById('estTit').textContent='Editar estudiante';
+  const h=document.getElementById('estSubHint');if(h)h.textContent='El acudiente accede con su documento; el estudiante con el documento del estudiante. Contraseña: use Restablecer si hace falta.';
   document.getElementById('eCurso').value=e.curso;
   document.getElementById('eTipoDocEst').value=e.tipo_doc_est||'';
   document.getElementById('eDocId').value=e.documento_identidad||'';
@@ -1711,10 +1712,8 @@ function editarEst(id){
   document.getElementById('eCed').value=e.cedula_acudiente||'';
   document.getElementById('eTel').value=e.telefono||'';
   document.getElementById('eDir').value=e.direccion||'';
-  const ecl=document.getElementById('eClaveEst');
-  if(ecl)ecl.value='';
-  const rst=document.getElementById('eResetClaveRow');
-  if(rst)rst.style.display=(CU.rol==='Coordinador'||CU.rol==='Superadmin'||CU.rol==='Director')?'block':'none';
+  const rb=document.getElementById('eResetClaveBtn');
+  if(rb)rb.style.display=(CU.rol==='Coordinador'||CU.rol==='Superadmin'||CU.rol==='Director')?'inline-block':'none';
   openOv('ov-est');
 }
 
@@ -1755,8 +1754,6 @@ async function guardarEstudiante(){
     parentesco_acu:document.getElementById('eParentescoAcu').value.trim(),
     cedula_acudiente:cedula,telefono:tel,direccion:document.getElementById('eDir').value.trim(),
   };
-  const ecl=document.getElementById('eClaveEst');
-  if(ecl&&ecl.value.trim())body.clave_estudiante=ecl.value.trim();
   const url=editEstId?`/api/estudiantes/${editEstId}`:'/api/estudiantes';
   const r=await api(url,{method:editEstId?'PATCH':'POST',body:JSON.stringify(body)});
   if(r.ok){closeOv('ov-est');toast(editEstId?'Estudiante actualizado':'Estudiante agregado. Usuario acudiente creado.');editEstId=null;renderCurrentTab();}
