@@ -142,10 +142,10 @@ function buildNav(){
   // Acción rápida global: registrar falta (solo roles autorizados)
   if(['Coordinador','Orientador','Director','Docente'].includes(CU.rol)){
     const wrap=document.createElement('div');
-    wrap.className='px-2 pt-2.5 pb-1.5';
+    wrap.className='px-2 pt-2 pb-2';
     const b=document.createElement('button');
     b.type='button';
-    b.className='btn btn-p flex w-full justify-center shadow-sm shadow-black/25';
+    b.className='btn btn-p flex w-full justify-center px-3 py-2.5 text-[13px] shadow-sm shadow-black/25';
     b.textContent='+ Registrar falta';
     b.onclick=()=>{
       openOv('ov-falta');
@@ -155,8 +155,8 @@ function buildNav(){
     nav.appendChild(wrap);
   }
   (NAV[CU.rol]||[]).forEach(item=>{
-    if(item.sep){const d=document.createElement('div');d.className='ni-sep px-2.5 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-widest text-white/25';d.textContent=item.sep;nav.appendChild(d);return;}
-    const d=document.createElement('div');d.className='ni flex cursor-pointer items-center gap-2 rounded-md border-l-2 border-transparent px-2.5 py-2 text-xs font-medium text-white/45 transition-all hover:bg-white/[0.06] hover:text-white/85';d.textContent=item.l;d.setAttribute('data-tab',item.id);
+    if(item.sep){const d=document.createElement('div');d.className='ni-sep px-2.5 pb-1.5 pt-3 text-[11px] font-semibold uppercase tracking-wide text-white/30';d.textContent=item.sep;nav.appendChild(d);return;}
+    const d=document.createElement('div');d.className='ni flex cursor-pointer items-center gap-2.5 rounded-lg border-l-[3px] border-transparent px-2.5 py-2.5 text-[13px] font-medium leading-snug text-white/50 transition-all hover:bg-white/[0.06] hover:text-white/90';d.textContent=item.l;d.setAttribute('data-tab',item.id);
     d.onclick=()=>showTab(item.id,d);nav.appendChild(d);
   });
 }

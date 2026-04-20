@@ -5,39 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Convivencia Escolar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='tailwind.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
-<body class="min-h-screen bg-[var(--bg)] font-sans text-[13px] text-[var(--ink)] antialiased">
+<body class="min-h-screen bg-[var(--bg)] font-sans text-[14px] leading-relaxed text-[var(--ink)] antialiased">
 <div class="sb-backdrop fixed inset-0 z-[25] bg-black/45" id="sbBackdrop" onclick="closeSidebar()"></div>
 <aside class="sb flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col border-r border-white/[0.06] bg-[var(--ink)] shadow-[2px_0_20px_rgba(0,0,0,0.12)]">
-  <div class="border-b border-white/[0.08] px-4 pb-3 pt-4">
-    <h2 id="sbSchool" class="text-xs font-semibold leading-tight text-[var(--gold)]">Convivencia Escolar</h2>
-    <p class="mt-0.5 text-[10px] tracking-wide text-white/35">Sistema disciplinar</p>
+  <div class="border-b border-white/[0.08] px-4 pb-3.5 pt-5">
+    <h2 id="sbSchool" class="text-[13px] font-semibold leading-snug tracking-tight text-[var(--gold)]">Convivencia Escolar</h2>
+    <p class="mt-1 text-[11px] tracking-wide text-white/40">Sistema disciplinar</p>
   </div>
-  <div id="sbUser" class="sb-user mx-2 my-2 rounded-lg border-l-[3px] border-[var(--gold)] bg-white/[0.05] px-2.5 py-2">
-    <div class="un text-xs font-medium text-white" id="sbNombre">—</div>
-    <div class="ur mt-0.5 text-[11px] text-white/40" id="sbRol">—</div>
+  <div id="sbUser" class="sb-user mx-2 my-3 rounded-lg border-l-[3px] border-[var(--gold)] bg-white/[0.05] px-3 py-2.5">
+    <div class="un text-[13px] font-medium leading-snug text-white" id="sbNombre">—</div>
+    <div class="ur mt-1 text-[12px] leading-snug text-white/45" id="sbRol">—</div>
   </div>
-  <nav id="mainNav" class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2"></nav>
-  <div class="border-t border-white/[0.08] p-2.5">
-    <button type="button" class="w-full rounded-lg border border-white/[0.12] bg-transparent py-1.5 text-[11px] text-white/40 transition hover:border-red-400/50 hover:text-red-300" onclick="doLogout()">⎋ Cerrar sesión</button>
+  <nav id="mainNav" class="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2"></nav>
+  <div class="border-t border-white/[0.08] p-3">
+    <button type="button" class="w-full rounded-lg border border-white/[0.12] bg-transparent py-2 text-[12px] leading-snug text-white/45 transition hover:border-red-400/50 hover:text-red-300" onclick="doLogout()">⎋ Cerrar sesión</button>
   </div>
 </aside>
 <div class="main flex min-h-screen flex-col">
-  <header class="topbar sticky top-0 z-20 flex items-center justify-between border-b border-[var(--brd)] bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm md:px-[18px]">
-    <div class="topbar-l flex items-center gap-2.5">
-      <button type="button" class="hamb hidden h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[var(--brd)] bg-white text-[var(--ink)] shadow-sm transition active:translate-y-px max-[720px]:inline-flex" onclick="toggleSidebar()" aria-label="Menú">☰</button>
-      <h1 id="topTitle" class="text-sm font-semibold text-[var(--ink)]">Inicio</h1>
+  <header class="topbar sticky top-0 z-20 flex items-center justify-between border-b border-[var(--brd)] bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm md:px-[22px]">
+    <div class="topbar-l flex items-center gap-3">
+      <button type="button" class="hamb hidden h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-[var(--brd)] bg-white text-[var(--ink)] shadow-sm transition active:translate-y-px max-[720px]:inline-flex" onclick="toggleSidebar()" aria-label="Menú">☰</button>
+      <h1 id="topTitle" class="text-[13px] font-semibold leading-snug tracking-tight text-[var(--ink)] md:text-[15px]">Inicio</h1>
     </div>
-    <div class="topbar-r flex items-center gap-2">
-      <label class="text-[11px] text-[var(--mut)]" title="Solo se listan faltas del año académico seleccionado">Año:</label>
-      <select class="yr-sel cursor-pointer rounded-lg border border-[var(--brd)] bg-white px-2 py-1.5 text-xs text-ink shadow-sm focus:border-[var(--ic)] focus:outline-none focus:ring-2 focus:ring-[#378ADD33]" id="yrSel" onchange="renderCurrentTab()"></select>
+    <div class="topbar-r flex items-center gap-2.5">
+      <label class="text-[12px] text-[var(--mut)]" title="Solo se listan faltas del año académico seleccionado">Año:</label>
+      <select class="yr-sel cursor-pointer rounded-lg border border-[var(--brd)] bg-white px-2.5 py-2 text-[13px] text-[var(--ink)] shadow-sm focus:border-[var(--ic)] focus:outline-none focus:ring-2 focus:ring-[#378ADD33]" id="yrSel" onchange="renderCurrentTab()"></select>
     </div>
   </header>
   <div id="citaPendBar" class="cita-pend-bar" style="display:none"></div>
-  <div class="content flex-1 px-3 py-4 md:px-[18px]" id="mainContent"></div>
+  <div class="content flex-1 px-4 py-5 md:px-6 md:py-6" id="mainContent"></div>
 </div>
 
 <!-- OVERLAY: Registrar falta -->

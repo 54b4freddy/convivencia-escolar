@@ -27,6 +27,6 @@
 @layer components {
   /* Estado activo del menú lateral (clase .on la pone showTab) */
   .ni.on {
-    @apply border-l-[var(--gold)] bg-[rgba(201,168,76,0.1)] text-[var(--gold)];
+    @apply border-l-[var(--gold)] bg-[rgba(201,168,76,0.12)] text-[var(--gold)] font-semibold;
   }
 }
