@@ -11,8 +11,8 @@
 </head>
 <body class="min-h-screen bg-[var(--bg)] font-sans text-[13px] text-[var(--ink)] antialiased">
 <div class="sb-backdrop fixed inset-0 z-[25] bg-black/45" id="sbBackdrop" onclick="closeSidebar()"></div>
-<aside class="sb flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col bg-[var(--ink)] shadow-[4px_0_32px_rgba(0,0,0,0.18)]">
-  <div class="border-b border-white/[0.08] px-3.5 pb-2.5 pt-4">
+<aside class="sb flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col border-r border-white/[0.06] bg-[var(--ink)] shadow-[2px_0_20px_rgba(0,0,0,0.12)]">
+  <div class="border-b border-white/[0.08] px-4 pb-3 pt-4">
     <h2 id="sbSchool" class="text-xs font-semibold leading-tight text-[var(--gold)]">Convivencia Escolar</h2>
     <p class="mt-0.5 text-[10px] tracking-wide text-white/35">Sistema disciplinar</p>
   </div>
@@ -20,7 +20,7 @@
     <div class="un text-xs font-medium text-white" id="sbNombre">—</div>
     <div class="ur mt-0.5 text-[11px] text-white/40" id="sbRol">—</div>
   </div>
-  <nav id="mainNav" class="flex flex-1 flex-col overflow-y-auto px-1 py-1"></nav>
+  <nav id="mainNav" class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2"></nav>
   <div class="border-t border-white/[0.08] p-2.5">
     <button type="button" class="w-full rounded-lg border border-white/[0.12] bg-transparent py-1.5 text-[11px] text-white/40 transition hover:border-red-400/50 hover:text-red-300" onclick="doLogout()">⎋ Cerrar sesión</button>
   </div>
@@ -42,9 +42,15 @@
 
 <!-- OVERLAY: Registrar falta -->
 <div class="ov" id="ov-falta">
-<div class="modal modal-lg" style="margin-top:14px">
-  <div class="mh"><div class="mh-l"><h3>Registrar falta</h3><small>Complete los 5 pasos</small></div><button onclick="closeOv('ov-falta')">×</button></div>
-  <div class="mb">
+<div class="modal modal-lg">
+  <div class="mh falta-mh">
+    <div class="mh-l">
+      <h3>Registrar falta</h3>
+      <small>Complete los 5 pasos</small>
+    </div>
+    <button type="button" class="falta-close" onclick="closeOv('ov-falta')" aria-label="Cerrar">×</button>
+  </div>
+  <div class="mb falta-mb">
     <div class="step">
       <div class="sn">1</div>
       <div class="sb2">
@@ -70,12 +76,12 @@
           </div>
         </div>
         <div id="rAlerta" style="display:none" class="abanner ab-r">⚠ Las faltas Tipo II y III requieren notificación inmediata al director de grupo y coordinador.</div>
-        <div id="rCatRef" style="display:none;margin-top:10px;padding:10px 12px;background:var(--ibg);border-radius:var(--r);border:1px solid var(--brd)">
-          <div style="font-size:10px;font-weight:600;color:var(--ic);letter-spacing:.04em">REFERENCIA DEL CATÁLOGO (manual de convivencia)</div>
-          <p style="font-size:11px;color:var(--mut);margin:6px 0 8px">Guía para el docente; ajuste siempre al contexto real. Lo registrado en el paso 4 es su actuación concreta.</p>
-          <div><div class="plbl">Protocolo sugerido</div><div class="pbox t1" id="rProtoSug" style="min-height:32px;white-space:pre-wrap;font-size:12px"></div></div>
-          <div style="margin-top:8px"><div class="plbl">Sanción o medida de referencia</div><div class="pbox t1" id="rSancSug" style="min-height:32px;white-space:pre-wrap;font-size:12px"></div></div>
-          <button type="button" class="btn btn-g btn-xs" style="margin-top:10px" onclick="aplicarSugerenciaAProc()">Copiar referencia al paso 4 (proceso inicial)</button>
+        <div id="rCatRef" class="falta-catref" style="display:none">
+          <div>REFERENCIA DEL CATÁLOGO (manual de convivencia)</div>
+          <p>Guía para el docente; ajuste siempre al contexto real. Lo registrado en el paso 4 es su actuación concreta.</p>
+          <div><div class="plbl">Protocolo sugerido</div><div class="pbox t1" id="rProtoSug"></div></div>
+          <div class="falta-catref-gap"><div class="plbl">Sanción o medida de referencia</div><div class="pbox t1" id="rSancSug"></div></div>
+          <button type="button" class="btn btn-g btn-xs falta-catref-btn" onclick="aplicarSugerenciaAProc()">Copiar referencia al paso 4 (proceso inicial)</button>
         </div>
 
       </div>
@@ -83,9 +89,9 @@
     <div class="step">
       <div class="sn">3</div>
       <div class="sb2">
-        <div class="fr" style="gap:14px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px">
-          <div style="min-width:200px;flex:1">
-            <select id="rLugar" style="width:100%;max-width:280px;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px" onchange="toggleRLugarOtro()">
+        <div class="falta-row-split">
+          <div>
+            <select id="rLugar" class="max-w-full" onchange="toggleRLugarOtro()">
               <option value="">— Lugar —</option>
               <option value="Baños">Baños</option>
               <option value="Patio">Patio</option>
@@ -97,11 +103,11 @@
               <option value="Transporte">Transporte</option>
               <option value="Otro">Otro…</option>
             </select>
-            <input id="rLugarOtro" placeholder="Ej: Aula 201" style="display:none;margin-top:8px;width:100%;max-width:280px;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px" maxlength="80">
+            <input id="rLugarOtro" class="mt-2 max-w-full" placeholder="Ej: Aula 201" style="display:none" maxlength="80">
           </div>
-          <div style="min-width:220px;flex:1.2">
-            <input id="rAfectInp" style="width:100%;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px" placeholder="Persona afectada (opcional). Enter para añadir." maxlength="60" onkeydown="if(event.key==='Enter'){event.preventDefault();addRAfect();}">
-            <div id="rAfectChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+          <div>
+            <input id="rAfectInp" class="w-full" placeholder="Persona afectada (opcional). Enter para añadir." maxlength="60" onkeydown="if(event.key==='Enter'){event.preventDefault();addRAfect();}">
+            <div id="rAfectChips" class="mt-2 flex flex-wrap gap-1.5"></div>
           </div>
         </div>
         <div class="st">¿Qué ocurrió?</div>
@@ -112,23 +118,23 @@
       <div class="sn">4</div>
       <div class="sb2">
         <div class="st">¿Qué acción tomó inmediatamente?</div>
-        <div id="rCatRefMini" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--t1g);border-radius:var(--r);border:1px solid var(--brd);font-size:11px">
-          <strong style="color:var(--t1c)">Referencia del catálogo</strong> (según la falta elegida en el paso 2)
-          <div style="margin-top:6px"><span class="plbl" style="font-size:9px">Protocolo</span><div id="rProtoSugMini" style="white-space:pre-wrap;color:var(--ink);margin-top:2px"></div></div>
-          <div style="margin-top:6px"><span class="plbl" style="font-size:9px">Sanción / medida</span><div id="rSancSugMini" style="white-space:pre-wrap;color:var(--ink);margin-top:2px"></div></div>
+        <div id="rCatRefMini" class="falta-ref-mini" style="display:none">
+          <strong>Referencia del catálogo</strong> (según la falta elegida en el paso 2)
+          <div class="falta-ref-mini-row"><span class="plbl">Protocolo</span><div id="rProtoSugMini" class="falta-ref-mini-txt"></div></div>
+          <div class="falta-ref-mini-row"><span class="plbl">Sanción / medida</span><div id="rSancSugMini" class="falta-ref-mini-txt"></div></div>
         </div>
         <div class="fr fr1"><div><label class="fl">Proceso disciplinar inicial</label><textarea id="rProc" rows="3" placeholder="Diálogo, llamado verbal, retención de objeto, remisión..."></textarea></div></div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--brd)">
-          <label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
+        <div class="falta-cita-block">
+          <label class="fl falta-cita-lbl">
             <input type="checkbox" id="rCitarAcu" onchange="toggleRCita()"> Citar a acudiente (fecha y hora propuestas; el acudiente confirma en su portal)
           </label>
-          <div id="rCitaFields" style="display:none;margin-top:10px">
-            <div id="rAcuCitaDatos" style="display:none;margin-bottom:12px;padding:11px 12px;background:var(--ibg);border-radius:var(--r);border:1px solid var(--brd)">
-              <div class="plbl" style="margin-bottom:6px">Datos del acudiente (para contacto telefónico)</div>
-              <div id="rAcuCitaBody" style="font-size:12px;line-height:1.55"></div>
+          <div id="rCitaFields" class="mt-2.5" style="display:none">
+            <div id="rAcuCitaDatos" class="falta-acu-box" style="display:none">
+              <div class="plbl mb-1.5">Datos del acudiente (para contacto telefónico)</div>
+              <div id="rAcuCitaBody"></div>
             </div>
             <label class="fl">Fecha y hora de la cita</label>
-            <input type="datetime-local" id="rCitaDt" style="max-width:280px;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px">
+            <input type="datetime-local" id="rCitaDt" class="falta-dt max-w-[280px]">
           </div>
         </div>
       </div>
@@ -153,7 +159,10 @@
       </div>
     </div>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-falta')">Cancelar</button><button class="btn btn-p" onclick="guardarFalta()">Registrar falta</button></div>
+  <div class="mf falta-mf">
+    <button type="button" class="btn" onclick="closeOv('ov-falta')">Cancelar</button>
+    <button type="button" class="btn btn-p" onclick="guardarFalta()">Registrar falta</button>
+  </div>
 </div>
 </div>
 

@@ -178,6 +178,120 @@ textarea{resize:vertical;min-height:60px}
 .sb2{flex:1}
 .st{font-size:12px;font-weight:600;margin-bottom:9px}
 
+/* Modal registrar falta (#ov-falta): pasos en tarjetas + scroll estable */
+#ov-falta .modal.modal-lg{
+  margin-top:14px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border-radius:16px;
+  max-height:min(92vh,860px);
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.04);
+}
+#ov-falta .mh.falta-mh{align-items:center;padding:14px 18px 14px 20px}
+#ov-falta .mh.falta-mh > button.falta-close{
+  border-radius:10px;
+  width:38px;
+  height:38px;
+  margin-top:0;
+  padding:0;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  transition:background .15s,color .15s;
+}
+#ov-falta .mh.falta-mh > button.falta-close:hover{background:rgba(0,0,0,.07);color:var(--ink)}
+#ov-falta .mb.falta-mb{
+  max-height:none;
+  flex:1 1 auto;
+  min-height:0;
+  background:linear-gradient(180deg,#f9f7f1 0%,#fff 32%);
+  padding:18px 18px 16px;
+}
+#ov-falta .step{
+  border:1px solid var(--brd);
+  border-radius:12px;
+  background:var(--surf);
+  padding:14px 14px 16px;
+  margin-bottom:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+  border-bottom:none;
+}
+#ov-falta .step:last-child{margin-bottom:0}
+#ov-falta .sn{
+  margin-top:2px;
+  width:28px;
+  height:28px;
+  font-size:12px;
+  background:linear-gradient(145deg,#f0f8ff,#e4f0fc);
+  border:1px solid #b8d4f0;
+  color:var(--ic);
+}
+#ov-falta .st{margin-bottom:10px}
+#ov-falta .falta-row-split{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px}
+#ov-falta .falta-row-split>div:first-child{min-width:200px;flex:1}
+#ov-falta .falta-row-split>div:last-child{min-width:220px;flex:1.2}
+#ov-falta #rLugar,#ov-falta #rLugarOtro,#ov-falta #rAfectInp,#ov-falta .falta-dt{
+  width:100%;
+  max-width:340px;
+  font-size:13px;
+}
+#ov-falta .falta-catref{
+  margin-top:10px;
+  padding:12px 14px;
+  background:var(--ibg);
+  border-radius:12px;
+  border:1px solid var(--brd);
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+#ov-falta .falta-catref>div:first-child{
+  font-size:10px;
+  font-weight:600;
+  color:var(--ic);
+  letter-spacing:.04em;
+}
+#ov-falta .falta-catref>p{
+  font-size:11px;
+  color:var(--mut);
+  margin:6px 0 8px;
+  line-height:1.45;
+}
+#ov-falta #rProtoSug,#ov-falta #rSancSug{min-height:32px;white-space:pre-wrap;font-size:12px}
+#ov-falta .falta-catref-gap{margin-top:8px}
+#ov-falta .falta-catref-btn{margin-top:10px}
+#ov-falta .falta-ref-mini{
+  margin-bottom:10px;
+  padding:10px 12px;
+  background:var(--t1g);
+  border-radius:12px;
+  border:1px solid var(--brd);
+  font-size:11px;
+  line-height:1.45;
+}
+#ov-falta .falta-ref-mini-txt{white-space:pre-wrap;color:var(--ink);margin-top:2px;font-size:12px}
+#ov-falta #rCatRefMini strong{color:var(--t1c)}
+#ov-falta .falta-ref-mini .plbl{font-size:9px}
+#ov-falta .falta-ref-mini-row{margin-top:6px}
+#ov-falta .falta-acu-box{
+  margin-bottom:12px;
+  padding:11px 12px;
+  background:var(--ibg);
+  border-radius:12px;
+  border:1px solid var(--brd);
+}
+#ov-falta #rAcuCitaBody{font-size:12px;line-height:1.55}
+#ov-falta .falta-cita-block{margin-top:14px;padding-top:14px;border-top:1px dashed var(--brd)}
+#ov-falta .falta-cita-lbl{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500}
+#ov-falta .mf.falta-mf{
+  padding:12px 18px;
+  background:linear-gradient(180deg,#faf8f4,#fff);
+  border-top:1px solid var(--brd);
+  box-shadow:0 -6px 16px rgba(0,0,0,.06);
+  gap:10px;
+}
+
 /* Reportes */
 .rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:12px}
 .rc{background:var(--surf);border:1px solid var(--brd);border-radius:12px;padding:13px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
