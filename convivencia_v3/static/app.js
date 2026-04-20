@@ -142,12 +142,10 @@ function buildNav(){
   // Acción rápida global: registrar falta (solo roles autorizados)
   if(['Coordinador','Orientador','Director','Docente'].includes(CU.rol)){
     const wrap=document.createElement('div');
-    wrap.style.padding='10px 12px 6px 12px';
+    wrap.className='px-3 pt-2.5 pb-1.5';
     const b=document.createElement('button');
     b.type='button';
-    b.className='btn btn-p';
-    b.style.width='100%';
-    b.style.justifyContent='center';
+    b.className='btn btn-p flex w-full justify-center shadow-sm shadow-black/25';
     b.textContent='+ Registrar falta';
     b.onclick=()=>{
       openOv('ov-falta');
@@ -157,8 +155,8 @@ function buildNav(){
     nav.appendChild(wrap);
   }
   (NAV[CU.rol]||[]).forEach(item=>{
-    if(item.sep){const d=document.createElement('div');d.className='ni-sep';d.textContent=item.sep;nav.appendChild(d);return;}
-    const d=document.createElement('div');d.className='ni';d.textContent=item.l;d.setAttribute('data-tab',item.id);
+    if(item.sep){const d=document.createElement('div');d.className='ni-sep px-3.5 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-widest text-white/25';d.textContent=item.sep;nav.appendChild(d);return;}
+    const d=document.createElement('div');d.className='ni flex cursor-pointer items-center gap-2 rounded-md border-l-2 border-transparent px-3 py-2 text-xs font-medium text-white/45 transition-all hover:bg-white/[0.06] hover:text-white/85';d.textContent=item.l;d.setAttribute('data-tab',item.id);
     d.onclick=()=>showTab(item.id,d);nav.appendChild(d);
   });
 }
@@ -294,13 +292,13 @@ async function renderInicio(tab){
     ?'<div class="mut" style="font-size:12px;padding:4px 0">Aparecerá cuando haya faltas con curso asignado.</div>'
     :`<div class="ini-cur-box"><div class="ini-cur-lbl">Curso con más faltas (${getAnio()})</div><div class="ini-cur-val"><strong>${escHtml(curTop[0])}</strong><span class="ini-rk-cnt">${curTop[1]}</span></div><div class="ini-cur-hint">Útil para focalizar acompañamiento o charlas de convivencia.</div></div>`;
   tab.innerHTML=`
-    <div class="stats">
-      <div class="stat"><div class="n">${faltasAll.length}</div><div class="l">Total ${getAnio()}</div><div class="stat-ln sl-b"></div></div>
-      <div class="stat"><div class="n">${faltasAll.filter(f=>f.tipo_falta==='Tipo I').length}</div><div class="l">Tipo I — Leves</div><div class="stat-ln sl-g"></div></div>
-      <div class="stat"><div class="n">${faltasAll.filter(f=>f.tipo_falta==='Tipo II').length}</div><div class="l">Tipo II — Graves</div><div class="stat-ln sl-a"></div></div>
-      <div class="stat"><div class="n">${faltasAll.filter(f=>f.tipo_falta==='Tipo III').length}</div><div class="l">Tipo III — Muy graves</div><div class="stat-ln sl-r"></div></div>
+    <div class="stats mb-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4 max-[720px]:flex max-[720px]:gap-2.5 max-[720px]:overflow-x-auto max-[720px]:pb-2 max-[720px]:[-webkit-overflow-scrolling:touch] max-[720px]:snap-x max-[720px]:snap-mandatory">
+      <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.length}</div><div class="l">Total ${getAnio()}</div><div class="stat-ln sl-b"></div></div>
+      <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo I').length}</div><div class="l">Tipo I — Leves</div><div class="stat-ln sl-g"></div></div>
+      <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo II').length}</div><div class="l">Tipo II — Graves</div><div class="stat-ln sl-a"></div></div>
+      <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo III').length}</div><div class="l">Tipo III — Muy graves</div><div class="stat-ln sl-r"></div></div>
     </div>
-    <div class="ini-grid">
+    <div class="ini-grid grid grid-cols-1 gap-4 min-[1021px]:grid-cols-3">
       <div class="card">
         <div class="ch"><h3>Pendiente <span class="ini-count">(${proc.length})</span></h3></div>
         <div class="ini-list">${proc.length?fCards(proc):'<div class="empty">Nada pendiente con usted en este momento según ese orden.</div>'}</div>
@@ -310,11 +308,11 @@ async function renderInicio(tab){
         <div class="ini-list">${atn.length?fCards(atn):'<div class="empty">Sin faltas Tipo II o III en este año.</div>'}</div>
       </div>
       <div class="card">
-        <div class="ch"><h3>Faltas recientes</h3>${canReg?`<button class="btn btn-p btn-xs" onclick="openOv('ov-falta')">+ Registrar</button>`:''}</div>
+        <div class="ch"><h3>Faltas recientes</h3>${canReg?`<button type="button" class="btn btn-p btn-xs" onclick="openOv('ov-falta')">+ Registrar</button>`:''}</div>
         <div class="ini-list">${fCards(rec)}</div>
       </div>
     </div>
-    <div class="card">
+    <div class="card mt-1">
       <div class="ch"><h3>Panorama para la acción</h3></div>
       <div class="ini-panorama">
         <div class="ini-pan-col">

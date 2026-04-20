@@ -6,6 +6,7 @@
   <title>Convivencia Escolar · Acceso</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='tailwind.css') }}">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,7 +26,6 @@
       font-family: 'DM Sans', sans-serif;
       overflow: hidden;
     }
-
     /* ── decorative grid lines ── */
     body::before {
       content: '';
@@ -47,15 +47,7 @@
     .corner-tl { top: 24px; left: 24px; border-right: none; border-bottom: none; }
     .corner-br { bottom: 24px; right: 24px; border-left: none; border-top: none; }
 
-    /* ── layout ── */
-    .scene {
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
+    /* ── layout: .scene usa utilidades Tailwind en el HTML ── */
     .card {
       background: var(--surface);
       backdrop-filter: blur(20px);
@@ -164,12 +156,12 @@
 
   </style>
 </head>
-<body>
+<body class="antialiased selection:bg-[rgba(201,168,76,0.35)]">
   <div class="corner corner-tl"></div>
   <div class="corner corner-br"></div>
 
-  <div class="scene">
-    <div class="card">
+  <div class="scene relative flex min-h-screen items-center justify-center">
+    <div class="card shadow-[0_40px_80px_rgba(0,0,0,0.5)] ring-1 ring-[rgba(201,168,76,0.12)]">
       <img class="escudo"
         src="https://drive.google.com/thumbnail?sz=w200&id=1BG_kKYH5zFtnxCNFI1ViFfv4Y5JqcTMR"
         onerror="this.src='https://placehold.co/72x72/c9a84c/0f0e17?text=CE'"

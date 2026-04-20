@@ -1,0 +1,26 @@
+{
+  "name": "convivencia_escolar_v7",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./convivencia_v3/styles/tailwind-input.css -o ./convivencia_v3/static/tailwind.css",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/54b4freddy/convivencia-escolar.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/54b4freddy/convivencia-escolar/issues"
+  },
+  "homepage": "https://github.com/54b4freddy/convivencia-escolar#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "tailwindcss": "^4.2.2"
+  }
+}

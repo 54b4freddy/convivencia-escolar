@@ -6,6 +6,7 @@
 <title>Reportar — convivencia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='tailwind.css') }}">
 <style>
   :root {
     --bg: #f6f3ff;
@@ -25,7 +26,7 @@
     background: linear-gradient(165deg, var(--bg) 0%, #eef8f4 100%);
     color: var(--ink); padding: 16px 14px 48px;
   }
-  .wrap { max-width: 440px; margin: 0 auto; }
+  ::selection { background: rgba(124, 108, 240, 0.22); color: var(--ink); }
   .head { text-align: center; margin-bottom: 20px; }
   .head h1 { font-size: 1.35rem; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em; }
   .head p { margin: 0; color: var(--mut); font-size: 0.95rem; line-height: 1.45; }
@@ -33,7 +34,8 @@
   .step-h { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--mut); margin: 0 0 10px; font-weight: 700; }
   .card {
     background: var(--card); border-radius: var(--radius); padding: 18px 16px;
-    box-shadow: var(--shadow); margin-bottom: 14px;
+    box-shadow: var(--shadow), 0 1px 2px rgba(45, 38, 64, 0.04); margin-bottom: 14px;
+    border: 1px solid rgba(124, 108, 240, 0.08);
   }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .opt {
@@ -78,8 +80,8 @@
   a.back { color: var(--accent); font-weight: 700; text-decoration: none; font-size: 0.9rem; }
 </style>
 </head>
-<body>
-<div class="wrap">
+<body class="antialiased">
+<div class="wrap mx-auto max-w-[440px]">
   <div class="head">
     <h1 id="tituloPrincipal">Reportar una situación</h1>
     <p id="subPrincipal">Este espacio es solo para ti. Nadie te juzga por contarlo.</p>
