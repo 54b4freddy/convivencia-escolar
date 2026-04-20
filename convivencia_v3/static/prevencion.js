@@ -354,8 +354,24 @@ async function renderSenales(tab){
   const canSeg=['Coordinador','Orientador','Superadmin'].includes(CU.rol);
   const canPrev=['Coordinador','Director','Orientador','Superadmin'].includes(CU.rol);
   const canRepPrev=['Coordinador','Orientador','Director','Superadmin'].includes(CU.rol);
+  const canPrevSingle=canPrev&&!(CU.rol==='Superadmin'&&!CU.colegio_id);
   const btnNueva=canNew?`<button type="button" class="btn btn-p btn-xs" onclick="openOvSenal()">+ Nueva conducta</button>`:'';
+  const mtDash=CU.rol==='Superadmin'?`
+    <div class="card" style="margin-bottom:12px;border:1px solid var(--brd)">
+      <div class="ch">
+        <h3>Panel multi-institución — Reiteración y focos</h3>
+        <div class="ch-r" style="gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="prevMtRango" style="font-size:12px;padding:5px 9px" onchange="refreshPrevencionReiteracionMt()">
+            <option value="30d" selected>Últimos 30 días</option>
+            <option value="anio">Año académico (selector superior)</option>
+          </select>
+          <button type="button" class="btn btn-xs" onclick="refreshPrevencionReiteracionMt()">Actualizar</button>
+        </div>
+      </div>
+      <div id="prevMtBody" style="padding:10px"><div class="mut">Cargando…</div></div>
+    </div>`:'';
   tab.innerHTML=`
+    ${mtDash}
     ${canRepPrev?`
     <div class="card" id="prevEstAlertasCard" style="margin-bottom:12px">
       <div class="ch">
@@ -375,7 +391,7 @@ async function renderSenales(tab){
         <div id="repEstPrevConductas" class="prev-est-pane" style="display:none;padding-top:4px"><div style="overflow:auto">${_senalesRowsHtml(conductaRows,canSeg)}</div></div>
       </div>
     </div>`:''}
-    ${canPrev?`
+    ${canPrevSingle?`
     <div class="card" style="margin-bottom:12px">
       <div class="ch">
         <h3>Prevención — Reiteración y focos</h3>
@@ -397,7 +413,8 @@ async function renderSenales(tab){
     _wirePrevEstTabs();
     refreshAlertasEstPrev();
   }
-  if(canPrev) refreshPrevencionReiteracion();
+  if(CU.rol==='Superadmin') refreshPrevencionReiteracionMt();
+  if(canPrevSingle) refreshPrevencionReiteracion();
 }
 
 async function refreshAlertasEstPrev(){
@@ -466,6 +483,90 @@ function _rangoPrev(){
   const desde=_isoDateNDaysAgo(30);
   return {desde,hasta,lbl:'Últimos 30 días'};
 }
+function _rangoPrevMt(){
+  const r=document.getElementById('prevMtRango')?.value||'30d';
+  if(r==='anio'){
+    const y=getAnio();
+    return {desde:`${y}-01-01`,hasta:`${y}-12-31`,lbl:`Año ${y}`};
+  }
+  const hasta=_hoyIso();
+  const desde=_isoDateNDaysAgo(30);
+  return {desde,hasta,lbl:'Últimos 30 días'};
+}
+function _rangoPrevDet(opts){
+  opts=opts||{};
+  if(opts.desde&&opts.hasta) return {desde:opts.desde,hasta:opts.hasta,lbl:opts.lbl||''};
+  return _rangoPrev();
+}
+async function refreshPrevencionReiteracionMt(){
+  const box=document.getElementById('prevMtBody');
+  if(!box||CU.rol!=='Superadmin')return;
+  const r=_rangoPrevMt();
+  box.innerHTML='<div class="mut">Cargando panel multi-institución…</div>';
+  const j=await api(`/api/prevencion/reiteracion-mt?desde=${encodeURIComponent(r.desde)}&hasta=${encodeURIComponent(r.hasta)}`);
+  if(j&&j.error){box.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;return;}
+  window._prevMtLast=j;
+  const inst=j.instituciones||[];
+  const rows=inst.map(x=>{
+    const cid=Number(x.colegio_id||0);
+    const na=(x.rank_ausencias||[]).length,nt=(x.rank_tipoI||[]).length,nl=(x.rank_lugares||[]).length,nv=(x.rank_victimas||[]).length;
+    return`<tr>
+      <td><strong>${escHtml(x.nombre||'')}</strong><div class="mut" style="font-size:10px">#${cid}</div></td>
+      <td style="text-align:center">${na}</td><td style="text-align:center">${nt}</td><td style="text-align:center">${nl}</td><td style="text-align:center">${nv}</td>
+      <td><button type="button" class="btn btn-xs btn-i" onclick="togglePrevMtInst(${cid})">Ver rankings</button></td>
+    </tr>
+    <tr id="prev-mt-exp-${cid}" class="prev-mt-exp" style="display:none"><td colspan="6" style="padding:0;border:none"></td></tr>`;
+  }).join('');
+  box.innerHTML=`
+    <p class="mut" style="font-size:11px;margin:0 0 10px;line-height:1.45">Mismos criterios que <strong>Reiteración y focos</strong> por institución. Use <strong>Ver rankings</strong> para abrir el detalle y enlaces a faltas (con <code>colegio_id</code> en la petición).</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <span class="bdg bg">Rango: ${escHtml(j.desde||r.desde)} → ${escHtml(j.hasta||r.hasta)}</span>
+      <span class="bdg bg">${inst.length} institución(es)</span>
+    </div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>Institución</th><th style="width:72px;text-align:center">Aus≥3</th><th style="width:72px;text-align:center">Tipo I≥3</th><th style="width:72px;text-align:center">Lugar≥3</th><th style="width:72px;text-align:center">Víc≥1</th><th style="width:110px"></th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="6" class="empty">Sin instituciones</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+function togglePrevMtInst(cid){
+  const sq=s=>String(s||'').replace(/'/g,'&#39;');
+  const tr=document.getElementById('prev-mt-exp-'+cid);
+  if(!tr)return;
+  const td=tr.querySelector('td');
+  const on=tr.style.display!=='table-row';
+  tr.style.display=on?'table-row':'none';
+  if(!on||!td||td.dataset.ready==='1')return;
+  const j=window._prevMtLast;
+  const x=(j&&j.instituciones||[]).find(z=>Number(z.colegio_id)===Number(cid));
+  if(!x){td.dataset.ready='1';return;}
+  const rd={desde:j.desde,hasta:j.hasta,lbl:''};
+  const mkAus=(x.rank_ausencias||[]).map(a=>[
+    `<button type="button" class="btn btn-xs btn-i" style="padding:2px 6px" onclick="openPrevDet('estudiante',${Number(a.estudiante_id||0)},'',{colegioId:${cid},desde:'${sq(rd.desde)}',hasta:'${sq(rd.hasta)}'})">${escHtml(a.estudiante||'—')}</button>`,
+    `<span class="reit-bdg crit">≥3</span> ${Number(a.ausencias||0)}`
+  ]);
+  const mkT1=(x.rank_tipoI||[]).map(a=>[
+    `<button type="button" class="btn btn-xs btn-i" style="padding:2px 6px" onclick="openPrevDet('estudiante',${Number(a.estudiante_id||0)},'',{colegioId:${cid},desde:'${sq(rd.desde)}',hasta:'${sq(rd.hasta)}'})">${escHtml(a.estudiante||'—')}</button>`,
+    `<span class="reit-bdg crit">≥3</span> ${Number(a.tipoI||0)}`
+  ]);
+  const mkLug=(x.rank_lugares||[]).map(a=>[
+    `<button type="button" class="btn btn-xs btn-i" style="padding:2px 6px" onclick="openPrevDet('lugar','${sq(a.lugar||'')}', '', {colegioId:${cid},desde:'${sq(rd.desde)}',hasta:'${sq(rd.hasta)}'})">${escHtml(a.lugar||'—')}</button>`,
+    `<span class="reit-bdg crit">≥3</span> ${Number(a.faltas||0)}`
+  ]);
+  const mkVic=(x.rank_victimas||[]).map(a=>[
+    `<button type="button" class="btn btn-xs btn-i" style="padding:2px 6px" onclick="openPrevDet('victima','${sq(a.victima||'')}', '', {colegioId:${cid},desde:'${sq(rd.desde)}',hasta:'${sq(rd.hasta)}'})">${escHtml(a.victima||'—')}</button>`,
+    `<span class="reit-bdg warn">≥1</span> ${Number(a.menciones||0)}`
+  ]);
+  td.innerHTML=`<div style="padding:10px;background:var(--bg)">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+      ${_tblRank('Ausencias (≥3)', ['Estudiante','Ausencias'], mkAus, '—')}
+      ${_tblRank('Tipo I (≥3)', ['Estudiante','Tipo I'], mkT1, '—')}
+      ${_tblRank('Lugares (≥3)', ['Lugar','Faltas'], mkLug, '—')}
+      ${_tblRank('Víctimas (≥1)', ['Víctima','Menciones'], mkVic, '—')}
+    </div></div>`;
+  td.dataset.ready='1';
+}
 function _tblRank(title,cols,rows,empty){
   const head=cols.map(c=>`<th>${c}</th>`).join('');
   const body=rows.length?rows.map(r=>`<tr>${r.map(td=>`<td>${td}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${cols.length}" class="mut">${empty}</td></tr>`;
@@ -515,8 +616,9 @@ async function refreshPrevencionReiteracion(){
     </div>`;
 }
 
-async function openPrevDet(kind,val,label){
-  const r=_rangoPrev();
+async function openPrevDet(kind,val,label,opts){
+  opts=opts||{};
+  const r=_rangoPrevDet(opts);
   const tit=document.getElementById('prevDetTit');
   const sub=document.getElementById('prevDetSub');
   const body=document.getElementById('prevDetBody');
@@ -527,6 +629,7 @@ async function openPrevDet(kind,val,label){
   if(kind==='estudiante') url+=`&estudiante_id=${encodeURIComponent(String(val||''))}`;
   else if(kind==='lugar') url+=`&lugar=${encodeURIComponent(String(val||''))}`;
   else url+=`&victima=${encodeURIComponent(String(val||''))}`;
+  if(opts.colegioId&&CU.rol==='Superadmin') url+=`&colegio_id=${encodeURIComponent(String(opts.colegioId))}`;
   const j=await api(url);
   if(j&&j.error){if(body)body.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;openOv('ov-prev-det');return;}
   const items=Array.isArray(j.items)?j.items:[];

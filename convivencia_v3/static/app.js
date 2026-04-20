@@ -1,6 +1,9 @@
 ﻿const CURSOS=['Preescolar A','Preescolar B','Primero A','Primero B','Segundo A','Tercero A','Cuarto A','Quinto A','6A','6B','7A','8A','9A','10A','11A'];
 const NAV={
-  Superadmin:[{id:'sa-col',l:'Instituciones'}],
+  Superadmin:[
+    {id:'sa-col',l:'Instituciones'},
+    {sep:'PREVENCIÓN'},{id:'sa-sen',l:'Conductas de riesgo'},
+  ],
   Coordinador:[
     {id:'co-ini',l:'Resumen'},
     {sep:'PROMOCIÓN'},{id:'co-prom',l:'Actividades de promoción'},
@@ -34,7 +37,7 @@ const NAV={
   ],
 };
 const TTLS={
-  'sa-col':'Instituciones educativas',
+  'sa-col':'Instituciones educativas','sa-sen':'Conductas de riesgo',
   'co-ini':'Resumen general','di-ini':'Mi resumen','or-ini':'Resumen orientación','doc-ini':'Mis registros','acu-ini':'Portal de acudiente',
   'co-prom':'Actividades de promoción','di-prom':'Actividades de promoción','or-prom':'Actividades de promoción','doc-prom':'Actividades de promoción',
   'co-sen':'Conductas de riesgo','di-sen':'Conductas de riesgo','or-sen':'Conductas de riesgo','doc-sen':'Conductas de riesgo','acu-sen':'Registrar conducta de riesgo',
@@ -183,7 +186,7 @@ function poblarSels(){
 async function renderTab(id){
   const mc=document.getElementById('mainContent');mc.innerHTML='';
   const tab=document.createElement('div');tab.className='tab on';tab.id='t-'+id;mc.appendChild(tab);
-  const mapa={'sa-col':renderSACol,'co-ini':renderInicio,'di-ini':renderInicio,'or-ini':renderInicio,'doc-ini':renderInicio,'acu-ini':renderInicio,
+  const mapa={'sa-col':renderSACol,'sa-sen':renderSenales,'co-ini':renderInicio,'di-ini':renderInicio,'or-ini':renderInicio,'doc-ini':renderInicio,'acu-ini':renderInicio,
     'co-prom':renderPromocion,'di-prom':renderPromocion,'or-prom':renderPromocion,'doc-prom':renderPromocion,
     'co-f':renderFaltas,'di-f':renderFaltas,'or-f':renderFaltas,'doc-f':renderFaltas,'acu-f':renderFaltas,
     'co-est':renderEstudiantes,'di-est':renderEstudiantes,
