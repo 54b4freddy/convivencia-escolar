@@ -78,6 +78,11 @@ def api_prom_listar():
     if fh:
         q += f" AND fecha<={p}"
         params.append(fh)
+    qtext = (request.args.get("q") or "").strip()
+    if qtext:
+        like = f"%{qtext}%"
+        q += f" AND (titulo LIKE {p} OR lugar LIKE {p} OR descripcion LIKE {p})"
+        params.extend([like, like, like])
     q += " ORDER BY fecha DESC, id DESC LIMIT 200"
     rows = execute(conn, q, params, fetch="all") or []
     conn.close()

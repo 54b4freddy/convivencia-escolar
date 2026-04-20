@@ -1,13 +1,29 @@
 ﻿// Tras app.js (globales): api, CU, CURSOS, escHtml, toast, renderCurrentTab, openOv, closeOv
 
-// ── Mapa de calor (focos) → planificación de actividad ───────────────────────
+const PROM_TEMAS=[
+  {v:'relaciones_respetuosas',l:'Relaciones respetuosas'},
+  {v:'normas_convivencia',l:'Normas de convivencia'},
+  {v:'gestion_emocional',l:'Gestión emocional'},
+  {v:'ambiente_fisico_seguro',l:'Ambiente físico y seguro'},
+  {v:'participacion_activa',l:'Participación activa'},
+  {v:'prevencion_conflictos',l:'Prevención de conflictos'},
+];
+function promTemaLbl(v){return (PROM_TEMAS.find(x=>x.v===v)||{}).l||v||'—';}
+
+// ── Focos → dashboard por tema de promoción ───────────────────────────────────
 window._promCalorFilas=[];
-function _promHmBg(n,max,kind){
-  if(!max||!n) return 'background:transparent';
-  const t=Math.min(1,n/max);
-  const a=kind==='u'?0.14+t*0.52:0.1+t*0.42;
-  const rgb=kind==='u'?'200,50,60':'40,90,160';
-  return `background:rgba(${rgb},${a.toFixed(2)})`;
+function _promAggCalorPorTema(filas){
+  const by={};
+  PROM_TEMAS.forEach(t=>{by[t.v]={u:0,r:0,tot:0,items:[]};});
+  (filas||[]).forEach(r=>{
+    const tm=(r.tema_promocion||'').trim();
+    if(!by[tm]) return;
+    by[tm].u+=Number(r.urgente)||0;
+    by[tm].r+=Number(r.no_urgente)||0;
+    by[tm].tot+=Number(r.total)||0;
+    by[tm].items.push(r);
+  });
+  return by;
 }
 async function promRefreshCalor(){
   const wrap=document.getElementById('promCalorWrap');
@@ -15,46 +31,108 @@ async function promRefreshCalor(){
   const sel=document.getElementById('promCalorDias');
   const dias=Math.min(90,Math.max(7,Number(sel?.value)||30));
   if(sel) sel.value=String(dias);
-  wrap.innerHTML='<div class="mut">Cargando mapa de calor…</div>';
+  wrap.innerHTML='<div class="mut">Cargando indicadores…</div>';
   let url=`/api/promocion/focos-calor?dias=${encodeURIComponent(String(dias))}`;
   if(CU.rol==='Superadmin'&&CU.colegio_id) url+=`&colegio_id=${encodeURIComponent(String(CU.colegio_id))}`;
   const j=await api(url);
   if(j&&j.error){wrap.innerHTML=`<div class="abanner ab-r">${escHtml(j.error)}</div>`;return;}
   const filas=Array.isArray(j.filas)?j.filas:[];
   window._promCalorFilas=filas;
-  const mu=Number(j.max_urgente)||0;
-  const mr=Number(j.max_no_urgente)||0;
-  const mt=Number(j.max_total)||0;
+  const by=_promAggCalorPorTema(filas);
+  const maxTot=Math.max(...PROM_TEMAS.map(t=>by[t.v].tot),1);
+  const rango=`<div class="mut" style="font-size:11px;margin-bottom:10px">Período: <strong>${escHtml(j.desde||'')} → ${escHtml(j.hasta||'')}</strong>. Los registros agrupan <strong>alertas ciudadanas</strong> y <strong>conductas de riesgo</strong> según su tipo, y se muestran bajo el <em>tema de promoción</em> correspondiente.</div>`;
+  const cards=PROM_TEMAS.map(t=>{
+    const b=by[t.v];
+    const u=b.u,r=b.r,tot=b.tot;
+    const pctU=tot>0?Math.round((u/tot)*100):0;
+    const pctR=100-pctU;
+    const wTot=maxTot>0?Math.min(100,Math.round((tot/maxTot)*100)):0;
+    return `<div class="fcard" style="padding:12px 14px;min-height:0;border:1px solid var(--brd);border-radius:var(--r);background:var(--card)">
+      <div style="font-weight:600;font-size:13px;line-height:1.3">${escHtml(t.l)}</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin:8px 0 6px">
+        <span style="font-size:24px;font-weight:700">${tot}</span>
+        <span class="mut" style="font-size:11px">registros</span>
+      </div>
+      <div style="height:8px;border-radius:6px;background:rgba(0,0,0,.06);overflow:hidden;margin-bottom:4px" title="Intensidad relativa al tema más frecuente">
+        <div style="height:100%;width:${wTot}%;background:linear-gradient(90deg,var(--gold),#c9a227);border-radius:6px;min-width:${tot?4:0}px"></div>
+      </div>
+      <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;background:rgba(0,0,0,.06);margin-bottom:4px" title="Urgente/alta vs resto">
+        ${tot?`<div style="width:${pctU}%;min-width:${u?3:0}px;background:rgba(200,50,60,.75)"></div><div style="width:${pctR}%;background:rgba(40,90,160,.55)"></div>`:'<div style="width:100%;background:transparent"></div>'}
+      </div>
+      <div class="mut" style="font-size:11px;line-height:1.35">Urgente/alta: ${u} · Resto: ${r}</div>
+      <button type="button" class="btn btn-xs btn-p" style="margin-top:10px;width:100%" onclick="promPlanDesdeTema(${JSON.stringify(t.v)})">Programar desde foco</button>
+    </div>`;
+  }).join('');
+  wrap.innerHTML=rango+`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">${cards}</div>
+    ${filas.length?`<details style="margin-top:14px;font-size:12px"><summary class="mut" style="cursor:pointer">Detalle por origen (${filas.length})</summary>
+      <div class="table-wrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>Origen</th><th>Urg./alta</th><th>Resto</th><th>Total</th><th></th></tr></thead><tbody>
+        ${filas.map((r,i)=>{
+          const u=Number(r.urgente)||0,nr=Number(r.no_urgente)||0,tot=Number(r.total)||0;
+          return `<tr><td style="font-size:12px"><strong>${escHtml(r.label||'')}</strong><div class="mut">${escHtml(promTemaLbl(r.tema_promocion))}</div>${r.curso_sugerido?`<div class="mut">Curso frecuente: ${escHtml(r.curso_sugerido)}</div>`:''}</td>
+            <td style="text-align:center">${u}</td><td style="text-align:center">${nr}</td><td style="text-align:center">${tot}</td>
+            <td><button type="button" class="btn btn-xs" onclick="promPlanDesdeCalor(${i})">Usar esta fila</button></td></tr>`;
+        }).join('')}
+      </tbody></table></div></details>`:`<div class="empty" style="margin-top:12px">Sin datos en el rango. Cuando haya alertas o conductas registradas, aparecerán aquí.</div>`}`;
+}
+function promFillCreateFormSelects(){
+  const tema=document.getElementById('promTema');
+  if(tema) tema.innerHTML='<option value="">Seleccionar</option>'+PROM_TEMAS.map(x=>`<option value="${x.v}">${x.l}</option>`).join('');
+  const cur=document.getElementById('promCurso');
+  if(cur) cur.innerHTML='<option value="">Seleccionar</option>'+CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const est=document.getElementById('promEstCurso');
+  if(est) est.innerHTML='<option value="">Seleccionar</option>'+CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+function openPromCrear(){
+  promFillCreateFormSelects();
+  const hoy=new Date().toISOString().slice(0,10);
+  const tit=document.getElementById('promTit');
+  const tema=document.getElementById('promTema');
+  const fecha=document.getElementById('promFecha');
+  const lugar=document.getElementById('promLugar');
+  const rec=document.getElementById('promRec');
+  const desc=document.getElementById('promDesc');
+  const pub=document.getElementById('promPub');
+  const ev=document.getElementById('promEvid');
+  const err=document.getElementById('promErr');
+  if(tit) tit.value='';
+  if(tema) tema.value='';
+  if(fecha) fecha.value=hoy;
+  if(lugar) lugar.value='';
+  if(rec) rec.value='';
+  if(desc) desc.value='';
+  if(pub){pub.value='colegio';promPubChanged();}
+  if(ev) ev.value='';
+  if(err) err.textContent='';
+  const box=document.getElementById('promEstPick');
+  if(box) box.innerHTML='<span class="mut">Seleccione curso</span>';
+  openOv('ov-prom-create');
+}
+function promPlanDesdeTema(temaKey){
+  const filas=(window._promCalorFilas||[]).filter(r=>(r.tema_promocion||'')===temaKey);
   if(!filas.length){
-    wrap.innerHTML=`<div class="empty">Sin datos en el rango ${escHtml(j.desde||'')} — ${escHtml(j.hasta||'')}. Cuando haya alertas o conductas registradas, aparecerán aquí.</div>`;
+    promFillCreateFormSelects();
+    const tema=document.getElementById('promTema');
+    if(tema) tema.value=temaKey;
+    const err=document.getElementById('promErr');if(err) err.textContent='';
+    const fecha=document.getElementById('promFecha');
+    if(fecha) fecha.value=new Date().toISOString().slice(0,10);
+    const tit=document.getElementById('promTit');if(tit) tit.value='';
+    const desc=document.getElementById('promDesc');if(desc) desc.value='';
+    const pub=document.getElementById('promPub');if(pub){pub.value='colegio';promPubChanged();}
+    openOv('ov-prom-create');
+    toast('Sin focos en este tema en el período; planifique desde cero o amplíe los días.');
     return;
   }
-  wrap.innerHTML=`
-    <div class="mut" style="font-size:11px;margin-bottom:8px">Rango: <strong>${escHtml(j.desde||'')} → ${escHtml(j.hasta||'')}</strong> · Intensidad = cantidad relativa al máximo en la columna.</div>
-    <div class="table-wrap">
-      <table class="tbl">
-        <thead><tr><th>Foco (tema recurrente)</th><th style="width:110px;text-align:center">Urgente / alta</th><th style="width:110px;text-align:center">Resto</th><th style="width:72px;text-align:center">Total</th><th style="width:150px"></th></tr></thead>
-        <tbody>
-          ${filas.map((r,i)=>{
-            const u=Number(r.urgente)||0;
-            const nr=Number(r.no_urgente)||0;
-            const tot=Number(r.total)||0;
-            return `<tr>
-              <td style="font-size:12px;line-height:1.35"><strong>${escHtml(r.label||'')}</strong>
-                ${r.curso_sugerido?`<div class="mut">Curso más frecuente: ${escHtml(r.curso_sugerido)}</div>`:''}</td>
-              <td style="text-align:center;${_promHmBg(u,mu,'u')}">${u}</td>
-              <td style="text-align:center;${_promHmBg(nr,mr,'r')}">${nr}</td>
-              <td style="text-align:center;${_promHmBg(tot,mt,'u')}">${tot}</td>
-              <td><button type="button" class="btn btn-xs btn-p" onclick="promPlanDesdeCalor(${i})">Programar actividad</button></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>`;
+  filas.sort((a,b)=>(Number(b.total)||0)-(Number(a.total)||0));
+  const row=filas[0];
+  const idx=(window._promCalorFilas||[]).indexOf(row);
+  if(idx>=0) promPlanDesdeCalor(idx);
 }
 function promPlanDesdeCalor(i){
   const row=(window._promCalorFilas||[])[i];
   if(!row)return;
+  promFillCreateFormSelects();
   const tit=document.getElementById('promTit');
   const tema=document.getElementById('promTema');
   const desc=document.getElementById('promDesc');
@@ -73,20 +151,12 @@ function promPlanDesdeCalor(i){
       promPubChanged();
     }
   }
-  tit?.scrollIntoView({behavior:'smooth',block:'center'});
-  toast('Formulario listo: revise título, fecha y público antes de guardar.');
+  const err=document.getElementById('promErr');if(err) err.textContent='';
+  openOv('ov-prom-create');
+  toast('Revise título, fecha y público antes de guardar.');
 }
 
 // ── Promoción (actividades) ───────────────────────────────────────────────────
-const PROM_TEMAS=[
-  {v:'relaciones_respetuosas',l:'Relaciones respetuosas'},
-  {v:'normas_convivencia',l:'Normas de convivencia'},
-  {v:'gestion_emocional',l:'Gestión emocional'},
-  {v:'ambiente_fisico_seguro',l:'Ambiente físico y seguro'},
-  {v:'participacion_activa',l:'Participación activa'},
-  {v:'prevencion_conflictos',l:'Prevención de conflictos'},
-];
-function promTemaLbl(v){return (PROM_TEMAS.find(x=>x.v===v)||{}).l||v||'—';}
 function _promPublicoLbl(a){
   if(!a)return'—';
   const t=a.publico_tipo||'';
@@ -102,48 +172,25 @@ function _promPublicoLbl(a){
   return t||'—';
 }
 
-function _promValCurso(a){
-  if(!a)return'';
-  if((a.publico_tipo||'')==='curso')return a.publico_curso||'';
-  if((a.publico_tipo||'')==='estudiantes'){
-    try{const js=JSON.parse(a.publico_json||'{}');return js.curso||'';}catch{return'';}
-  }
-  return '';
-}
-
 async function _promFetchList(){
-  const tema=document.getElementById('promFTema')?.value||'';
-  const desde=document.getElementById('promFDesde')?.value||'';
-  const hasta=document.getElementById('promFHasta')?.value||'';
-  const pub=document.getElementById('promFPub')?.value||'';
-  const cur=document.getElementById('promFCurso')?.value||'';
-  const cread=document.getElementById('promFCreador')?.value||'';
+  const q=(document.getElementById('promBuscar')?.value||'').trim();
   const qp=[];
-  if(tema)qp.push('tema='+encodeURIComponent(tema));
-  if(desde)qp.push('desde='+encodeURIComponent(desde));
-  if(hasta)qp.push('hasta='+encodeURIComponent(hasta));
-  if(pub)qp.push('publico_tipo='+encodeURIComponent(pub));
-  if(cur)qp.push('curso='+encodeURIComponent(cur));
-  if(cread)qp.push('creado_por_id='+encodeURIComponent(cread));
+  if(q) qp.push('q='+encodeURIComponent(q));
   const url='/api/promocion/actividades'+(qp.length?('?'+qp.join('&')):'');
   const list=await api(url);
   return Array.isArray(list)?list:[];
 }
 
 function _promTblRows(rows){
-  if(!rows.length)return`<tr><td colspan="7" class="empty">Sin actividades con esos filtros</td></tr>`;
+  if(!rows.length)return`<tr><td colspan="5" class="empty">Sin actividades</td></tr>`;
   return rows.map(a=>{
-    const curso=_promValCurso(a);
-    const ev=a.evidencia_path?`<a class="btn btn-xs btn-g" href="/api/promocion/actividades/${Number(a.id)}/evidencia" target="_blank" rel="noopener">Principal</a>`:'—';
     const btn=`<button type="button" class="btn btn-xs btn-i" onclick="openPromDet(${Number(a.id)})">Abrir</button>`;
     return `<tr>
       <td>${escHtml(a.fecha||'—')}</td>
       <td><strong>${escHtml(a.titulo||'—')}</strong><div class="mut">${escHtml(a.lugar||'')}</div></td>
-      <td style="font-size:11px">${escHtml(promTemaLbl(a.tema))}</td>
-      <td style="font-size:11px">${escHtml(_promPublicoLbl(a))}${curso?`<div class="mut">${escHtml(curso)}</div>`:''}</td>
-      <td style="font-size:11px">${escHtml(a.creado_por_nombre||'—')} <span class="mut">(${escHtml(a.creado_por_rol||'')})</span></td>
-      <td style="font-size:11px">${ev}</td>
-      <td style="width:80px">${btn}</td>
+      <td style="font-size:12px">${escHtml(promTemaLbl(a.tema))}</td>
+      <td style="font-size:12px">${escHtml(_promPublicoLbl(a))}</td>
+      <td style="width:88px">${btn}</td>
     </tr>`;
   }).join('');
 }
@@ -151,7 +198,7 @@ function _promTblRows(rows){
 async function promAplicarFiltros(){
   const tb=document.getElementById('promListBody');
   if(!tb)return;
-  tb.innerHTML='<tr><td colspan="7" class="mut">Cargando…</td></tr>';
+  tb.innerHTML='<tr><td colspan="5" class="mut">Cargando…</td></tr>';
   const rows=await _promFetchList();
   tb.innerHTML=_promTblRows(rows);
 }
@@ -210,19 +257,18 @@ async function promCrear(){
   if(f) fd.append('evidencia',f);
   const r=await fetch('/api/promocion/actividades',{method:'POST',body:fd,credentials:'same-origin'});
   const j=await r.json().catch(()=>({}));
-  if(j.ok){toast('Actividad guardada');renderCurrentTab();}
+  if(j.ok){toast('Actividad guardada');closeOv('ov-prom-create');renderCurrentTab();}
   else{if(err)err.textContent=j.error||'Error';toast(j.error||'Error','e');}
 }
 async function renderPromocion(tab){
   const rows=await _promFetchList();
-  const hoy=new Date().toISOString().slice(0,10);
   tab.innerHTML=`
     <div class="abanner ab-i" style="font-size:11px;line-height:1.45">
       Actividades de <strong>Promoción</strong> en convivencia (planeación, público objetivo y evidencias). No visible para acudientes ni estudiantes.
     </div>
     <div class="card">
       <div class="ch">
-        <h3>Focos para promoción (mapa de calor)</h3>
+        <h3>Indicadores por tema (focos recurrentes)</h3>
         <div class="ch-r" style="gap:8px;align-items:center;flex-wrap:wrap">
           <label class="mut" style="font-size:11px;display:flex;align-items:center;gap:6px">Últimos
             <select id="promCalorDias" class="inp-sm" style="padding:4px 8px">
@@ -237,72 +283,30 @@ async function renderPromocion(tab){
         </div>
       </div>
       <div class="mb" style="padding:10px 14px">
-        <p class="mut" style="font-size:11px;line-height:1.45;margin:0 0 8px">
-          Cruce de <strong>alertas ciudadanas</strong> (coordinación/orientación) y <strong>conductas de riesgo</strong> visibles para su rol, por fecha de registro.
-          La columna «Urgente» suma alertas marcadas como urgentes y conductas con urgencia alta o crítica.
-        </p>
         <div id="promCalorWrap"><div class="mut">Cargando…</div></div>
       </div>
     </div>
-    <div class="card">
-      <div class="ch"><h3>Crear actividad</h3></div>
-      <div class="mb" style="padding:12px 14px;max-width:780px">
-        <div class="fr">
-          <div style="flex:2"><label class="fl">Título *</label><input id="promTit" maxlength="120" placeholder="Ej: Taller de gestión emocional"></div>
-          <div><label class="fl">Tema *</label>
-            <select id="promTema"><option value="">Seleccionar</option>${PROM_TEMAS.map(t=>`<option value="${t.v}">${t.l}</option>`).join('')}</select>
-          </div>
+    <div class="card" style="border-style:dashed">
+      <div class="mb" style="padding:16px 18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <h3 style="margin:0 0 4px;font-size:15px">Registrar actividad</h3>
+          <p class="mut" style="margin:0;font-size:12px;max-width:520px">Complete título, tema, fecha y público en el formulario. Las evidencias y el detalle se gestionan al abrir la actividad.</p>
         </div>
-        <div class="fr" style="margin-top:10px">
-          <div><label class="fl">Fecha *</label><input type="date" id="promFecha" value="${hoy}"></div>
-          <div style="flex:2"><label class="fl">Lugar</label><input id="promLugar" maxlength="120" placeholder="Ej: Biblioteca / Patio / Aula 203"></div>
-        </div>
-        <div class="fr" style="margin-top:10px">
-          <div style="flex:2"><label class="fl">Recursos</label><input id="promRec" maxlength="240" placeholder="Ej: Proyector, cartillas, parlante"></div>
-          <div><label class="fl">Público objetivo *</label>
-            <select id="promPub" onchange="promPubChanged()">
-              <option value="colegio">Todo el colegio</option>
-              <option value="curso">Un curso</option>
-              <option value="estudiantes">Estudiantes seleccionados</option>
-            </select>
-          </div>
-        </div>
-        <div id="promPubCursoRow" class="fr" style="margin-top:10px;display:none">
-          <div><label class="fl">Curso</label><select id="promCurso"><option value="">Seleccionar</option>${CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>
-        </div>
-        <div id="promPubEstRow" style="margin-top:10px;display:none">
-          <div class="fr">
-            <div><label class="fl">Curso base</label><select id="promEstCurso" onchange="promLoadEstSel()"><option value="">Seleccionar</option>${CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>
-            <div style="flex:2"><label class="fl">Estudiantes (marcar varios)</label><div id="promEstPick" class="mut">Seleccione curso</div></div>
-          </div>
-        </div>
-        <div style="margin-top:10px"><label class="fl">Descripción / planeación</label><textarea id="promDesc" rows="3" placeholder="Objetivo, actividades, responsables, logística…"></textarea></div>
-        <div class="fr" style="margin-top:10px">
-          <div style="flex:2"><label class="fl">Evidencia (opcional)</label><input type="file" id="promEvid" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></div>
-        </div>
-        <p class="ferr" id="promErr" style="font-size:12px;margin-top:6px"></p>
-        <button type="button" class="btn btn-p" onclick="promCrear()">Guardar actividad</button>
+        <button type="button" class="btn btn-p" onclick="openPromCrear()">Nueva actividad</button>
       </div>
     </div>
     <div class="card">
-      <div class="ch"><h3>Actividades registradas</h3><button type="button" class="btn btn-xs" onclick="promAplicarFiltros()">Actualizar</button></div>
+      <div class="ch"><h3>Historial</h3></div>
       <div class="mb" style="padding:10px 14px">
-        <div class="fr" style="align-items:flex-end">
-          <div><label class="fl">Tema</label><select id="promFTema" onchange="promAplicarFiltros()"><option value="">Todos</option>${PROM_TEMAS.map(t=>`<option value="${t.v}">${t.l}</option>`).join('')}</select></div>
-          <div><label class="fl">Desde</label><input type="date" id="promFDesde" onchange="promAplicarFiltros()"></div>
-          <div><label class="fl">Hasta</label><input type="date" id="promFHasta" onchange="promAplicarFiltros()"></div>
-          <div><label class="fl">Público</label><select id="promFPub" onchange="promAplicarFiltros()">
-            <option value="">Todos</option><option value="colegio">Colegio</option><option value="curso">Curso</option><option value="estudiantes">Estudiantes</option>
-          </select></div>
-          <div><label class="fl">Curso</label><select id="promFCurso" onchange="promAplicarFiltros()"><option value="">Todos</option>${CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>
-          <div><label class="fl">Creador (id)</label><input id="promFCreador" placeholder="Ej: ${CU.id||''}" style="max-width:120px" oninput="this.value=this.value.replace(/\\D/g,'');"></div>
-          <div><button type="button" class="btn btn-xs" onclick="promAplicarFiltros()">Filtrar</button></div>
+        <div class="fr" style="align-items:flex-end;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px"><label class="fl">Buscar</label>
+            <input type="search" id="promBuscar" placeholder="Título, lugar o descripción…" style="width:100%" onkeydown="if(event.key==='Enter')promAplicarFiltros()"></div>
+          <button type="button" class="btn btn-xs" onclick="promAplicarFiltros()">Buscar</button>
         </div>
-        <div class="mut" style="margin-top:6px;font-size:11px">Tip: “Curso” filtra tanto actividades por curso como por estudiantes (si el curso fue seleccionado al escoger estudiantes).</div>
       </div>
       <div class="table-wrap mb" style="padding:0 8px 12px">
         <table>
-          <thead><tr><th style="width:92px">Fecha</th><th>Título</th><th style="width:18%">Tema</th><th style="width:18%">Público</th><th style="width:14%">Registró</th><th style="width:92px">Evid.</th><th style="width:80px"></th></tr></thead>
+          <thead><tr><th style="width:92px">Fecha</th><th>Actividad / problemática</th><th style="width:22%">Tema</th><th style="width:22%">Público objetivo</th><th style="width:88px"></th></tr></thead>
           <tbody id="promListBody">${_promTblRows(rows)}</tbody>
         </table>
       </div>

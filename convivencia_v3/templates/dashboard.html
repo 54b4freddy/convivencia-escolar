@@ -447,6 +447,59 @@
 </div>
 </div>
 
+<!-- OVERLAY: Promoción — nueva actividad -->
+<div class="ov" id="ov-prom-create">
+<div class="modal modal-lg" style="margin-top:14px">
+  <div class="mh">
+    <div class="mh-l">
+      <h3>Nueva actividad de promoción</h3>
+      <small>Planeación, público objetivo y evidencia opcional</small>
+    </div>
+    <button type="button" onclick="closeOv('ov-prom-create')">×</button>
+  </div>
+  <div class="mb" style="padding:12px 14px">
+    <div class="fr">
+      <div style="flex:2"><label class="fl">Título *</label><input id="promTit" maxlength="120" placeholder="Ej: Taller de gestión emocional"></div>
+      <div><label class="fl">Tema *</label>
+        <select id="promTema"><option value="">Seleccionar</option></select>
+      </div>
+    </div>
+    <div class="fr" style="margin-top:10px">
+      <div><label class="fl">Fecha *</label><input type="date" id="promFecha"></div>
+      <div style="flex:2"><label class="fl">Lugar</label><input id="promLugar" maxlength="120" placeholder="Ej: Biblioteca / Patio / Aula 203"></div>
+    </div>
+    <div class="fr" style="margin-top:10px">
+      <div style="flex:2"><label class="fl">Recursos</label><input id="promRec" maxlength="240" placeholder="Ej: Proyector, cartillas, parlante"></div>
+      <div><label class="fl">Público objetivo *</label>
+        <select id="promPub" onchange="promPubChanged()">
+          <option value="colegio">Todo el colegio</option>
+          <option value="curso">Un curso</option>
+          <option value="estudiantes">Estudiantes seleccionados</option>
+        </select>
+      </div>
+    </div>
+    <div id="promPubCursoRow" class="fr" style="margin-top:10px;display:none">
+      <div><label class="fl">Curso</label><select id="promCurso"><option value="">Seleccionar</option></select></div>
+    </div>
+    <div id="promPubEstRow" style="margin-top:10px;display:none">
+      <div class="fr">
+        <div><label class="fl">Curso base</label><select id="promEstCurso" onchange="promLoadEstSel()"><option value="">Seleccionar</option></select></div>
+        <div style="flex:2"><label class="fl">Estudiantes (marcar varios)</label><div id="promEstPick" class="mut">Seleccione curso</div></div>
+      </div>
+    </div>
+    <div style="margin-top:10px"><label class="fl">Descripción / planeación</label><textarea id="promDesc" rows="3" placeholder="Objetivo, actividades, responsables, logística…"></textarea></div>
+    <div class="fr" style="margin-top:10px">
+      <div style="flex:2"><label class="fl">Evidencia (opcional)</label><input type="file" id="promEvid" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></div>
+    </div>
+    <p class="ferr" id="promErr" style="font-size:12px;margin-top:6px"></p>
+  </div>
+  <div class="mf">
+    <button type="button" class="btn" onclick="closeOv('ov-prom-create')">Cancelar</button>
+    <button type="button" class="btn btn-p" onclick="promCrear()">Guardar actividad</button>
+  </div>
+</div>
+</div>
+
 <!-- OVERLAY: Promoción — detalle / edición -->
 <div class="ov" id="ov-prom">
 <div class="modal modal-lg" style="margin-top:14px">

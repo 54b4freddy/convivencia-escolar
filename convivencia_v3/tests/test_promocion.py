@@ -68,3 +68,27 @@ def test_promocion_focos_calor(client):
     assert "max_total" in j
 
 
+def test_promocion_listar_busqueda_q(client):
+    _login(client, "admin", "admin123")
+    data = {
+        "titulo": "Taller convivencia busqueda",
+        "tema": "gestion_emocional",
+        "fecha": "2026-04-15",
+        "lugar": "Biblioteca",
+        "recursos": "Proyector",
+        "descripcion": "Actividad de promoción",
+        "publico_tipo": "curso",
+        "publico_curso": "6A",
+    }
+    rv = client.post("/api/promocion/actividades", data=data, content_type="multipart/form-data")
+    assert rv.status_code == 200, rv.get_json()
+
+    lst = client.get("/api/promocion/actividades?q=busqueda").get_json()
+    assert isinstance(lst, list)
+    assert any(x.get("titulo") == "Taller convivencia busqueda" for x in lst)
+
+    vacio = client.get("/api/promocion/actividades?q=xyz_no_existe_12345").get_json()
+    assert isinstance(vacio, list)
+    assert not any(x.get("titulo") == "Taller convivencia busqueda" for x in vacio)
+
+
