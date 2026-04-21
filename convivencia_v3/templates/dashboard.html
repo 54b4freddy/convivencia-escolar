@@ -12,18 +12,18 @@
 </head>
 <body class="min-h-screen bg-[var(--bg)] font-sans text-[14px] leading-relaxed text-[var(--ink)] antialiased">
 <div class="sb-backdrop fixed inset-0 z-[25] bg-black/45" id="sbBackdrop" onclick="closeSidebar()"></div>
-<aside class="sb flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col border-r border-white/[0.06] bg-[var(--navy)] shadow-[2px_0_20px_rgba(0,0,0,0.18)]">
-  <div class="border-b border-white/[0.08] px-5 pb-4 pt-7">
-    <h2 id="sbSchool" class="text-[13px] font-semibold leading-snug tracking-tight text-[var(--sand)]">Convivencia Escolar</h2>
-    <p class="mt-1.5 text-[11px] tracking-wide text-white/40">Sistema disciplinar</p>
+<aside class="sb flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col border-r border-white/[0.06] bg-[var(--navy)] shadow-[2px_0_24px_rgba(0,0,0,0.22)]">
+  <div class="flex shrink-0 flex-col gap-1 border-b border-white/[0.08] px-4 pb-5 pt-8 sm:px-5">
+    <h2 id="sbSchool" class="sb-brand">Convivencia Escolar</h2>
+    <p class="text-[11px] font-medium leading-snug tracking-wide text-white/45">Sistema disciplinar</p>
   </div>
-  <div id="sbUser" class="sb-user mx-5 my-4 rounded-lg border-l-[3px] border-[var(--emerald)] bg-white/[0.05] px-3 py-2.5">
+  <div id="sbUser" class="sb-user-card mx-4 my-3 shrink-0 sm:mx-5 sm:my-4">
     <div class="un text-[13px] font-medium leading-snug text-white" id="sbNombre">—</div>
-    <div class="ur mt-1 text-[12px] leading-snug text-white/45" id="sbRol">—</div>
+    <div class="ur mt-1.5 text-[12px] leading-snug text-white/50" id="sbRol">—</div>
   </div>
-  <nav id="mainNav" class="flex flex-1 flex-col gap-2.5 overflow-y-auto px-5 py-5"></nav>
-  <div class="border-t border-white/[0.08] px-5 py-4">
-    <button type="button" class="w-full rounded-lg border border-white/[0.12] bg-transparent py-2 text-[12px] leading-snug text-white/45 transition hover:border-red-400/50 hover:text-red-300" onclick="doLogout()">⎋ Cerrar sesión</button>
+  <nav id="mainNav" class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-4 py-2 sm:px-5 sm:py-3"></nav>
+  <div class="sb-footer shrink-0">
+    <button type="button" class="sb-logout" onclick="doLogout()">⎋ Cerrar sesión</button>
   </div>
 </aside>
 <div class="main flex min-h-screen flex-col">
