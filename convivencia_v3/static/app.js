@@ -1951,8 +1951,15 @@ function closeOv(id){document.getElementById(id)?.classList.remove('open');}
 document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
 let toastT;
-function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.style.borderLeftColor=type==='e'?'#e74c3c':var_gold();t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3500);}
-function var_gold(){return getComputedStyle(document.documentElement).getPropertyValue('--gold').trim()||'#c9a84c';}
+function toast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  const r=getComputedStyle(document.documentElement);
+  t.style.borderLeftColor=type==='e'?'#e74c3c':(r.getPropertyValue('--emerald').trim()||'#009368');
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),3500);
+}
 
 async function doLogout(){await api('/api/logout',{method:'POST'});window.location.href='/login';}
 

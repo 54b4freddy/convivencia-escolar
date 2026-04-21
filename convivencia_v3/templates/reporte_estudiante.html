@@ -5,37 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Reportar — convivencia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='tailwind.css') }}">
 <style>
   :root {
-    --bg: #f6f3ff;
+    --navy: #143351;
+    --emerald: #009368;
+    --sand: #eed474;
+    --bg: #f6f4ef;
     --card: #fff;
-    --ink: #2d2640;
-    --mut: #6b6580;
-    --accent: #7c6cf0;
-    --accent2: #5bb89a;
+    --ink: #0f0e17;
+    --mut: #6b7280;
+    --accent: #009368;
+    --accent2: #007a56;
     --danger: #e85d6a;
-    --ok: #3d9e7a;
-    --radius: 18px;
-    --shadow: 0 8px 28px rgba(45, 38, 64, 0.08);
+    --ok: #009368;
+    --radius: 16px;
+    --shadow: 0 8px 28px rgba(20, 51, 81, 0.08);
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; min-height: 100vh; font-family: 'Nunito', system-ui, sans-serif;
-    background: linear-gradient(165deg, var(--bg) 0%, #eef8f4 100%);
+    margin: 0; min-height: 100vh; font-family: 'Inter', system-ui, sans-serif;
+    background: linear-gradient(165deg, var(--bg) 0%, #eef5f2 100%);
     color: var(--ink); padding: 16px 14px 48px;
   }
-  ::selection { background: rgba(124, 108, 240, 0.22); color: var(--ink); }
+  ::selection { background: rgba(0, 147, 104, 0.2); color: var(--ink); }
   .head { text-align: center; margin-bottom: 20px; }
-  .head h1 { font-size: 1.35rem; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .head h1 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1.35rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.02em; color: var(--navy); }
   .head p { margin: 0; color: var(--mut); font-size: 0.95rem; line-height: 1.45; }
-  .school { display: inline-block; margin-top: 10px; padding: 6px 14px; background: var(--card); border-radius: 999px; font-size: 0.85rem; box-shadow: var(--shadow); }
+  .school { display: inline-block; margin-top: 10px; padding: 6px 14px; background: var(--card); border-radius: 999px; font-size: 0.85rem; box-shadow: var(--shadow); border: 1px solid rgba(0, 147, 104, 0.12); }
   .step-h { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--mut); margin: 0 0 10px; font-weight: 700; }
   .card {
     background: var(--card); border-radius: var(--radius); padding: 18px 16px;
-    box-shadow: var(--shadow), 0 1px 2px rgba(45, 38, 64, 0.04); margin-bottom: 14px;
-    border: 1px solid rgba(124, 108, 240, 0.08);
+    box-shadow: var(--shadow), 0 1px 2px rgba(20, 51, 81, 0.04); margin-bottom: 14px;
+    border: 1px solid rgba(20, 51, 81, 0.08);
   }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .opt {
@@ -44,7 +48,7 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   }
   .opt:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .opt.on { border-color: var(--accent); background: #f0edff; box-shadow: inset 0 0 0 1px var(--accent); }
+  .opt.on { border-color: var(--accent); background: rgba(0, 147, 104, 0.08); box-shadow: inset 0 0 0 1px var(--accent); }
   .opt .ic { font-size: 1.6rem; line-height: 1; }
   .opt .tx { font-size: 0.82rem; font-weight: 700; line-height: 1.25; }
   .row { margin-bottom: 12px; }
@@ -59,7 +63,7 @@
     padding: 10px 14px; border-radius: 999px; border: 2px solid #e8e4f5; cursor: pointer; font-size: 0.85rem; font-weight: 600;
     background: #fff;
   }
-  .chip.on { border-color: var(--accent2); background: #e9f8f2; }
+  .chip.on { border-color: var(--emerald); background: rgba(0, 147, 104, 0.1); }
   .btn {
     width: 100%; padding: 16px; border: none; border-radius: 14px; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer;
     margin-top: 8px;
@@ -75,9 +79,9 @@
   .done h2 { margin: 0 0 10px; font-size: 1.2rem; }
   .done p { color: var(--mut); line-height: 1.55; font-size: 0.95rem; margin: 0; }
   .bar { height: 4px; background: #e8e4f5; border-radius: 4px; margin-bottom: 16px; overflow: hidden; }
-  .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.25s; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--emerald), var(--accent2)); border-radius: 4px; transition: width 0.25s; }
   footer { text-align: center; margin-top: 28px; font-size: 0.78rem; color: var(--mut); max-width: 360px; margin-left: auto; margin-right: auto; line-height: 1.45; }
-  a.back { color: var(--accent); font-weight: 700; text-decoration: none; font-size: 0.9rem; }
+  a.back { color: var(--emerald); font-weight: 700; text-decoration: none; font-size: 0.9rem; }
 </style>
 </head>
 <body class="antialiased">

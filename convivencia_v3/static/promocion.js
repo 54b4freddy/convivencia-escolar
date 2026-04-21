@@ -54,7 +54,7 @@ async function promRefreshCalor(){
         <span class="mut" style="font-size:11px">registros</span>
       </div>
       <div style="height:8px;border-radius:6px;background:rgba(0,0,0,.06);overflow:hidden;margin-bottom:4px" title="Intensidad relativa al tema más frecuente">
-        <div style="height:100%;width:${wTot}%;background:linear-gradient(90deg,var(--gold),#c9a227);border-radius:6px;min-width:${tot?4:0}px"></div>
+        <div style="height:100%;width:${wTot}%;background:linear-gradient(90deg,var(--emerald),#007a56);border-radius:6px;min-width:${tot?4:0}px"></div>
       </div>
       <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;background:rgba(0,0,0,.06);margin-bottom:4px" title="Urgente/alta vs resto">
         ${tot?`<div style="width:${pctU}%;min-width:${u?3:0}px;background:rgba(200,50,60,.75)"></div><div style="width:${pctR}%;background:rgba(40,90,160,.55)"></div>`:'<div style="width:100%;background:transparent"></div>'}
@@ -263,7 +263,7 @@ async function promCrear(){
 async function renderPromocion(tab){
   const rows=await _promFetchList();
   tab.innerHTML=`
-    <div class="abanner ab-i" style="font-size:11px;line-height:1.45">
+    <div class="abanner ab-i voice-lead" style="font-size:12px;line-height:1.5;max-width:none">
       Actividades de <strong>Promoción</strong> en convivencia (planeación, público objetivo y evidencias). No visible para acudientes ni estudiantes.
     </div>
     <div class="card">

@@ -7,12 +7,18 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --color-ink: #0f0e17;
-  --color-gold: #c9a84c;
-  --color-bg-app: #f4f1eb;
+  --color-navy: #143351;
+  --color-emerald: #009368;
+  --color-coral: #f4a07f;
+  --color-sand: #eed474;
+  --color-gold: #eed474;
+  --color-bg-app: #f6f4ef;
   --color-surf: #ffffff;
-  --color-brd: #e5e0d8;
-  --color-muted: #888888;
+  --color-brd: #e8e3d9;
+  --color-muted: #6b7280;
   --color-t1: #2ecc71;
   --color-t2: #f39c12;
   --color-t3: #e74c3c;
@@ -27,6 +33,6 @@
 @layer components {
   /* Estado activo del menú lateral (clase .on la pone showTab) */
   .ni.on {
-    @apply border-l-[var(--gold)] bg-[rgba(201,168,76,0.12)] text-[var(--gold)] font-semibold;
+    @apply border-l-[color:var(--emerald)] bg-[rgba(0,147,104,0.14)] text-white font-semibold;
   }
 }
