@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+@config '../tailwind.config.ts';
+
+@layer base {
+  html {
+    @apply font-body text-[15px] leading-[1.65] text-brand-navy antialiased;
+  }
+  body {
+    @apply m-0 min-h-screen bg-surface-base;
+  }
+}
