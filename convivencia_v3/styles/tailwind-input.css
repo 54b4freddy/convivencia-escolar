@@ -35,10 +35,35 @@
    * Barra lateral — .ni = fila plana (sin “tarjeta”); CTA verde (.btn-p) y cierre rojizo (.sb-logout).
    */
   .ni {
-    @apply flex w-full min-h-[38px] cursor-pointer items-center rounded-md border-0 border-l-[3px] border-transparent bg-transparent px-3 py-1.5 text-[13px] font-medium leading-snug text-white/72 shadow-none transition-colors duration-150 hover:bg-white/[0.06] hover:text-white;
+    @apply flex w-full min-h-[38px] cursor-pointer items-center gap-2.5 rounded-md border-0 border-l-[3px] border-transparent bg-transparent px-3 py-1.5 text-[13px] font-medium leading-snug text-white/72 shadow-none transition-colors duration-150 hover:bg-white/[0.06] hover:text-white;
+  }
+  /* SVG inline compactos: color vía currentColor, sin “fondos” raros */
+  .ni-ic {
+    @apply inline-flex h-5 w-5 shrink-0 text-white/80;
+  }
+  .ni-ic svg {
+    @apply block h-full w-full;
+  }
+  .ni:hover .ni-ic {
+    @apply text-white/95;
+  }
+  .ni.on .ni-ic {
+    @apply text-white;
+  }
+  .ni-ic--faltas {
+    @apply text-white;
+  }
+  .ni .ni-txt {
+    @apply min-w-0 flex-1 pr-0.5;
   }
   .ni.on {
     @apply border-[#009368] bg-[rgba(0,147,104,0.14)] font-semibold text-white;
+  }
+  .ni:focus {
+    outline: none;
+  }
+  .ni:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-white/40;
   }
   .ni-sep {
     @apply px-3 pb-0.5 pt-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35;

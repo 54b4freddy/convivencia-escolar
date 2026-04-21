@@ -11,19 +11,29 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body class="min-h-screen bg-[var(--bg)] font-sans text-[14px] leading-relaxed text-[var(--ink)] antialiased">
+<script>try{var m=matchMedia('(min-width:721px)').matches, n=localStorage.getItem('sbNarrow')==='1';if(n&&m)document.documentElement.classList.add('sb-narrow');}catch(e){}</script>
 <div class="sb-backdrop fixed inset-0 z-[25] bg-black/45" id="sbBackdrop" onclick="closeSidebar()"></div>
-<aside class="sb flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col border-r border-white/[0.06] bg-[var(--navy)] shadow-[2px_0_24px_rgba(0,0,0,0.22)]">
-  <div class="flex shrink-0 flex-col gap-1 border-b border-white/[0.08] px-4 pb-5 pt-8 sm:px-5">
-    <h2 id="sbSchool" class="sb-brand">Convivencia Escolar</h2>
-    <p class="text-[11px] font-medium leading-snug tracking-wide text-white/45">Sistema disciplinar</p>
+<aside id="appSidebar" class="sb sb-tr flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col border-r border-white/[0.06] bg-[var(--navy)] shadow-[2px_0_24px_rgba(0,0,0,0.22)]" aria-label="Navegación principal">
+  <div class="sb-head flex shrink-0 flex-col gap-1 border-b border-white/[0.08] px-4 pb-4 pt-7 sm:px-5 sm:pb-5 sm:pt-8">
+    <div class="flex items-start justify-between gap-2">
+      <div class="min-w-0 flex-1 pr-0.5">
+        <h2 id="sbSchool" class="sb-brand">Convivencia Escolar</h2>
+        <p class="sb-subline text-[11px] font-medium leading-snug tracking-wide text-white/45">Sistema disciplinar</p>
+        <div id="sbAbbr" class="sb-abbr" aria-hidden="true">CE</div>
+      </div>
+      <button type="button" class="sb-toggle" id="sbToggle" title="Contraer barra" aria-label="Contraer barra lateral" aria-pressed="false">‹</button>
+    </div>
   </div>
-  <div id="sbUser" class="sb-user-card mx-4 my-3 shrink-0 sm:mx-5 sm:my-4">
-    <div class="un text-[13px] font-medium leading-snug text-white" id="sbNombre">—</div>
-    <div class="ur mt-1.5 text-[12px] leading-snug text-white/50" id="sbRol">—</div>
+  <div id="sbUser" class="sb-user-card sb-user-outer mx-4 my-3 shrink-0 sm:mx-5 sm:my-4">
+    <div class="sb-initial" id="sbInicial">?</div>
+    <div class="sb-user-txt">
+      <div class="un text-[13px] font-medium leading-snug text-white" id="sbNombre">—</div>
+      <div class="ur mt-1.5 text-[12px] leading-snug text-white/50" id="sbRol">—</div>
+    </div>
   </div>
-  <nav id="mainNav" class="flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overscroll-contain px-4 py-2 sm:px-5 sm:py-2"></nav>
+  <nav id="mainNav" class="flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overscroll-contain px-4 py-2 sm:px-5 sm:py-2" aria-label="Secciones de la aplicación"></nav>
   <div class="sb-footer shrink-0">
-    <button type="button" class="sb-logout" onclick="doLogout()">⎋ Cerrar sesión</button>
+    <button type="button" class="sb-logout" onclick="doLogout()"><span class="sb-out-ico" aria-hidden="true">⎋</span><span class="sb-txt">Cerrar sesión</span></button>
   </div>
 </aside>
 <div class="main flex min-h-screen flex-col">
