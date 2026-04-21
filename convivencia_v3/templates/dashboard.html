@@ -90,6 +90,10 @@
         <div id="rCatRef" class="falta-catref" style="display:none">
           <div>REFERENCIA DEL CATÁLOGO (manual de convivencia)</div>
           <p>Guía para el docente; ajuste siempre al contexto real. Lo registrado en el paso 4 es su actuación concreta.</p>
+          <div id="rTemWrap" class="falta-tem-wrap" style="display:none">
+            <div class="plbl">Dimensión temática (automática desde el catálogo)</div>
+            <div id="rTemSug"></div>
+          </div>
           <div><div class="plbl">Protocolo sugerido</div><div class="pbox t1" id="rProtoSug"></div></div>
           <div class="falta-catref-gap"><div class="plbl">Sanción o medida de referencia</div><div class="pbox t1" id="rSancSug"></div></div>
           <button type="button" class="btn btn-g btn-xs falta-catref-btn" onclick="aplicarSugerenciaAProc()">Copiar referencia al paso 4 (proceso inicial)</button>
@@ -131,6 +135,7 @@
         <div class="st">¿Qué acción tomó inmediatamente?</div>
         <div id="rCatRefMini" class="falta-ref-mini" style="display:none">
           <strong>Referencia del catálogo</strong> (según la falta elegida en el paso 2)
+          <div class="falta-ref-mini-row"><span class="plbl">Temática</span><div id="rTemSugMini" class="falta-ref-mini-txt"></div></div>
           <div class="falta-ref-mini-row"><span class="plbl">Protocolo</span><div id="rProtoSugMini" class="falta-ref-mini-txt"></div></div>
           <div class="falta-ref-mini-row"><span class="plbl">Sanción / medida</span><div id="rSancSugMini" class="falta-ref-mini-txt"></div></div>
         </div>
@@ -199,6 +204,7 @@
         <div><label class="fl">Estudiante</label><input id="vEst" readonly></div>
         <div><label class="fl">Curso</label><input id="vCurso" readonly></div>
         <div><label class="fl">Tipo</label><input id="vTipo" readonly></div>
+        <div id="vTemRow" style="display:none;grid-column:1 / -1"><label class="fl">Dimensión temática</label><div id="vTemBdg"></div></div>
         <div style="grid-column:span 2"><label class="fl">Falta específica</label><input id="vEsp" readonly></div>
         <div><label class="fl">Lugar del incidente</label><input id="vLugarRo" readonly></div>
         <div style="grid-column:span 2"><label class="fl">Personas afectadas</label><input id="vAfectRo" readonly></div>
@@ -396,9 +402,10 @@
 <!-- OVERLAY: Editar protocolo/sancion -->
 <div class="ov" id="ov-proto-edit">
 <div class="modal" style="margin-top:14px;max-width:520px">
-  <div class="mh"><div class="mh-l"><h3>Protocolo y sanción</h3><small id="peDesc">—</small></div><button onclick="closeOv('ov-proto-edit')">×</button></div>
+  <div class="mh"><div class="mh-l"><h3>Protocolo, sanción y temática</h3><small id="peDesc">—</small></div><button onclick="closeOv('ov-proto-edit')">×</button></div>
   <div class="mb">
-    <div class="abanner ab-i" style="margin-bottom:12px">Estos textos aparecerán automáticamente al registrar una falta de este tipo.</div>
+    <div class="abanner ab-i" style="margin-bottom:12px">Protocolo y sanción se copian al registrar la falta. La <strong>dimensión temática</strong> clasifica el caso (manual de convivencia); puede corregirla si la inferencia no encaja.</div>
+    <div class="fr fr1" style="margin-bottom:12px"><div><label class="fl">Dimensión temática</label><select id="peTematica" class="max-w-full"></select></div></div>
     <div class="fr fr1"><div><label class="fl">Protocolo de atención</label><textarea id="peProto" rows="4" placeholder="Pasos a seguir según el manual de convivencia..."></textarea></div></div>
     <div class="fr fr1"><div><label class="fl">Sanción disciplinar sugerida</label><textarea id="peSancion" rows="3" placeholder="Consecuencia disciplinar establecida..."></textarea></div></div>
   </div>
@@ -421,9 +428,9 @@
 <!-- OVERLAY: Carga masiva catálogo -->
 <div class="ov" id="ov-cat-bulk">
 <div class="modal modal-lg" style="margin-top:14px">
-  <div class="mh"><div class="mh-l"><h3>Carga masiva al catálogo</h3><small>Una línea por falta: Tipo, Descripción</small></div><button onclick="closeOv('ov-cat-bulk')">×</button></div>
+  <div class="mh"><div class="mh-l"><h3>Carga masiva al catálogo</h3><small>Una línea: Tipo, Descripción y opcionalmente Temática</small></div><button onclick="closeOv('ov-cat-bulk')">×</button></div>
   <div class="mb">
-    <div class="abanner ab-i" style="margin-bottom:10px;font-size:11px">Cada línea: <code>Tipo I,Descripción breve</code> — el tipo debe ser exactamente <strong>Tipo I</strong>, <strong>Tipo II</strong> o <strong>Tipo III</strong>. Líneas con <code>#</code> se ignoran.</div>
+    <div class="abanner ab-i" style="margin-bottom:10px;font-size:11px">Cada línea: <code>Tipo I,Descripción breve</code> o <code>Tipo I,Descripción,Nombre de temática</code> (temática opcional; si falta, se infiere por palabras clave). El tipo debe ser <strong>Tipo I</strong>, <strong>Tipo II</strong> o <strong>Tipo III</strong>. Líneas con <code>#</code> se ignoran.</div>
     <textarea id="catBulkTxt" rows="12" style="width:100%;font-family:monospace;font-size:12px;background:#faf8f4" placeholder="Tipo I,Conflicto verbal leve&#10;Tipo II,Bullying en redes"></textarea>
     <p class="ferr" id="catBulkErr" style="font-size:12px;margin-top:6px"></p>
   </div>

@@ -226,15 +226,16 @@ def api_falta_crear():
         afectados_json = "[]"
     cat = execute(
         conn,
-        f"SELECT protocolo,sancion FROM catalogo_faltas WHERE descripcion={p} AND colegio_id={p}",
+        f"SELECT protocolo,sancion,tematica FROM catalogo_faltas WHERE descripcion={p} AND colegio_id={p}",
         (d["falta_especifica"], cid),
         fetch="one",
     )
+    tem = (cat.get("tematica") or "").strip() if cat else ""
     execute(
         conn,
         f"INSERT INTO faltas (anio,fecha,curso,estudiante,estudiante_id,tipo_falta,falta_especifica,"
-        f"descripcion,proceso_inicial,protocolo_aplicado,sancion_aplicada,docente,colegio_id,lugar,afectados_json) "
-        f"VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
+        f"descripcion,proceso_inicial,protocolo_aplicado,sancion_aplicada,tematica,docente,colegio_id,lugar,afectados_json) "
+        f"VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
         (
             anio,
             datetime.now().strftime("%Y-%m-%d"),
@@ -247,6 +248,7 @@ def api_falta_crear():
             d["proceso_inicial"],
             cat.get("protocolo", "") if cat else "",
             cat.get("sancion", "") if cat else "",
+            tem,
             u["nombre"],
             cid,
             lugar,

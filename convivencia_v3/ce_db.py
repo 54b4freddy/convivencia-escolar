@@ -6,6 +6,7 @@ import os
 from datetime import datetime, timedelta
 
 from ce_utils import clave_portal_estudiante_por_defecto, hpwd, solo_numeros
+from ce_tematica import infer_tematica
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 USE_PG = DATABASE_URL.startswith("postgres")
@@ -118,6 +119,8 @@ def _migrate_schema(conn):
             "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS gestion_coordinador TEXT DEFAULT NULL",
             "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS lugar TEXT DEFAULT ''",
             "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS afectados_json TEXT DEFAULT ''",
+            "ALTER TABLE catalogo_faltas ADD COLUMN IF NOT EXISTS tematica TEXT DEFAULT ''",
+            "ALTER TABLE faltas ADD COLUMN IF NOT EXISTS tematica TEXT DEFAULT ''",
             "ALTER TABLE estudiantes ADD COLUMN IF NOT EXISTS reporte_token TEXT DEFAULT ''",
             "ALTER TABLE estudiantes ADD COLUMN IF NOT EXISTS reporte_pin_hash TEXT DEFAULT ''",
             """CREATE TABLE IF NOT EXISTS reportes_convivencia (
@@ -244,6 +247,8 @@ def _migrate_schema(conn):
         ("faltas", "gestion_coordinador", "TEXT DEFAULT NULL"),
         ("faltas", "lugar", "TEXT DEFAULT ''"),
         ("faltas", "afectados_json", "TEXT DEFAULT ''"),
+        ("catalogo_faltas", "tematica", "TEXT DEFAULT ''"),
+        ("faltas", "tematica", "TEXT DEFAULT ''"),
         ("estudiantes", "reporte_token", "TEXT DEFAULT ''"),
         ("estudiantes", "reporte_pin_hash", "TEXT DEFAULT ''"),
     ):
@@ -438,7 +443,7 @@ CREATE TABLE IF NOT EXISTS estudiantes (
 );
 CREATE TABLE IF NOT EXISTS catalogo_faltas (
     id SERIAL PRIMARY KEY, tipo TEXT NOT NULL, descripcion TEXT NOT NULL,
-    protocolo TEXT DEFAULT '', sancion TEXT DEFAULT '',
+    protocolo TEXT DEFAULT '', sancion TEXT DEFAULT '', tematica TEXT DEFAULT '',
     colegio_id INTEGER REFERENCES colegios(id)
 );
 CREATE TABLE IF NOT EXISTS faltas (
@@ -447,7 +452,7 @@ CREATE TABLE IF NOT EXISTS faltas (
     estudiante_id INTEGER DEFAULT NULL, tipo_falta TEXT NOT NULL,
     falta_especifica TEXT NOT NULL, descripcion TEXT NOT NULL,
     proceso_inicial TEXT NOT NULL, protocolo_aplicado TEXT DEFAULT '',
-    sancion_aplicada TEXT DEFAULT '', docente TEXT NOT NULL,
+    sancion_aplicada TEXT DEFAULT '', tematica TEXT DEFAULT '', docente TEXT NOT NULL,
     colegio_id INTEGER REFERENCES colegios(id),
     gestion_coordinador TEXT DEFAULT NULL,
     lugar TEXT DEFAULT '',
@@ -612,7 +617,7 @@ CREATE TABLE IF NOT EXISTS estudiantes (
 );
 CREATE TABLE IF NOT EXISTS catalogo_faltas (
     id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, descripcion TEXT NOT NULL,
-    protocolo TEXT DEFAULT '', sancion TEXT DEFAULT '',
+    protocolo TEXT DEFAULT '', sancion TEXT DEFAULT '', tematica TEXT DEFAULT '',
     colegio_id INTEGER REFERENCES colegios(id)
 );
 CREATE TABLE IF NOT EXISTS faltas (
@@ -621,7 +626,7 @@ CREATE TABLE IF NOT EXISTS faltas (
     estudiante_id INTEGER DEFAULT NULL, tipo_falta TEXT NOT NULL,
     falta_especifica TEXT NOT NULL, descripcion TEXT NOT NULL,
     proceso_inicial TEXT NOT NULL, protocolo_aplicado TEXT DEFAULT '',
-    sancion_aplicada TEXT DEFAULT '', docente TEXT NOT NULL,
+    sancion_aplicada TEXT DEFAULT '', tematica TEXT DEFAULT '', docente TEXT NOT NULL,
     colegio_id INTEGER REFERENCES colegios(id),
     gestion_coordinador TEXT DEFAULT NULL,
     lugar TEXT DEFAULT '',
@@ -851,7 +856,11 @@ def init_db():
             ("Tipo III", "Porte de sustancias psicoactivas", "Llamado a padres y Policía de Infancia. RAI.", "Suspensión inmediata. Comité Municipal.", 1),
             ("Tipo III", "Acoso escolar comprobado", "Activación RAI. Orientación y autoridades.", "Matrícula en observación. Seguimiento psicosocial.", 1),
         ]:
-            execute(conn, f"INSERT INTO catalogo_faltas (tipo,descripcion,protocolo,sancion,colegio_id) VALUES ({p},{p},{p},{p},{p})", c)
+            execute(
+                conn,
+                f"INSERT INTO catalogo_faltas (tipo,descripcion,protocolo,sancion,colegio_id,tematica) VALUES ({p},{p},{p},{p},{p},{p})",
+                (*c[:5], infer_tematica(c[1])),
+            )
 
     cnt = execute(conn, "SELECT COUNT(*) as c FROM estudiantes", fetch="one")
     if (cnt or {}).get("c", 0) == 0:
@@ -909,10 +918,12 @@ def init_db():
             (_y, _d(-6), "6A", "Valentina Torres", 2, "Tipo II", "Agresión verbal a compañeros", "Discusión en recreo.", "Llamado escrito.", "Intervención del director.", "Compromiso de convivencia.", doc_nom, 1, "Baños", vic_pair),
             (_y, _d(-8), "6B", "Daniela Martínez", 4, "Tipo III", "Agresión física", "Incidente grave.", "Coordinación.", "RAI.", "Suspensión y comité.", "Carlos Director", 1, "Patio", vic_val),
         ]:
+            tem = infer_tematica(f[6])
+            row = f[:11] + (tem,) + f[11:]
             cur3 = execute(
                 conn,
-                f"INSERT INTO faltas (anio,fecha,curso,estudiante,estudiante_id,tipo_falta,falta_especifica,descripcion,proceso_inicial,protocolo_aplicado,sancion_aplicada,docente,colegio_id,lugar,afectados_json) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
-                f,
+                f"INSERT INTO faltas (anio,fecha,curso,estudiante,estudiante_id,tipo_falta,falta_especifica,descripcion,proceso_inicial,protocolo_aplicado,sancion_aplicada,tematica,docente,colegio_id,lugar,afectados_json) VALUES ({p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p},{p})",
+                row,
             )
             if USE_PG:
                 fid_row = execute(conn, "SELECT lastval() as lid", fetch="one")

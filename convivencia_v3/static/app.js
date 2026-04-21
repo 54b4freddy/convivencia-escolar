@@ -147,7 +147,7 @@ const TLINI={Docente:'D',Director:'DG',Coordinador:'CO',Orientador:'OR',Acudient
 const TLBLS={Director:'Observación del director de grupo',Coordinador:'Observación del coordinador',Orientador:'Nota de orientación — proceso psicosocial',Docente:'Seguimiento del docente'};
 const TGCLS={Superadmin:'t-sa',Coordinador:'t-co',Director:'t-di',Orientador:'t-or',Docente:'t-doc',Acudiente:'t-acu'};
 
-let CU=null,curTab=null,editEstId=null,editUsrId=null,editColId=null,verFId=null,catFil='Tipo I',catCache=[];
+let CU=null,curTab=null,editEstId=null,editUsrId=null,editColId=null,verFId=null,catFil='Tipo I',catCache=[],_TEMATICAS=[];
 
 // ── API helper ───────────────────────────────────────────────────────────────
 async function api(url,opts={}){
@@ -223,6 +223,12 @@ async function init(){
   buildNav();poblarSels();
   initSidebarChrome();
   refreshCitasPendientes();
+  try{
+    const tr=await api('/api/catalogo/tematicas');
+    _TEMATICAS=Array.isArray(tr.tematicas)?tr.tematicas:[];
+  }catch(_e){
+    _TEMATICAS=[];
+  }
   const first=document.querySelector('.ni');if(first)first.click();
 }
 
@@ -407,6 +413,15 @@ async function renderInicio(tab){
   const curBlock=!faltasAll.length||!curTop
     ?'<div class="mut" style="font-size:12px;padding:4px 0">Aparecerá cuando haya faltas con curso asignado.</div>'
     :`<div class="ini-cur-box"><div class="ini-cur-lbl">Curso con más faltas (${getAnio()})</div><div class="ini-cur-val"><strong>${escHtml(curTop[0])}</strong><span class="ini-rk-cnt">${curTop[1]}</span></div><div class="ini-cur-hint">Útil para focalizar acompañamiento o charlas de convivencia.</div></div>`;
+  const temList=_TEMATICAS.length?_TEMATICAS:['Relaciones Respetuosas','Normas de convivencia','Gestión Emocional','Ambiente Físico y seguro','Participación activa','Prevención de conflictos'];
+  const temCounts={};
+  temList.forEach(t=>{temCounts[t]=0;});
+  faltasAll.forEach(f=>{
+    const tx=(f.tematica||'').trim();
+    if(tx)temCounts[tx]=(temCounts[tx]||0)+1;
+  });
+  const temTiles=temList.map(t=>`<div class="ini-tem-tile"><div class="ini-tem-n">${temCounts[t]||0}</div><div class="ini-tem-l">${temBdg(t)}</div></div>`).join('');
+  const temBlock=`<div class="card mb-4"><div class="ch"><h3>Por dimensión temática</h3><span class="mut" style="font-size:11px;font-weight:500">${getAnio()} · clasificación del registro</span></div><div class="ini-tem-grid">${temTiles}</div></div>`;
   tab.innerHTML=`
     <div class="stats mb-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4 max-[720px]:flex max-[720px]:gap-2.5 max-[720px]:overflow-x-auto max-[720px]:pb-2 max-[720px]:[-webkit-overflow-scrolling:touch] max-[720px]:snap-x max-[720px]:snap-mandatory">
       <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.length}</div><div class="l">Total ${getAnio()}</div><div class="stat-ln sl-b"></div></div>
@@ -414,6 +429,7 @@ async function renderInicio(tab){
       <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo II').length}</div><div class="l">Tipo II — Graves</div><div class="stat-ln sl-a"></div></div>
       <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo III').length}</div><div class="l">Tipo III — Muy graves</div><div class="stat-ln sl-r"></div></div>
     </div>
+    ${temBlock}
     <div class="ini-grid grid grid-cols-1 gap-4 min-[1021px]:grid-cols-3">
       <div class="card">
         <div class="ch"><h3>Pendiente <span class="ini-count">(${proc.length})</span></h3></div>
@@ -445,6 +461,20 @@ async function renderInicio(tab){
 // ── Tarjetas faltas ───────────────────────────────────────────────────────────
 function escHtml(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+const _TEM_STY={
+  'Relaciones Respetuosas':'background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe',
+  'Normas de convivencia':'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe',
+  'Gestión Emocional':'background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8',
+  'Ambiente Físico y seguro':'background:#d1fae5;color:#047857;border:1px solid #a7f3d0',
+  'Participación activa':'background:#ffedd5;color:#c2410c;border:1px solid #fed7aa',
+  'Prevención de conflictos':'background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe',
+};
+function temBdg(lab){
+  const t=String(lab==null?'':lab).trim();
+  if(!t)return'';
+  const st=_TEM_STY[t]||'background:#f1f5f9;color:#475569;border:1px solid #e2e8f0';
+  return`<span class="tem-pill" style="${st}">${escHtml(t)}</span>`;
 }
 function estGestionBdg(f){
   const eg=f.estado_gestion||'pendiente';
@@ -483,7 +513,7 @@ function fCards(faltas){
     <div class="fcard ${f.tipo_falta==='Tipo III'?'t3':f.tipo_falta==='Tipo II'?'t2':''}" onclick="verFalta(${f.id})">
       <div class="fc-top">
         <span class="fc-est">${f.estudiante}</span>
-        <div class="fc-bdg">${bdg(f.tipo_falta)}${estGestionBdg(f)}<span class="bdg bg">${f.curso}</span>${(f.anotaciones?.length||0)>0?`<span class="bdg bi">${f.anotaciones.length} seg.</span>`:''}</div>
+        <div class="fc-bdg">${bdg(f.tipo_falta)}${estGestionBdg(f)}${(f.tematica||'').trim()?temBdg(f.tematica):''}<span class="bdg bg">${f.curso}</span>${(f.anotaciones?.length||0)>0?`<span class="bdg bi">${f.anotaciones.length} seg.</span>`:''}</div>
       </div>
       <div class="fc-meta"><span>${f.fecha}</span><span>${f.docente}</span></div>
       <div class="fc-desc">${f.falta_especifica} — ${f.descripcion}</div>
@@ -1000,17 +1030,18 @@ async function renderCatalogo(tab){
         <button class="tb-btn" onclick="setCF('Tipo III',this)">Tipo III — Muy graves</button>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th style="width:28%">Descripción</th><th style="width:8%">Tipo</th><th>Protocolo</th><th>Sanción</th><th style="width:55px"></th></tr></thead>
+        <table><thead><tr><th style="width:24%">Descripción</th><th style="width:8%">Tipo</th><th style="width:16%">Temática</th><th>Protocolo</th><th>Sanción</th><th style="width:55px"></th></tr></thead>
         <tbody id="tCat">${filasCat(cat,catFil)}</tbody></table>
       </div>
     </div>`;
 }
 function filasCat(cat,tipo){
   const lista=cat.filter(f=>f.tipo===tipo);
-  if(!lista.length)return`<tr><td colspan="5" class="empty">No hay faltas en este tipo</td></tr>`;
+  if(!lista.length)return`<tr><td colspan="6" class="empty">No hay faltas en este tipo</td></tr>`;
   return lista.map(f=>`<tr>
     <td style="font-weight:500;white-space:normal">${f.descripcion}</td>
     <td>${bdg(f.tipo)}</td>
+    <td style="white-space:normal;vertical-align:middle">${(f.tematica||'').trim()?temBdg(f.tematica):'<span class="mut" style="font-size:11px">—</span>'}</td>
     <td style="font-size:11px;color:var(--mut);white-space:normal;line-height:1.4">${f.protocolo||'<span style=color:#c9a84c>Sin definir — edite en Protocolos</span>'}</td>
     <td style="font-size:11px;color:var(--mut);white-space:normal;line-height:1.4">${f.sancion||'<span style=color:#c9a84c>Sin definir — edite en Protocolos</span>'}</td>
     <td><button type="button" class="btn btn-xs btn-d" onclick="borrarCat(${f.id})" title="Eliminar del catálogo">✕</button></td>
@@ -1020,13 +1051,14 @@ function setCF(tipo,btn){catFil=tipo;document.querySelectorAll('.tbar .tb-btn').
 
 // ── Protocolos ────────────────────────────────────────────────────────────────
 function htmlFilasProtoCat(cat){
-  if(!cat||!cat.length)return'<tr><td colspan="5" class="empty">No hay ítems en el catálogo. Agréguelos en «Catálogo de faltas».</td></tr>';
+  if(!cat||!cat.length)return'<tr><td colspan="6" class="empty">No hay ítems en el catálogo. Agréguelos en «Catálogo de faltas».</td></tr>';
   return cat.slice().sort((a,b)=>(a.tipo+a.descripcion).localeCompare(b.tipo+b.descripcion)).map(f=>`<tr>
     <td style="font-weight:500;white-space:normal">${f.descripcion}</td>
     <td>${bdg(f.tipo)}</td>
+    <td style="white-space:normal;vertical-align:middle">${(f.tematica||'').trim()?temBdg(f.tematica):'<span class="mut" style="font-size:11px">—</span>'}</td>
     <td style="font-size:11px;color:var(--mut);white-space:normal;line-height:1.35">${f.protocolo||'<span style=color:#c9a84c>Sin definir</span>'}</td>
     <td style="font-size:11px;color:var(--mut);white-space:normal;line-height:1.35">${f.sancion||'<span style=color:#c9a84c>Sin definir</span>'}</td>
-    <td><button type="button" class="btn btn-xs btn-i" onclick="editarProtoPorId(${f.id})">Editar protocolo y sanción</button></td>
+    <td><button type="button" class="btn btn-xs btn-i" onclick="editarProtoPorId(${f.id})">Editar protocolo, sanción y temática</button></td>
   </tr>`).join('');
 }
 
@@ -1062,7 +1094,7 @@ async function renderProto(tab){
         <div class="mb" style="padding:12px 14px">
           <p class="mut" style="font-size:11px;margin:0 0 10px;line-height:1.45">Texto que verá el docente al registrar una falta (pasos 2 y 4). Use <strong>Editar protocolo y sanción</strong> en cada fila.</p>
           <div class="table-wrap">
-            <table><thead><tr><th>Descripción</th><th style="width:11%">Tipo</th><th>Protocolo</th><th>Sanción / medida</th><th style="width:130px"></th></tr></thead>
+            <table><thead><tr><th>Descripción</th><th style="width:9%">Tipo</th><th style="width:14%">Temática</th><th>Protocolo</th><th>Sanción / medida</th><th style="width:150px"></th></tr></thead>
             <tbody id="tProtoCat">${htmlFilasProtoCat(cat)}</tbody></table>
           </div>
         </div>
@@ -1406,7 +1438,14 @@ async function verFalta(id){
   const f=await api(`/api/faltas/${id}`);
   window.verFObj=f;
   document.getElementById('verTitle').textContent=`Falta — ${f.estudiante}`;
-  document.getElementById('verBdgs').innerHTML=bdg(f.tipo_falta)+estGestionBdg(f)+`<span class="bdg bg">${f.curso}</span><span class="bdg bg">${f.anio}</span>`;
+  document.getElementById('verBdgs').innerHTML=bdg(f.tipo_falta)+((f.tematica||'').trim()?temBdg(f.tematica):'')+estGestionBdg(f)+`<span class="bdg bg">${f.curso}</span><span class="bdg bg">${f.anio}</span>`;
+  const vtr=document.getElementById('vTemRow');
+  const vtb=document.getElementById('vTemBdg');
+  const ttx=(f.tematica||'').trim();
+  if(vtr&&vtb){
+    if(ttx){vtb.innerHTML=temBdg(ttx);vtr.style.display='block';}
+    else{vtb.innerHTML='';vtr.style.display='none';}
+  }
   document.getElementById('vFecha').value=f.fecha;document.getElementById('vEst').value=f.estudiante;
   document.getElementById('vCurso').value=f.curso;document.getElementById('vTipo').value=f.tipo_falta;
   document.getElementById('vEsp').value=f.falta_especifica;document.getElementById('vDesc').value=f.descripcion;
@@ -1623,10 +1662,14 @@ function updateRCatSugerencia(){
   const mini=document.getElementById('rCatRefMini');
   const pMini=document.getElementById('rProtoSugMini');
   const sMini=document.getElementById('rSancSugMini');
+  const tw=document.getElementById('rTemWrap');
+  const ts=document.getElementById('rTemSug');
+  const tMini=document.getElementById('rTemSugMini');
   const esp=document.getElementById('rFaltaEsp').value;
   const hide=()=>{
     if(ref)ref.style.display='none';
     if(mini)mini.style.display='none';
+    if(tw)tw.style.display='none';
   };
   if(!pEl||!sEl){hide();return;}
   if(!esp){hide();return;}
@@ -1637,6 +1680,15 @@ function updateRCatSugerencia(){
   const st=(item.sancion||'').trim()||miss;
   pEl.textContent=pt;
   sEl.textContent=st;
+  const tm=(item.tematica||'').trim();
+  if(tm){
+    if(ts)ts.innerHTML=temBdg(tm);
+    if(tw)tw.style.display='block';
+    if(tMini)tMini.innerHTML=temBdg(tm);
+  }else{
+    if(tw)tw.style.display='none';
+    if(tMini)tMini.innerHTML='—';
+  }
   if(ref){ref.style.display='block';ref.scrollIntoView({behavior:'smooth',block:'nearest'});}
   if(pMini)pMini.textContent=pt;
   if(sMini)sMini.textContent=st;
@@ -1793,7 +1845,7 @@ async function guardarFalta(){
     ['rCurso','rEst','rTipo','rFaltaEsp','rDesc','rProc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     const rFile2=document.getElementById('rAdjFile');if(rFile2)rFile2.value='';
     const rCat2=document.getElementById('rAdjCat');if(rCat2)rCat2.value='descargos_inicial';
-    const rc=document.getElementById('rCitarAcu');if(rc){rc.checked=false;toggleRCita();}const rd=document.getElementById('rCitaDt');if(rd)rd.value='';document.getElementById('rAlerta').style.display='none';const cr=document.getElementById('rCatRef');if(cr)cr.style.display='none';const cm=document.getElementById('rCatRefMini');if(cm)cm.style.display='none';window._rCatList=[];await refreshCitasPendientes();renderCurrentTab();
+    const rc=document.getElementById('rCitarAcu');if(rc){rc.checked=false;toggleRCita();}const rd=document.getElementById('rCitaDt');if(rd)rd.value='';document.getElementById('rAlerta').style.display='none';const cr=document.getElementById('rCatRef');if(cr)cr.style.display='none';const cm=document.getElementById('rCatRefMini');if(cm)cm.style.display='none';const rtw=document.getElementById('rTemWrap');if(rtw)rtw.style.display='none';window._rCatList=[];await refreshCitasPendientes();renderCurrentTab();
   }
   else toast(r.error||'Error','e');
 }
@@ -1994,14 +2046,24 @@ async function guardarCatBulk(){
   else{if(err)err.textContent=r.error||'Error';else toast(r.error||'Error','e');}
 }
 let editProtoCatId=null;
+function fillPeTemSelect(val){
+  const sel=document.getElementById('peTematica');
+  if(!sel)return;
+  const list=_TEMATICAS.length?_TEMATICAS:['Relaciones Respetuosas','Normas de convivencia','Gestión Emocional','Ambiente Físico y seguro','Participación activa','Prevención de conflictos'];
+  sel.innerHTML=list.map(t=>`<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('');
+  const v=(val||'').trim();
+  if(v&&list.includes(v))sel.value=v;
+  else sel.selectedIndex=0;
+}
 function editarProtoPorId(id){
   const f=(catCache||[]).find(x=>x.id===id);
   if(!f){toast('Actualice la pestaña Protocolos (vuelva a entrar)','e');return;}
-  editarProtoSancion(f.id,f.descripcion,f.protocolo||'',f.sancion||'');
+  editarProtoSancion(f.id,f.descripcion,f.protocolo||'',f.sancion||'',f.tematica||'');
 }
-function editarProtoSancion(id,desc,proto,sancion){
+function editarProtoSancion(id,desc,proto,sancion,tematica){
   editProtoCatId=id;
   document.getElementById('peDesc').textContent=desc;
+  fillPeTemSelect(tematica);
   document.getElementById('peProto').value=proto||'';
   document.getElementById('peSancion').value=sancion||'';
   openOv('ov-proto-edit');
@@ -2009,8 +2071,9 @@ function editarProtoSancion(id,desc,proto,sancion){
 async function guardarProtoSancion(){
   const proto=document.getElementById('peProto').value.trim();
   const sancion=document.getElementById('peSancion').value.trim();
-  const r=await api(`/api/catalogo/${editProtoCatId}`,{method:'PATCH',body:JSON.stringify({protocolo:proto,sancion})});
-  if(r.ok){closeOv('ov-proto-edit');toast('Protocolo y sanción guardados');const cat=await api('/api/catalogo');catCache=cat;const tb=document.getElementById('tCat');if(tb)tb.innerHTML=filasCat(cat,catFil);const tp=document.getElementById('tProtoCat');if(tp)tp.innerHTML=htmlFilasProtoCat(cat);}
+  const tematica=(document.getElementById('peTematica')?.value||'').trim();
+  const r=await api(`/api/catalogo/${editProtoCatId}`,{method:'PATCH',body:JSON.stringify({protocolo:proto,sancion,tematica})});
+  if(r.ok){closeOv('ov-proto-edit');toast('Catálogo actualizado');const cat=await api('/api/catalogo');catCache=cat;const tb=document.getElementById('tCat');if(tb)tb.innerHTML=filasCat(cat,catFil);const tp=document.getElementById('tProtoCat');if(tp)tp.innerHTML=htmlFilasProtoCat(cat);}
   else toast(r.error||'Error','e');
 }
 async function borrarCat(id){if(!confirm('¿Eliminar esta falta del catálogo?'))return;const r=await api(`/api/catalogo/${id}`,{method:'DELETE'});if(r.ok){toast('Falta eliminada');const cat=await api('/api/catalogo');catCache=cat;const tb=document.getElementById('tCat');if(tb)tb.innerHTML=filasCat(cat,catFil);const tp=document.getElementById('tProtoCat');if(tp)tp.innerHTML=htmlFilasProtoCat(cat);}else toast(r.error||'Error','e');}

@@ -113,6 +113,8 @@ html,body{height:100%;font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-
 .cita-pend-row input[type="datetime-local"]{padding:6px 8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:12px}
 .fc-foot{margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
 .fc-proc{font-size:12px;color:var(--mut);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+.tem-pill{display:inline-flex;align-items:center;max-width:100%;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:600;line-height:1.35;white-space:normal;vertical-align:middle}
+.falta-tem-wrap{margin-bottom:10px}
 
 /* Estado “en progreso” / humano (coral) — uso puntual */
 .bdg-coral{background:rgba(244,160,127,.22);color:#7c2d12;border:1px solid rgba(244,160,127,.45)}
@@ -438,6 +440,10 @@ textarea{resize:vertical;min-height:68px}
 .ini-cur-lbl{font-size:11px;font-weight:600;color:var(--mut);margin-bottom:6px}
 .ini-cur-val{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px}
 .ini-cur-hint{font-size:10px;color:var(--mut);margin-top:8px;line-height:1.45}
+.ini-tem-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:12px 14px 14px;border-top:1px solid var(--brd)}
+.ini-tem-tile{background:var(--bg);border:1px solid var(--brd);border-radius:10px;padding:10px 11px;display:flex;flex-direction:column;gap:6px;min-height:72px}
+.ini-tem-n{font-size:20px;font-weight:700;color:var(--navy);line-height:1}
+.ini-tem-l{font-size:11px;line-height:1.35}
 .ff-grid{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;padding:4px 14px 14px}
 .ff-grid label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--mut);font-weight:500;margin:0}
 .ff-grid select,.ff-grid input[type=date]{min-width:132px;max-width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--brd);border-radius:var(--r);background:#fff;font-family:inherit;color:var(--ink)}
