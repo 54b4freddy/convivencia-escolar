@@ -32,20 +32,19 @@
 
 @layer components {
   /*
-   * Barra lateral — solo clases .ni / .ni-sep / .sb-* (buildNav aplica .ni sin utilidades duplicadas).
-   * Tarjetas: bordes suaves, sombra ligera, mismo lenguaje que cards del contenido.
+   * Barra lateral — .ni = fila plana (sin “tarjeta”); CTA verde (.btn-p) y cierre rojizo (.sb-logout).
    */
   .ni {
-    @apply flex min-h-[44px] cursor-pointer items-center rounded-xl border border-white/10 bg-white/[0.05] px-3.5 py-3 text-[13px] font-medium leading-snug text-white/70 shadow-sm transition-all duration-150 hover:border-white/18 hover:bg-white/[0.09] hover:text-white;
+    @apply flex w-full min-h-[38px] cursor-pointer items-center rounded-md border-0 border-l-[3px] border-transparent bg-transparent px-3 py-1.5 text-[13px] font-medium leading-snug text-white/72 shadow-none transition-colors duration-150 hover:bg-white/[0.06] hover:text-white;
   }
   .ni.on {
-    @apply border-[#009368]/55 bg-[rgba(0,147,104,0.2)] font-semibold text-white shadow-[0_4px_16px_rgba(0,0,0,0.18)] ring-1 ring-[#009368]/35;
+    @apply border-[#009368] bg-[rgba(0,147,104,0.14)] font-semibold text-white;
   }
   .ni-sep {
-    @apply px-0 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35;
+    @apply px-3 pb-0.5 pt-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35;
   }
   .sb-nav-cta {
-    @apply mb-1 pb-3;
+    @apply mb-0 pb-2;
   }
   .sb-brand {
     @apply font-display text-[13px] font-semibold leading-snug tracking-tight text-[var(--sand)];
@@ -57,6 +56,6 @@
     @apply border-t border-white/[0.08] px-4 py-4 sm:px-5;
   }
   .sb-logout {
-    @apply w-full rounded-xl border border-white/12 bg-white/[0.04] py-2.5 text-[12px] font-medium leading-snug text-white/55 shadow-sm transition hover:border-red-400/40 hover:bg-white/[0.06] hover:text-red-200/90;
+    @apply w-full rounded-xl border border-red-500/40 bg-red-950/35 py-2.5 text-[12px] font-medium leading-snug text-red-100 shadow-sm transition hover:border-red-400/55 hover:bg-red-950/50 hover:text-white;
   }
 }
