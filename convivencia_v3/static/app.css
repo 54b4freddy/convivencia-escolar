@@ -123,7 +123,7 @@ html,body{height:100%;font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-
 /* Badge */
 .bdg{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap;line-height:1.3}
 .b1{background:var(--t1g);color:var(--t1c)}.b2{background:var(--t2g);color:var(--t2c)}.b3{background:var(--t3g);color:var(--t3c)}
-.bi{background:var(--ibg);color:var(--ic)}.bg{background:#f0ece4;color:#555}
+.bi{background:var(--ibg);color:var(--ic)}.bg{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
 .beg-pe{background:#fff8e6;color:#7a5f1a}.beg-er{background:#eaf4ff;color:#185fa5}.beg-ce{background:#eafaf1;color:#1a7a40}
 .dot{width:5px;height:5px;border-radius:50%;display:inline-block;flex-shrink:0}
 .dg{background:var(--t1b)}.da{background:var(--t2b)}.dr{background:var(--t3b)}
@@ -151,12 +151,18 @@ html,body{height:100%;font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-
 
 /* Tabla */
 table{width:100%;border-collapse:collapse;table-layout:fixed}
-th{padding:10px 12px;text-align:left;font-size:12px;color:var(--mut);background:linear-gradient(180deg,#faf8f4,#f5f0e8);border-bottom:1px solid var(--brd);font-weight:600;letter-spacing:.02em}
+th{padding:10px 12px;text-align:left;font-size:12px;color:var(--mut);background:linear-gradient(180deg,#f8fafc,#f1f5f9);border-bottom:1px solid var(--brd);font-weight:600;letter-spacing:.02em}
 td{padding:10px 12px;font-size:13px;line-height:1.45;border-bottom:1px solid var(--brd);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#fdf9f0;cursor:pointer}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--brd);background:var(--surf);box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .table-wrap table{min-width:820px}
+
+/* Tabs (pestañas suaves, estilo moderno) */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;padding:6px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px}
+.tab-btn{appearance:none;border:1px solid transparent;background:transparent;color:#475569;font-size:12px;line-height:1.2;font-weight:600;padding:7px 12px;border-radius:999px;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.tab-btn:hover{background:rgba(20,51,81,.06);color:var(--navy)}
+.tab-btn.on{background:#fff;border-color:#e2e8f0;color:var(--navy);box-shadow:0 1px 2px rgba(0,0,0,.05)}
 
 /* Colegios SA */
 .col-card{background:var(--surf);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}

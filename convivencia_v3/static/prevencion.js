@@ -318,8 +318,7 @@ function _wirePrevEstTabs(){
   const set=(k)=>{
     btns.forEach(b=>{
       const on=b.getAttribute('data-prev-est')===k;
-      b.classList.toggle('btn-p',on);
-      b.classList.toggle('btn-xs',true);
+      b.classList.toggle('on',on);
     });
     Object.keys(panes).forEach(key=>{
       const el=panes[key];
@@ -383,9 +382,9 @@ async function renderSenales(tab){
         </div>
       </div>
       <div style="padding:10px">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-          <button type="button" class="btn btn-xs btn-p" data-prev-est="ciudadana">Alertas ciudadanas</button>
-          <button type="button" class="btn btn-xs" data-prev-est="conductas">Conductas de riesgo</button>
+        <div class="tabs" style="margin-bottom:10px">
+          <button type="button" class="tab-btn on" data-prev-est="ciudadana">Alertas ciudadanas</button>
+          <button type="button" class="tab-btn" data-prev-est="conductas">Conductas de riesgo</button>
         </div>
         <div id="repEstPrevCiudadana" class="prev-est-pane"></div>
         <div id="repEstPrevConductas" class="prev-est-pane" style="display:none;padding-top:4px"><div style="overflow:auto">${_senalesRowsHtml(conductaRows,canSeg)}</div></div>

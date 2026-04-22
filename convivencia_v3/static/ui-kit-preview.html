@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UI kit — vista previa local (Convivencia Escolar)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <!-- Mismos CSS que el dashboard (sin Flask): rutas relativas a esta carpeta -->
+  <link rel="stylesheet" href="tailwind.css" />
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    /* Solo en esta página: tipografía objetivo (DM) + fondo tipo prototipo */
+    .preview-page {
+      font-family: "DM Sans", "Inter", system-ui, sans-serif;
+      background: #f8fafc;
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 28px 18px 56px;
+    }
+    .preview-inner {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .preview-h1 {
+      font-family: "DM Serif Display", "Space Grotesk", Georgia, serif;
+      font-size: 1.85rem;
+      font-weight: 400;
+      color: #1a2e4a;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+      line-height: 1.2;
+    }
+    .preview-lead {
+      font-size: 14px;
+      line-height: 1.55;
+      color: #64748b;
+      margin: 0 0 22px;
+      max-width: 58ch;
+    }
+    .preview-note {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #64748b;
+      padding: 10px 14px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      margin-bottom: 22px;
+      background: #fff;
+    }
+    .preview-section-title {
+      font-family: "DM Serif Display", Georgia, serif;
+      font-size: 1.05rem;
+      color: #1a2e4a;
+      margin: 0 0 12px;
+    }
+    .preview-section {
+      margin-bottom: 32px;
+    }
+    /* Reutiliza reglas #ov-falta .falta-catref de app.css */
+    #ov-falta.preview-falta-scope {
+      position: static;
+      display: block;
+      padding: 0;
+      background: transparent;
+      overflow: visible;
+    }
+    .preview-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 720px) {
+      .preview-grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .preview-asist-card {
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .preview-asist-card--focus {
+      border-color: #1a2e4a !important;
+      box-shadow: 0 0 0 1px rgba(26, 46, 74, 0.12);
+    }
+    .preview-kv {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body class="preview-page">
+  <div class="preview-inner">
+    <h1 class="preview-h1">Vista previa del UI kit</h1>
+    <p class="preview-lead">
+      Archivo estático para revisar colores, tarjetas, tablas y componentes sin subir cambios a GitHub.
+      Carga los mismos <code>tailwind.css</code> y <code>app.css</code> que usa el dashboard.
+    </p>
+    <div class="preview-note">
+      <strong>Uso:</strong> abra este HTML desde el explorador (doble clic) en
+      <code>convivencia_v3/static/ui-kit-preview.html</code>, o sirva la carpeta <code>static</code> con cualquier servidor local.
+      Si los estilos no cargan, compruebe que <code>tailwind.css</code> y <code>app.css</code> estén en la misma carpeta.
+    </div>
+
+    <section class="preview-section" aria-labelledby="sec-form">
+      <h2 id="sec-form" class="preview-section-title">Formulario — referencia (Registrar falta)</h2>
+      <div class="card">
+        <div class="ch">
+          <h3>Registrar falta</h3>
+          <small class="mut">Ejemplo de jerarquía: título + ayuda breve</small>
+        </div>
+        <div style="padding: 16px 18px 18px">
+          <div class="fr fr1">
+            <div>
+              <label class="fl">Estudiante *</label>
+              <select><option>Valeria Martínez — 9°A</option></select>
+            </div>
+          </div>
+          <div class="fr fr1" style="margin-top: 4px">
+            <div>
+              <label class="fl">Falta específica *</label>
+              <select><option>[T1F10] Uso de bicicletas ajenas sin permiso</option></select>
+            </div>
+          </div>
+
+          <div id="ov-falta" class="preview-falta-scope" style="margin-top: 14px">
+            <div class="falta-catref" style="display: block">
+              <div>✦ CLASIFICACIÓN AUTOMÁTICA ASIGNADA</div>
+              <p>Texto explicativo breve según el catálogo y la descripción (se muestra en gris para no competir con el título).</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                <span class="bdg b1"><span class="dot dg"></span>Tipo I • Falta leve</span>
+                <span class="tem-pill" style="background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe">Normas de convivencia</span>
+              </div>
+              <div class="falta-catref-gap">
+                <div class="plbl">Protocolo sugerido</div>
+                <div class="pbox t1">Diálogo entre partes y acuerdo escrito en el observador.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="preview-grid-3" style="margin-top: 18px">
+            <div>
+              <div class="preview-kv">Fecha *</div>
+              <input type="date" value="2026-04-21" />
+            </div>
+            <div>
+              <div class="preview-kv">Hora *</div>
+              <input type="time" value="09:30" />
+            </div>
+            <div>
+              <div class="preview-kv">Reportado por</div>
+              <input type="text" value="Ana Coordinadora" readonly />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="preview-section" aria-labelledby="sec-tabs">
+      <h2 id="sec-tabs" class="preview-section-title">Pestañas (Prevención)</h2>
+      <div class="card" style="padding: 14px 16px 16px">
+        <div class="tabs" style="margin-bottom: 12px">
+          <button type="button" class="tab-btn on">Alertas ciudadanas</button>
+          <button type="button" class="tab-btn">Conductas de riesgo</button>
+        </div>
+        <p class="mut" style="margin: 0; font-size: 12px; line-height: 1.5">
+          Estado activo: <code>.tab-btn.on</code> (sin botón verde sólido; más limpio y alineado al prototipo).
+        </p>
+      </div>
+    </section>
+
+    <section class="preview-section" aria-labelledby="sec-badges">
+      <h2 id="sec-badges" class="preview-section-title">Badges y alertas</h2>
+      <div class="card" style="padding: 14px 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px">
+          <span class="bdg bg">Pendientes: <strong>1</strong></span>
+          <span class="bdg bg">Urgentes: <strong>0</strong></span>
+          <span class="bdg b1"><span class="dot dg"></span>Tipo I</span>
+          <span class="bdg b2"><span class="dot da"></span>Tipo II</span>
+          <span class="reit-bdg crit">Urgente</span>
+        </div>
+        <div class="abanner ab-i">Información (azul suave)</div>
+        <div class="abanner ab-a" style="margin-top: 8px">Atención (ámbar suave)</div>
+        <div class="abanner ab-r" style="margin-top: 8px">Error o riesgo alto</div>
+      </div>
+    </section>
+
+    <section class="preview-section" aria-labelledby="sec-table">
+      <h2 id="sec-table" class="preview-section-title">Tabla</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Recibido</th>
+              <th>Urgencia</th>
+              <th>Estudiante</th>
+              <th>Resumen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-size: 12px">2026-04-20 14:05</td>
+              <td><span class="bdg bg">Puede esperar</span></td>
+              <td><strong>Valentina Torres</strong><div class="mut">6A</div></td>
+              <td class="mut" style="font-size: 12px">Algo malo en el colegio · Patio</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="preview-section" aria-labelledby="sec-asist">
+      <h2 id="sec-asist" class="preview-section-title">Asistencia — tarjetas historial</h2>
+      <p class="mut" style="font-size: 12px; margin: -4px 0 12px">
+        Primera tarjeta con borde acento (como en su captura); las demás neutras.
+      </p>
+      <div class="fcard preview-asist-card preview-asist-card--focus" style="cursor: default">
+        <div class="fc-top">
+          <span class="fc-est">2026-04-17 · 6A</span>
+          <span class="bdg bg">Inglés</span>
+        </div>
+        <div class="fc-meta"><span>Ana Coordinadora</span><span>2026-04-17 00:49</span></div>
+        <table style="margin-top: 8px; font-size: 12px; width: 100%; border-collapse: collapse; border: 1px solid var(--brd); border-radius: 8px; overflow: hidden">
+          <thead>
+            <tr><th>Estudiante</th><th>Justificada</th><th>Revisar</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Sebastián García</td>
+              <td>Pendiente</td>
+              <td>
+                <button type="button" class="btn btn-xs">Marcar sí</button>
+                <button type="button" class="btn btn-xs">Marcar no</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="fcard preview-asist-card" style="cursor: default">
+        <div class="fc-top">
+          <span class="fc-est">2026-04-16 · 6A</span>
+          <span class="bdg bg">Naturales</span>
+        </div>
+        <div class="fc-meta"><span>Ana Coordinadora</span><span>2026-04-16 10:12</span></div>
+        <div class="mut" style="margin-top: 8px; font-size: 12px">Sin ausencias registradas</div>
+      </div>
+    </section>
+
+    <section class="preview-section" aria-labelledby="sec-btns">
+      <h2 id="sec-btns" class="preview-section-title">Botones</h2>
+      <div class="card" style="padding: 14px 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+          <button type="button" class="btn">Secundario</button>
+          <button type="button" class="btn btn-p">Primario</button>
+          <button type="button" class="btn btn-d">Peligro</button>
+          <button type="button" class="btn btn-g">Éxito suave</button>
+          <button type="button" class="btn btn-i">Info</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
