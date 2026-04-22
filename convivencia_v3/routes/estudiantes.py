@@ -99,11 +99,27 @@ def _strip_utf8_bom(s: str) -> str:
 
 
 def _import_csv_rows(texto: str) -> list[list[str]]:
-    """Parsea todo el texto como CSV (respeta comillas y comas dentro de campos)."""
+    """Parsea todo el texto como CSV (respeta comillas y separadores).
+
+    Acepta delimitadores típicos de exportación: coma `,` y punto y coma `;` (Excel LATAM).
+    """
     texto = _strip_utf8_bom((texto or "").strip())
     if not texto:
         return []
-    return list(csv.reader(StringIO(texto)))
+    sample = texto[:8192]
+    delim = ","
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=";,\t|")
+        delim = getattr(dialect, "delimiter", ",") or ","
+    except Exception:
+        # Heurística simple si el sniff falla
+        if sample.count(";") > sample.count(","):
+            delim = ";"
+        elif sample.count("\t") > sample.count(","):
+            delim = "\t"
+        else:
+            delim = ","
+    return list(csv.reader(StringIO(texto), delimiter=delim))
 
 
 def _is_extended_header_row(pts: list[str]) -> bool:
@@ -515,6 +531,12 @@ def api_importar_estudiantes():
             telefono = solo_numeros(pts[15]) if len(pts) > 15 else ""
             direccion = pts[16].strip() if len(pts) > 16 else ""
             clave_portal = (pts[17] or "").strip() if len(pts) > 17 else ""
+            # Archivos reales suelen dejar dirección vacía y ponerla al final como "columna extra".
+            # Si la dirección está vacía y la "clave" parece una dirección (tiene espacios / #),
+            # se reasigna como dirección y se deja clave vacía.
+            if not direccion and clave_portal and (" " in clave_portal or "#" in clave_portal):
+                direccion = clave_portal[:120]
+                clave_portal = ""
             nombre = nombre_desde_partes(ap1e, ap2e, n1e, n2e)
             acudiente = nombre_desde_partes(ap1a, ap2a, n1a, n2a)
             if not ap1e or not n1e or not curso:

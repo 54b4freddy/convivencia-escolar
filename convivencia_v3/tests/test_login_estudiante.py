@@ -260,3 +260,19 @@ def test_import_estudiantes_campo_con_coma_entre_comillas(client):
     assert rv.status_code == 200, rv.get_json()
     assert rv.get_json().get("insertados") == 1
     _logout(client)
+
+
+def test_import_estudiantes_delimitador_punto_y_coma_y_direccion_columna_extra(client):
+    """Caso real: CSV separado por ';' (Excel LATAM) y dirección queda al final."""
+    _login(client, "admin", "admin123")
+    doc = "9900112233445"
+    # 18 columnas: en este caso la "dirección" cae en la 18a; el import debe detectarlo.
+    line = (
+        "R.C.;"
+        + doc
+        + ";DUQUE;GIRALDO;EMILIANA;;10100;NO APLICA;C.C.;1001444275;DUQUE;GIRALDO;LAURA;MARYORI;Madre;3146198669;;Carrera 10 # 5-20\n"
+    )
+    rv = client.post("/api/estudiantes/importar", json={"texto": line, "curso_default": ""})
+    assert rv.status_code == 200, rv.get_json()
+    assert rv.get_json().get("insertados") == 1
+    _logout(client)
