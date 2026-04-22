@@ -256,7 +256,7 @@ async function promCrear(){
   const f=document.getElementById('promEvid')?.files?.[0];
   if(f) fd.append('evidencia',f);
   const r=await fetch('/api/promocion/actividades',{method:'POST',body:fd,credentials:'same-origin'});
-  const j=await r.json().catch(()=>({}));
+  const j=await parseFetchBodyAsJson(r);
   if(j.ok){toast('Actividad guardada');closeOv('ov-prom-create');renderCurrentTab();}
   else{if(err)err.textContent=j.error||'Error';toast(j.error||'Error','e');}
 }
@@ -446,7 +446,7 @@ async function promEvidAdd(){
   fd.append('evidencia',f);
   if(document.getElementById('promESetMain')?.checked) fd.append('set_como_principal','1');
   const r=await fetch(`/api/promocion/actividades/${id}/evidencias`,{method:'POST',body:fd,credentials:'same-origin'});
-  const j=await r.json().catch(()=>({}));
+  const j=await parseFetchBodyAsJson(r);
   if(j.ok){
     toast('Evidencia subida');
     const inp=document.getElementById('promEAddFile');if(inp)inp.value='';

@@ -150,9 +150,52 @@ const TGCLS={Superadmin:'t-sa',Coordinador:'t-co',Director:'t-di',Orientador:'t-
 let CU=null,curTab=null,editEstId=null,editUsrId=null,editColId=null,verFId=null,catFil='Tipo I',catCache=[],_TEMATICAS=[];
 
 // ── API helper ───────────────────────────────────────────────────────────────
+/** Interpreta el cuerpo de una Response como JSON; evita SyntaxError si llega HTML (login, 404, proxy). */
+async function parseFetchBodyAsJson(r){
+  const txt=await r.text();
+  const trimmed=txt.trimStart();
+  const low=trimmed.slice(0,16).toLowerCase();
+  const looksHtml=low.startsWith('<!doctype html')||low.startsWith('<html');
+  if(looksHtml){
+    const u=(r.url||'').toLowerCase();
+    if(r.status===401||r.status===403||u.includes('/login')){
+      window.location.href='/login';
+      return {error:'No autenticado',status:r.status};
+    }
+    if(r.status===404){
+      return {error:'Ruta no encontrada',status:404};
+    }
+    console.warn('[api] Respuesta HTML en lugar de JSON',r.status,r.url);
+    return {error:'El servidor devolvió una página HTML en lugar de datos. Revise la URL o intente iniciar sesión de nuevo.',status:r.status};
+  }
+  if(!trimmed.length){
+    if(r.ok)return {ok:true};
+    return {error:`HTTP ${r.status}`,status:r.status};
+  }
+  const ct=(r.headers.get('content-type')||'').toLowerCase();
+  if(ct.includes('application/json')||trimmed.startsWith('{')||trimmed.startsWith('[')){
+    try{return JSON.parse(txt);}
+    catch(e){
+      console.warn('[api] JSON inválido',e);
+      return {error:'Respuesta del servidor no es JSON válido',status:r.status,raw:trimmed.slice(0,160)};
+    }
+  }
+  try{return JSON.parse(txt);}
+  catch(_){
+    return {error:trimmed.slice(0,200)||`Error HTTP ${r.status}`,status:r.status};
+  }
+}
+
 async function api(url,opts={}){
-  const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
-  return r.json();
+  const{headers:ho,...rest}=opts;
+  const headers=ho instanceof Headers?Object.fromEntries(ho.entries()):{...(ho||{})};
+  const hasBody=rest.body!=null&&rest.body!=='';
+  if(hasBody&&typeof rest.body==='string'&&!headers['Content-Type']&&!headers['content-type']){
+    headers['Content-Type']='application/json';
+  }
+  const cred=rest.credentials!=null?rest.credentials:'same-origin';
+  const r=await fetch(url,{...rest,headers,credentials:cred});
+  return parseFetchBodyAsJson(r);
 }
 
 // ── Sidebar (mobile) ──────────────────────────────────────────────────────────
@@ -1787,7 +1830,7 @@ async function uploadFaltaAdjunto(fid,categoria,fileInput){
   fd.append('categoria',categoria);
   fd.append('archivo',fileInput.files[0]);
   const r=await fetch(`/api/faltas/${fid}/adjuntos`,{method:'POST',body:fd,credentials:'same-origin'});
-  return r.json();
+  return parseFetchBodyAsJson(r);
 }
 async function subirAdjuntoFalta(){
   if(!verFId)return;
@@ -1806,7 +1849,7 @@ async function subirAdjuntoFalta(){
 async function borrarAdjunto(fid,aid){
   if(!confirm('¿Eliminar este adjunto del expediente?'))return;
   const r=await fetch(`/api/faltas/${fid}/adjuntos/${aid}`,{method:'DELETE',credentials:'same-origin',headers:{'Content-Type':'application/json'}});
-  const j=await r.json();
+  const j=await parseFetchBodyAsJson(r);
   if(j&&j.ok){toast('Adjunto eliminado');await verFalta(fid);}
   else toast((j&&j.error)||'Error','e');
 }

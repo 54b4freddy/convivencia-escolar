@@ -255,7 +255,7 @@ async function guardarConducta(){
   const f=document.getElementById('crEvid')?.files?.[0];
   if(f)fd.append('evidencia',f);
   const r=await fetch('/api/senales-atencion',{method:'POST',body:fd,credentials:'same-origin'});
-  const j=await r.json().catch(()=>({}));
+  const j=await parseFetchBodyAsJson(r);
   if(j.ok){closeOv('ov-senal');toast('Conducta registrada');renderCurrentTab();}
   else err.textContent=j.error||'No se pudo guardar';
 }
