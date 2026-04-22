@@ -219,3 +219,41 @@ def test_import_estudiante_clave_portal_columna_opcional(client):
     ok = _login(client, doc, "ClaveImp99", colegio_id=1)
     assert ok.status_code == 200
     assert ok.get_json().get("usuario", {}).get("rol") == "Estudiante"
+
+
+def test_plantilla_importacion_estudiantes_csv(client):
+    _login(client, "admin", "admin123")
+    rv = client.get("/api/estudiantes/plantilla-importacion")
+    assert rv.status_code == 200
+    assert b"tipo_doc_est" in rv.data
+    assert b"documento_est" in rv.data
+
+
+def test_import_estudiantes_bom_y_fila_encabezado(client):
+    """UTF-8 BOM + primera fila de títulos (export Excel)."""
+    _login(client, "admin", "admin123")
+    doc = "8877665544332"
+    block = (
+        "\ufefftipo_doc_est,documento_est,apellido1,apellido2,nombre1,nombre2,curso,barreras,"
+        "tipo_doc_acu,documento_acu,apellido1_acu,apellido2_acu,nombre1_acu,nombre2_acu,parentesco,telefono,direccion\n"
+        f"CC,{doc},Bo,Z,Uno,Dos,6B,Ninguna identificada,CC,11122233344,Acu,Lo,No,Mb,Madre,300,\n"
+    )
+    rv = client.post("/api/estudiantes/importar", json={"texto": block, "curso_default": ""})
+    assert rv.status_code == 200, rv.get_json()
+    assert rv.get_json().get("insertados") == 1
+    _logout(client)
+
+
+def test_import_estudiantes_campo_con_coma_entre_comillas(client):
+    _login(client, "admin", "admin123")
+    doc = "7766554433221"
+    line = (
+        "CC,"
+        + doc
+        + ",Bo,Z,Uno,Dos,6B,Ninguna identificada,"
+        'CC,11122233344,Acu,Lo,No,Mb,Madre,300,"Calle 10, 5-20"\n'
+    )
+    rv = client.post("/api/estudiantes/importar", json={"texto": line, "curso_default": ""})
+    assert rv.status_code == 200, rv.get_json()
+    assert rv.get_json().get("insertados") == 1
+    _logout(client)

@@ -2114,17 +2114,48 @@ function previewImport(){
   const prev=document.getElementById('impPreview');
   if(prev)prev.innerHTML=`<div class="abanner ab-i" style="margin-top:6px">Se importarán <strong>${tot}</strong> fila(s) (${ext} extendido, ${leg} legado). Ejemplos: ${muestra.join(' · ')||'—'}</div>`;
 }
+function onImpFileChange(ev){
+  const f=ev.target?.files?.[0];
+  if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const t=(typeof rd.result==='string'?rd.result:'');
+    const ta=document.getElementById('impData');
+    if(ta)ta.value=t;
+    previewImport();
+  };
+  rd.onerror=()=>toast('No se pudo leer el archivo','e');
+  rd.readAsText(f,'UTF-8');
+}
 async function ejecutarImport(){
   const texto=document.getElementById('impData').value;const curso_default=document.getElementById('impCurso').value;
   const r=await api('/api/estudiantes/importar',{method:'POST',body:JSON.stringify({texto,curso_default})});
-  if(r.ok){closeOv('ov-import');let msg=`${r.insertados} estudiantes importados`;if(r.errores?.length)msg+=` (${r.errores.length} errores)`;toast(msg);renderCurrentTab();}
-  else toast(r.error||'Error','e');
+  if(r.ok){
+    const ne=(r.errores&&r.errores.length)||0;
+    let msg=`${r.insertados||0} estudiantes importados`;
+    if(ne)msg+=` — ${ne} fila(s) con aviso o error`;
+    toast(msg,ne&&!r.insertados?'e':undefined);
+    if(ne){
+      const prev=document.getElementById('impPreview');
+      if(prev)prev.innerHTML=`<div class="abanner" style="margin-top:8px;font-size:12px;max-height:220px;overflow:auto;border-left:3px solid #e74c3c;padding-left:8px">`+
+        (r.errores||[]).slice(0,40).map(e=>`<div>${escHtml(String(e))}</div>`).join('')+
+        (ne>40?`<div class="mut" style="margin-top:6px">… y ${ne-40} más</div>`:'')+`</div>`;
+    }
+    if(!ne)closeOv('ov-import');
+    if(r.insertados)renderCurrentTab();
+  }else toast(r.error||'Error','e');
 }
 
 // ── Overlays & Toast ──────────────────────────────────────────────────────────
 function openOv(id){
   document.getElementById(id)?.classList.add('open');
   if(id==='ov-falta')resetRegFaltaLugar();
+  if(id==='ov-import'){
+    const f=document.getElementById('impFile');
+    if(f)f.value='';
+    const pv=document.getElementById('impPreview');
+    if(pv)pv.innerHTML='';
+  }
 }
 function closeOv(id){document.getElementById(id)?.classList.remove('open');}
 document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));

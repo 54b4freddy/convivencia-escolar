@@ -175,6 +175,16 @@ El flujo recomendado es:
 
 ---
 
+## Carga masiva de estudiantes (CSV)
+
+En **Estudiantes → Carga masiva** puede **elegir un archivo** `.csv` o `.txt` (UTF-8) o pegar el contenido. Se recomienda **CSV UTF-8** desde Excel (*Guardar como*). También puede descargar la **plantilla** desde el mismo cuadro de diálogo (`/api/estudiantes/plantilla-importacion`, con sesión iniciada).
+
+- **Formato extendido (17 u 18 columnas):** tipo de documento y documento del estudiante, apellidos y nombres, curso, barreras, datos del acudiente, teléfono, dirección; columna opcional de contraseña del portal estudiante.
+- **Formato legado (8 u 9 columnas):** nombre completo estudiante, curso, barreras, acudiente, documento acudiente, teléfono, dirección, documento estudiante (y opcional clave portal).
+- Si la primera fila son **títulos de columnas** (p. ej. exportación desde otro sistema), el sistema intenta omitirla automáticamente.
+
+---
+
 ## 📦 Versiones
 
 | Versión | Cambios |

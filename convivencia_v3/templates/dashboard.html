@@ -384,14 +384,16 @@
   <div class="mb">
     <div class="abanner ab-i">
       <div>
-        <strong>Formato de columnas (separadas por coma):</strong><br>
-        <code style="font-size:11px;background:rgba(0,0,0,.06);padding:2px 5px;border-radius:3px">Nombre Apellido, Curso, Discapacidad, Nombre Acudiente, Cédula, Teléfono, Dirección</code><br>
-        Mínimo requerido: <strong>Nombre</strong> y <strong>Curso</strong>. El resto es opcional pero recomendado.<br>
-        Las líneas que empiecen con <code>#</code> se ignoran (comentarios).
+        <strong>Archivo CSV o TXT (UTF-8):</strong> use el botón <strong>«Elegir archivo»</strong> o pegue el contenido abajo. Excel: <em>Guardar como → CSV UTF-8 (delimitado por comas)</em>.<br>
+        <a class="btn btn-xs" href="/api/estudiantes/plantilla-importacion" download style="margin-top:6px;text-decoration:none;display:inline-block">Descargar plantilla CSV</a>
+        <span class="mut" style="margin-left:8px">Misma estructura que el formato extendido (17–18 columnas).</span><br>
+        Las líneas que empiecen con <code>#</code> se ignoran (comentarios). Si el archivo trae <strong>fila de encabezados</strong> (nombres de columnas), se omite automáticamente.
       </div>
     </div>
     <div style="margin-bottom:10px"><label class="fl">Curso por defecto (si no viene en la lista)</label><select id="impCurso" style="max-width:200px"><option value="">Seleccionar</option></select></div>
-    <label class="fl">Lista de estudiantes</label>
+    <label class="fl">Archivo</label>
+    <input type="file" id="impFile" accept=".csv,.txt,text/csv,text/plain" style="margin-bottom:8px;font-size:13px" onchange="onImpFileChange(event)">
+    <label class="fl">Lista de estudiantes (pegar o cargar archivo)</label>
     <textarea id="impData" rows="10" style="font-family:monospace;font-size:12px;background:#faf8f4" placeholder="# Extendido (17 cols; 18ª opcional = clave portal):&#10;Tarjeta de identidad (TI),1234567890,García,López,Ana,María,6A,Ninguna identificada,Cédula de ciudadanía (CC),9876543210,García,Pérez,Carlos,,Padre,3001234567,Calle 10 5-20,MiClaveOpc9&#10;# Legado (8 cols; 9ª opcional = clave portal):&#10;Alejandro Pérez, 6A, Ninguna identificada, Roberto Pérez, 1234567890, 3001234567, Calle 10, 1090123456"></textarea>
     <div id="impPreview" style="margin-top:8px"></div>
   </div>

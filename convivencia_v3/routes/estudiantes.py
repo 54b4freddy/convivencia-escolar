@@ -3,7 +3,7 @@ import csv
 from io import StringIO
 from typing import Optional
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
 from ce_db import USE_PG, commit, execute, get_db, ph
 from ce_utils import clave_portal_estudiante_por_defecto, hpwd, nombre_desde_partes, solo_letras, solo_numeros
@@ -90,6 +90,48 @@ def _row_csv(linea):
         return next(csv.reader(StringIO(linea)))
     except Exception:
         return [x.strip() for x in linea.split(",")]
+
+
+def _strip_utf8_bom(s: str) -> str:
+    if s.startswith("\ufeff"):
+        return s[1:]
+    return s
+
+
+def _import_csv_rows(texto: str) -> list[list[str]]:
+    """Parsea todo el texto como CSV (respeta comillas y comas dentro de campos)."""
+    texto = _strip_utf8_bom((texto or "").strip())
+    if not texto:
+        return []
+    return list(csv.reader(StringIO(texto)))
+
+
+def _is_extended_header_row(pts: list[str]) -> bool:
+    """Primera fila típica de Excel: encabezados en lugar de datos."""
+    if len(pts) < 15:
+        return False
+    doc_c = solo_numeros((pts[1] or ""))
+    if len(doc_c) >= 5:
+        return False
+    t0 = (pts[0] or "").lower()
+    t1 = (pts[1] or "").lower()
+    if "tipo" in t0 and "doc" in t0.replace(" ", ""):
+        return True
+    if "documento" in t1 and ("est" in t1 or "estudiante" in t1 or "alumno" in t1):
+        return True
+    if "identificación" in t1 or "identificacion" in t1:
+        return True
+    return False
+
+
+def _is_legacy_header_row(pts: list[str]) -> bool:
+    if len(pts) >= 15:
+        return False
+    a = (pts[0] or "").strip().lower()
+    b = (pts[1] or "").strip().lower() if len(pts) > 1 else ""
+    if ("nombre" in a or "estudiante" in a) and ("curso" in b or "grado" in b or "grupo" in b or "salón" in b or "salon" in b):
+        return True
+    return False
 
 
 def _import_insert_estudiante(
@@ -402,6 +444,28 @@ def api_estudiante_borrar(eid):
     return jsonify({"ok": True})
 
 
+_PLANTILLA_CSV = (
+    "tipo_doc_est,documento_est,apellido1,apellido2,nombre1,nombre2,curso,barreras,"
+    "tipo_doc_acu,documento_acu,apellido1_acu,apellido2_acu,nombre1_acu,nombre2_acu,"
+    "parentesco,telefono,direccion,clave_portal\r\n"
+    "# Ejemplo (quite el # al inicio de la siguiente línea para probar):\r\n"
+    "# CC,1234567890123,García,López,Ana,María,6A,Ninguna identificada,CC,9876543210987,"
+    "García,Pérez,Carlos,,Padre,3001234567,Calle 10 5-20,\r\n"
+)
+
+
+@bp.route("/api/estudiantes/plantilla-importacion")
+@login_required
+@roles("Superadmin", "Coordinador", "Director")
+def api_plantilla_importacion_estudiantes():
+    """CSV UTF-8 con encabezados recomendados (misma convención que la carga masiva)."""
+    return Response(
+        _PLANTILLA_CSV,
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="plantilla_estudiantes_convivencia.csv"'},
+    )
+
+
 @bp.route("/api/estudiantes/importar", methods=["POST"])
 @roles("Superadmin", "Coordinador", "Director")
 def api_importar_estudiantes():
@@ -414,12 +478,18 @@ def api_importar_estudiantes():
     curso_def = (d.get("curso_default") or "").strip()
     count = 0
     errores = []
-    for i, raw in enumerate(d.get("texto", "").split("\n"), 1):
-        linea = raw.strip()
-        if not linea or linea.startswith("#"):
+    rows = _import_csv_rows(d.get("texto", ""))
+    start = 0
+    if rows and _is_extended_header_row(rows[0]):
+        start = 1
+    elif rows and _is_legacy_header_row(rows[0]):
+        start = 1
+
+    for i, pts in enumerate(rows[start:], start=start + 1):
+        pts = [(x or "").strip() for x in pts]
+        if not any(pts):
             continue
-        pts = [x.strip() for x in _row_csv(linea)]
-        if not pts:
+        if pts[0].startswith("#"):
             continue
         low0 = pts[0].lower().replace("_", " ")
         if low0 in ("tipo doc est", "tipo_doc_est"):
