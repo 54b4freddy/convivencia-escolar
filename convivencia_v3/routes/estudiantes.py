@@ -548,8 +548,21 @@ def api_importar_estudiantes():
                     parentesco,
                     clave_portal or None,
                 )
+                commit(conn)  # evita que un error posterior anule filas ya buenas
             except ValueError as ex:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 errores.append(f"Línea {i}: {ex}")
+                continue
+            except Exception as ex:
+                # En Postgres, un error deja la transacción en estado inválido hasta rollback.
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                errores.append(f"Línea {i}: error interno al importar (revise formato/valores). {ex}")
                 continue
             count += 1
             continue
@@ -595,10 +608,21 @@ def api_importar_estudiantes():
                 "",
                 clave_portal or None,
             )
+            commit(conn)  # evita que un error posterior anule filas ya buenas
         except ValueError as ex:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             errores.append(f"Línea {i}: {ex}")
             continue
+        except Exception as ex:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            errores.append(f"Línea {i}: error interno al importar (revise formato/valores). {ex}")
+            continue
         count += 1
-    commit(conn)
     conn.close()
     return jsonify({"ok": True, "insertados": count, "errores": errores})

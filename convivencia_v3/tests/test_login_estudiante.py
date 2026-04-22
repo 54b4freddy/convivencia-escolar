@@ -24,6 +24,9 @@ def test_login_estudiante_documento_colegio(client):
             eid = row["id"]
             break
     assert doc and eid, "seed estudiante con documento"
+    # Asegura contraseña por defecto (últimos 4 dígitos) aunque el estudiante venga de importación.
+    rv = client.post(f"/api/estudiantes/{eid}/reset-clave-portal", json={})
+    assert rv.status_code == 200, rv.get_json()
     _logout(client)
 
     bad = _login(client, doc, "mala", colegio_id=1)
