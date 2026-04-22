@@ -59,6 +59,13 @@
   .ni.on {
     @apply border-[#009368] bg-[rgba(0,147,104,0.14)] font-semibold text-white;
   }
+  /* Variante “pill” (como el ejemplo): sin barra izquierda, fondo suave */
+  .ni.ni-pill {
+    @apply border-l-0 rounded-xl px-3.5 py-2;
+  }
+  .ni.ni-pill.on {
+    @apply bg-white/[0.10] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)];
+  }
   .ni:focus {
     outline: none;
   }
@@ -70,6 +77,15 @@
   }
   .sb-nav-cta {
     @apply mb-0 pb-2;
+  }
+  .sb-nav-cierre {
+    @apply mt-2 pb-3;
+  }
+  .sb-cierre-anio {
+    @apply w-full border border-red-500/40 bg-red-950/35 py-2.5 text-[12px] font-medium leading-snug text-red-100 shadow-sm transition hover:border-red-400/55 hover:bg-red-950/50 hover:text-white;
+  }
+  .sb-cierre-anio.on {
+    @apply border-red-400/65 bg-red-950/55 text-white;
   }
   .sb-brand {
     @apply font-display text-[13px] font-semibold leading-snug tracking-tight text-[var(--sand)];

@@ -1,39 +1,40 @@
 ﻿const CURSOS=['Preescolar A','Preescolar B','Primero A','Primero B','Segundo A','Tercero A','Cuarto A','Quinto A','6A','6B','7A','8A','9A','10A','11A'];
 const NAV={
   Superadmin:[
-    {id:'sa-col',l:'Instituciones'},
+    {sep:'PANEL'},{id:'sa-col',l:'Instituciones'},
     {sep:'PREVENCIÓN'},{id:'sa-sen',l:'Conductas de riesgo'},
   ],
   Coordinador:[
-    {id:'co-ini',l:'Resumen'},
+    {sep:'PANEL'},{id:'co-ini',l:'Resumen'},
+    {sep:'FALTAS'},{id:'co-f',l:'Todas las faltas'},{id:'co-asist',l:'Asistencia'},
     {sep:'PROMOCIÓN'},{id:'co-prom',l:'Actividades de promoción'},
     {sep:'PREVENCIÓN'},{id:'co-sen',l:'Conductas de riesgo'},
-    {sep:'ATENCIÓN Y SEGUIMIENTO'},{id:'co-f',l:'Todas las faltas'},{id:'co-asist',l:'Asistencia'},
-    {sep:'GESTIÓN'},{id:'co-est',l:'Estudiantes'},{id:'co-usr',l:'Usuarios'},{id:'co-cat',l:'Catálogo faltas'},{id:'co-proto',l:'Protocolos'},{id:'co-rep',l:'Reportes'},{id:'co-anio',l:'Cierre de año'}
+    {sep:'GESTIÓN'},{id:'co-est',l:'Estudiantes'},{id:'co-usr',l:'Usuarios'},{id:'co-cat',l:'Catálogo faltas'},{id:'co-proto',l:'Protocolos'},{id:'co-rep',l:'Reportes'},
+    {id:'co-anio',l:'Cierre de año',variant:'cierre'},
   ],
   Director:[
-    {id:'di-ini',l:'Mi resumen'},
+    {sep:'PANEL'},{id:'di-ini',l:'Mi resumen'},
+    {sep:'FALTAS'},{id:'di-f',l:'Faltas del curso'},{id:'di-asist',l:'Asistencia'},
     {sep:'PROMOCIÓN'},{id:'di-prom',l:'Actividades de promoción'},
     {sep:'PREVENCIÓN'},{id:'di-sen',l:'Conductas de riesgo'},
-    {sep:'ATENCIÓN Y SEGUIMIENTO'},{id:'di-f',l:'Faltas del curso'},{id:'di-asist',l:'Asistencia'},
-    {sep:'GESTIÓN'},{id:'di-est',l:'Mis estudiantes'}
+    {sep:'GESTIÓN'},{id:'di-est',l:'Mis estudiantes'},
   ],
   Orientador:[
-    {id:'or-ini',l:'Resumen'},
+    {sep:'PANEL'},{id:'or-ini',l:'Resumen'},
+    {sep:'FALTAS'},{id:'or-f',l:'Todas las faltas'},{id:'or-asist',l:'Asistencia'},{id:'or-perf',l:'Perfil estudiante'},
     {sep:'PROMOCIÓN'},{id:'or-prom',l:'Actividades de promoción'},
     {sep:'PREVENCIÓN'},{id:'or-sen',l:'Conductas de riesgo'},
-    {sep:'ATENCIÓN Y SEGUIMIENTO'},{id:'or-f',l:'Todas las faltas'},{id:'or-asist',l:'Asistencia'},{id:'or-perf',l:'Perfil estudiante'}
   ],
   Docente:[
-    {id:'doc-ini',l:'Mis registros'},
+    {sep:'PANEL'},{id:'doc-ini',l:'Mis registros'},
+    {sep:'FALTAS'},{id:'doc-f',l:'Mis faltas'},{id:'doc-asist',l:'Asistencia'},
     {sep:'PROMOCIÓN'},{id:'doc-prom',l:'Actividades de promoción'},
     {sep:'PREVENCIÓN'},{id:'doc-sen',l:'Conductas de riesgo'},
-    {sep:'ATENCIÓN Y SEGUIMIENTO'},{id:'doc-f',l:'Mis faltas'},{id:'doc-asist',l:'Asistencia'}
   ],
   Acudiente:[
-    {id:'acu-ini',l:'Inicio'},
+    {sep:'PANEL'},{id:'acu-ini',l:'Inicio'},
     {sep:'PREVENCIÓN'},{id:'acu-sen',l:'Registrar conducta de riesgo'},
-    {sep:'ATENCIÓN Y SEGUIMIENTO'},{id:'acu-f',l:'Faltas de mi hijo/a'}
+    {sep:'FALTAS'},{id:'acu-f',l:'Faltas de mi hijo/a'},
   ],
 };
 const TTLS={
@@ -47,38 +48,45 @@ const TTLS={
   'co-est':'Gestión de estudiantes','di-est':'Mis estudiantes',
   'co-usr':'Gestión de usuarios','co-cat':'Catálogo de faltas','co-proto':'Protocolos y procesos','co-rep':'Reportes y seguimiento','co-anio':'Cierre de año'
 };
-// Iconos nav: SVG compactos inline (sin <img>, sin fondo). Monocromo = currentColor (hereda text-* del .ni). Faltas = tarjetas con color fijo.
+// Iconos nav: SVG inline monocromo (currentColor). Sin “logos” de color para lectura homogénea en barra oscura.
 const NAV_SVG = {
   instituciones: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"><path d="M3 20h18V10l-9-6-9 6v10z"/><path d="M8 20v-6h3v6M13 20v-9h3v9"/></svg>',
   riesgo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3.2L2.6 20h18.8L12 3.2z"/><line x1="12" y1="9" x2="12" y2="12.5" stroke-linecap="round" stroke-width="2"/><circle cx="12" cy="16.2" r="0.9" fill="currentColor" stroke="none"/></svg>',
-  reportes: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 2.5h9l3.2 3.2V21.5H6V2.5z"/><path d="M15 2.5V6h3.2"/><rect x="7.5" y="11" width="2.8" height="5" fill="currentColor" fill-opacity=".32" stroke="none"/><rect x="11.2" y="9" width="2.8" height="7" fill="currentColor" fill-opacity=".5" stroke="none"/></svg>',
+  reportes: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h4V10H4v9zM10 19h4V5h-4v14zM16 19h4v-7h-4v7z"/></svg>',
   megafono: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 10.5V13a1.5 1.5 0 0 0 1.5 1.5H5l3.2 3.2V5.3L5 8.5H4A1.5 1.5 0 0 0 2.5 10z"/><path d="M16 6.5a6 6 0 0 1 0 11" stroke-width="1.4"/><path d="M19 4.5a9 9 0 0 1 0 15" stroke-width="1.2"/></svg>',
   asistencia: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="7.2"/><line x1="12" y1="8" x2="12" y2="12.3"/><line x1="12" y1="12.3" x2="15.2" y2="14.5"/></svg>',
   catalogo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 2.5H15l2.2 2.2v17.3H4.2V2.5h2.3z"/><line x1="6.2" y1="6" x2="12.5" y2="6"/><line x1="6.2" y1="8.5" x2="14" y2="8.5"/><line x1="6.2" y1="11" x2="11" y2="11"/><circle cx="15.2" cy="16.2" r="1.8"/><path d="M16.3 17.4l1.6 1.5"/></svg>',
-  faltas: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g fill="none" stroke-linejoin="round"><rect x="3.5" y="5.5" width="9.5" height="12" rx="1.3" fill="#d93b3b" stroke="#0f0e17" stroke-opacity=".22" stroke-width=".45"/><rect x="8.2" y="7.2" width="9.5" height="12" rx="1.3" fill="#c9a227" stroke="#0f0e17" stroke-opacity=".22" stroke-width=".45"/><path d="M6.2 8.2l3.2 3.2M9.4 8.2L6.2 11.4" stroke="#fff" stroke-width="1.15" stroke-linecap="round"/><path d="M12.8 9.2v4.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></g></svg>',
+  panel: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round"><path d="M12 3.8l8.2 8.2-8.2 8.2-8.2-8.2L12 3.8z"/><path d="M12 8.2l4.2 3.8L12 15.8l-4.2-3.8L12 8.2z"/></svg>',
+  lista: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><line x1="8.5" y1="7" x2="19" y2="7"/><line x1="8.5" y1="12" x2="19" y2="12"/><line x1="8.5" y1="17" x2="15" y2="17"/><circle cx="5" cy="7" r="1.15" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.15" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.15" fill="currentColor" stroke="none"/></svg>',
+  faltas: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8l2.2 6.4h6.6l-5.3 3.9 2 6.5-5.5-4-5.5 4 2-6.5L3.2 9.2h6.6L12 2.8z"/></svg>',
+  cierreAnio: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14.5" rx="2"/><path d="M3.5 9.5h17"/><line x1="8" y1="3.2" x2="8" y2="6"/><line x1="16" y1="3.2" x2="16" y2="6"/><path d="M8 14.5h5M8 17.5h8"/></svg>',
   protocolos: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 2v1.2l1.1.3a8 8 0 0 1 1.4.5l1-.6 1.7 1.7-.6 1a8 8 0 0 1 .5 1.4l.3 1.1H20v2.4h-1.2l-.3 1.1a8 8 0 0 1-.5 1.4l.6 1-1.7 1.7-1-.6a8 8 0 0 1-1.4.5l-1.1.3V20h-2.4v-1.2l-1.1-.3a8 8 0 0 1-1.4-.5l-1 .6-1.7-1.7.6-1a8 8 0 0 1-.5-1.4L6.2 16H4v-2.4h1.2l.3-1.1a8 8 0 0 1 .5-1.4l-.6-1 1.7-1.7 1 .6a8 8 0 0 1 1.4-.5L9.6 4H12z"/><circle cx="12" cy="12" r="2.2" fill="none"/></svg>',
-  usuarios: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="2.8"/><path d="M3.2 20.2v0a4.2 4.2 0 0 1 4.1-3.1H11"/><circle cx="16.2" cy="6.2" r="2.2"/><path d="M20.2 20.2V19a2.7 2.7 0 0 0-1.2-2.1"/></svg>'
+  usuarios: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="2.8"/><path d="M3.2 20.2v0a4.2 4.2 0 0 1 4.1-3.1H11"/><circle cx="16.2" cy="6.2" r="2.2"/><path d="M20.2 20.2V19a2.7 2.7 0 0 0-1.2-2.1"/></svg>',
+  estudiante: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.2"/><path d="M6 20.5v-.8a4.5 4.5 0 0 1 4.5-4.5h3A4.5 4.5 0 0 1 18 19.7v.8"/></svg>',
 };
 function makeNavIcon(name) {
   const wrap = document.createElement("span");
-  wrap.className = "ni-ic" + (name === "faltas" ? " ni-ic--faltas" : "");
+  wrap.className = "ni-ic";
   wrap.setAttribute("aria-hidden", "true");
-  wrap.innerHTML = NAV_SVG[name] || NAV_SVG.reportes;
+  wrap.innerHTML = NAV_SVG[name] || NAV_SVG.panel;
   return wrap;
 }
 function tabIconName(id) {
-  if (id === "or-perf") return "usuarios";
+  if (id === "or-perf") return "estudiante";
   if (id === "sa-col") return "instituciones";
   if (id.endsWith("-sen")) return "riesgo";
   if (id.endsWith("-prom")) return "megafono";
   if (id.endsWith("-asist")) return "asistencia";
-  if (id.endsWith("-f")) return "faltas";
-  if (id.endsWith("-est") || id === "co-usr") return "usuarios";
+  if (id.endsWith("-f")) return "lista";
+  if (id.endsWith("-est")) return "estudiante";
+  if (id === "co-usr") return "usuarios";
   if (id.endsWith("-cat")) return "catalogo";
   if (id.endsWith("-proto")) return "protocolos";
-  if (id.endsWith("-rep") || id.endsWith("-anio") || id.endsWith("-ini")) return "reportes";
-  if (id === "acu-f") return "faltas";
-  return "reportes";
+  if (id.endsWith("-rep")) return "reportes";
+  if (id.endsWith("-anio")) return "cierreAnio";
+  if (id.endsWith("-ini")) return "panel";
+  if (id === "acu-f") return "lista";
+  return "panel";
 }
 function colegioAbbr(n) {
   if (!n || !String(n).trim()) return "CE";
@@ -299,8 +307,29 @@ function buildNav(){
   }
   (NAV[CU.rol]||[]).forEach(item=>{
     if(item.sep){const d=document.createElement('div');d.className='ni-sep';d.textContent=item.sep;nav.appendChild(d);return;}
+    if(item.variant==='cierre'){
+      const wrap=document.createElement('div');
+      wrap.className='sb-nav-cta sb-nav-cierre';
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='sb-cierre-anio flex w-full items-center justify-center gap-2.5 rounded-xl px-3 py-3 text-[13px] shadow-md shadow-black/25';
+      b.setAttribute('data-tab',item.id);
+      const ttl=TTLS[item.id]||item.l;
+      b.title=ttl;
+      b.setAttribute('aria-label',ttl);
+      b.appendChild(makeNavIcon('cierreAnio'));
+      const sp=document.createElement('span');
+      sp.className='ni-txt';
+      sp.textContent=item.l;
+      b.appendChild(sp);
+      b.onclick=()=>{showTab(item.id,b);if(isMobile())closeSidebar();};
+      wrap.appendChild(b);
+      nav.appendChild(wrap);
+      return;
+    }
     const d=document.createElement('div');
     d.className='ni';
+    d.classList.add('ni-pill');
     d.setAttribute('data-tab',item.id);
     d.setAttribute('role','button');
     d.setAttribute('tabindex','0');
@@ -326,8 +355,12 @@ function showTab(id,el){
     n.classList.remove('on');
     n.removeAttribute('aria-current');
   });
+  document.querySelectorAll('.sb-cierre-anio').forEach(n=>{
+    n.classList.remove('on');
+    n.removeAttribute('aria-current');
+  });
   document.getElementById('topTitle').textContent=TTLS[id]||id;
-  const active=el||document.querySelector(`.ni[data-tab="${id}"]`);
+  const active=el||document.querySelector(`.ni[data-tab="${id}"]`)||document.querySelector(`.sb-cierre-anio[data-tab="${id}"]`);
   if(active){
     active.classList.add('on');
     active.setAttribute('aria-current','page');
