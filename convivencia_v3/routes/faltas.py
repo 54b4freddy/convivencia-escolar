@@ -8,7 +8,15 @@ from werkzeug.utils import secure_filename
 
 import json
 
+from pydantic import ValidationError
+
 from ce_citas import CITA_ROLES_DESTINO, cancelar_citas_abiertas_por_falta, insert_cita_escuela
+from models.faltas import (
+    FaltaCreadaResponse,
+    FaltaCreate,
+    validar_falta_detalle,
+    validar_faltas_lista,
+)
 from ce_db import USE_PG, commit, execute, get_db, ph
 from ce_faltas_service import attach_cita_falta, listar_faltas_enriquecidas, parse_filtros_faltas_args
 from ce_gestion import enriquecer_falta_gestion
@@ -87,6 +95,7 @@ def _lista_adjuntos(conn, fid):
 @bp.route("/api/faltas")
 @login_required
 def api_faltas():
+    # Respuesta: lista validada con FaltaListItem (cada ítem) — models.faltas.FaltaListItem
     u = cu()
     tenant_id, terr = resolve_colegio_id(u)
     if terr:
@@ -100,6 +109,7 @@ def api_faltas():
     conn = get_db()
     try:
         faltas = listar_faltas_enriquecidas(conn, u_sc, anio, filt_sql, estado_g)
+        validar_faltas_lista(faltas)
         return jsonify(faltas)
     finally:
         conn.close()
@@ -108,6 +118,7 @@ def api_faltas():
 @bp.route("/api/faltas/<int:fid>")
 @login_required
 def api_falta_detalle(fid):
+    # Respuesta: FaltaDetalle — models.faltas.FaltaDetalle
     u = cu()
     tenant_id, terr = resolve_colegio_id(u)
     if terr:
@@ -135,6 +146,7 @@ def api_falta_detalle(fid):
     enriquecer_falta_gestion(f)
     f["adjuntos"] = _lista_adjuntos(conn, fid)
     conn.close()
+    validar_falta_detalle(f)
     return jsonify(f)
 
 
@@ -173,7 +185,18 @@ def api_falta_gestion(fid):
 @bp.route("/api/faltas", methods=["POST"])
 @roles("Superadmin", "Coordinador", "Orientador", "Director", "Docente")
 def api_falta_crear():
+    # Cuerpo: FaltaCreate — models.faltas.FaltaCreate; respuesta: FaltaCreadaResponse
     d = request.json or {}
+    try:
+        FaltaCreate.model_validate(d)
+    except ValidationError as e:
+        err = e.errors()
+        return jsonify(
+            {
+                "ok": False,
+                "error": err[0].get("msg", "validación") if err else "Datos no válidos",
+            }
+        ), 400
     u = cu()
     cid, terr = resolve_colegio_id(u)
     if terr:
@@ -270,7 +293,9 @@ def api_falta_crear():
                 pass
     commit(conn)
     conn.close()
-    return jsonify({"ok": True, "id": fid})
+    out = {"ok": True, "id": fid}
+    FaltaCreadaResponse.model_validate(out)
+    return jsonify(out)
 
 
 def _puede_editar_analitica(u, f):

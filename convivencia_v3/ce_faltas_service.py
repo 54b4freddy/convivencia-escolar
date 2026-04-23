@@ -11,7 +11,7 @@ _FECHA_ISO_FALTAS = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 def parse_filtros_faltas_args(args):
     """
     args: objeto tipo request.args con .get(key, default).
-    Devuelve dict para fq(..., filtros).
+    Devuelve dict para fq(..., filtros). El caller debe pasar usuario con colegio_id resuelto.
     """
     curso = (args.get("curso") or "").strip()
     tipo_falta = (args.get("tipo_falta") or "").strip()

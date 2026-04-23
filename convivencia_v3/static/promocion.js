@@ -47,17 +47,18 @@ async function promRefreshCalor(){
     const pctU=tot>0?Math.round((u/tot)*100):0;
     const pctR=100-pctU;
     const wTot=maxTot>0?Math.min(100,Math.round((tot/maxTot)*100)):0;
-    return `<div class="fcard" style="padding:12px 14px;min-height:0;border:1px solid var(--brd);border-radius:var(--r);background:var(--card)">
+    /* TODO: barra de intensidad con gradiente multi-token (antes linear-gradient 90deg, var(--emerald), #007a56)) */
+    return `<div class="fcard" style="min-height:0;margin-bottom:12px">
       <div style="font-weight:600;font-size:13px;line-height:1.3">${escHtml(t.l)}</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin:8px 0 6px">
         <span style="font-size:24px;font-weight:700">${tot}</span>
         <span class="mut" style="font-size:11px">registros</span>
       </div>
-      <div style="height:8px;border-radius:6px;background:rgba(0,0,0,.06);overflow:hidden;margin-bottom:4px" title="Intensidad relativa al tema más frecuente">
-        <div style="height:100%;width:${wTot}%;background:linear-gradient(90deg,var(--emerald),#007a56);border-radius:6px;min-width:${tot?4:0}px"></div>
+      <div style="height:8px;border-radius:6px;background:color-mix(in srgb,var(--color-text) 6%,var(--color-surface));overflow:hidden;margin-bottom:4px" title="Intensidad relativa al tema más frecuente">
+        <div style="height:100%;width:${wTot}%;background:var(--color-accent);border-radius:6px;min-width:${tot?4:0}px"></div>
       </div>
-      <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;background:rgba(0,0,0,.06);margin-bottom:4px" title="Urgente/alta vs resto">
-        ${tot?`<div style="width:${pctU}%;min-width:${u?3:0}px;background:rgba(200,50,60,.75)"></div><div style="width:${pctR}%;background:rgba(40,90,160,.55)"></div>`:'<div style="width:100%;background:transparent"></div>'}
+      <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;background:color-mix(in srgb,var(--color-text) 6%,var(--color-surface));margin-bottom:4px" title="Urgente/alta vs resto">
+        ${tot?`<div style="width:${pctU}%;min-width:${u?3:0}px;background:var(--color-danger)"></div><div style="width:${pctR}%;background:var(--color-info)"></div>`:'<div style="width:100%;background:transparent"></div>'}
       </div>
       <div class="mut" style="font-size:11px;line-height:1.35">Urgente/alta: ${u} · Resto: ${r}</div>
       <button type="button" class="btn btn-xs btn-p" style="margin-top:10px;width:100%" onclick="promPlanDesdeTema(${JSON.stringify(t.v)})">Programar desde foco</button>

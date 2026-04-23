@@ -4,10 +4,13 @@ from datetime import datetime
 from ce_db import USE_PG, execute, get_db, ph
 
 
-def fq(usuario, anio, filtros=None):
+def fq(usuario, anio, filtros=None, colegio_id=None):
     """Query base de faltas según rol y año. Retorna (sql, params).
 
     filtros opcionales (dict): curso, tipo_falta, fecha_desde, fecha_hasta (YYYY-MM-DD).
+
+    colegio_id opcional: si se pasa, se usa como tenant (prioridad sobre usuario["colegio_id"]).
+    Si no se pasa, usuario debe incluir colegio_id entero ya resuelto (p. ej. tras resolve_colegio_id).
     """
     try:
         anio = int(anio)
@@ -15,8 +18,17 @@ def fq(usuario, anio, filtros=None):
         anio = datetime.now().year
     filtros = filtros or {}
     p = ph()
-    colegio_id = usuario.get("colegio_id") or 1
-    params = [colegio_id, anio]
+    _err = "colegio_id no resuelto en el usuario. Usa resolve_colegio_id() antes de llamar fq()."
+    cid = colegio_id if colegio_id is not None else usuario.get("colegio_id")
+    if cid is None or cid == "":
+        raise ValueError(_err)
+    try:
+        cid = int(cid)
+    except (TypeError, ValueError):
+        raise ValueError(_err)
+    if cid <= 0:
+        raise ValueError(_err)
+    params = [cid, anio]
     q = f"SELECT f.* FROM faltas f WHERE f.colegio_id={p} AND f.anio={p}"
     if usuario["rol"] == "Director":
         q += f" AND (f.curso={p} OR f.docente={p})"

@@ -7,6 +7,7 @@ from flask import Blueprint, Response, jsonify, request
 
 from ce_db import USE_PG, commit, execute, get_db, ph
 from ce_utils import clave_portal_estudiante_por_defecto, hpwd, nombre_desde_partes, solo_letras, solo_numeros
+from models.faltas import validar_estudiantes_lista
 from routes.authz import cu, login_required, resolve_colegio_id, roles
 
 bp = Blueprint("estudiantes", __name__)
@@ -226,6 +227,7 @@ def _import_insert_estudiante(
 @bp.route("/api/estudiantes")
 @login_required
 def api_estudiantes():
+    # Respuesta: lista de filas — cada una validada con EstudianteBasico (models.faltas.EstudianteBasico)
     u = cu()
     tenant_id, terr = resolve_colegio_id(u)
     if terr:
@@ -242,7 +244,9 @@ def api_estudiantes():
             return jsonify({"error": "Sesión de acudiente sin estudiante asociado."}), 400
         rows = execute(conn, f"SELECT * FROM estudiantes WHERE colegio_id={p} AND id={p}", (tenant_id, eid), fetch="all")
         conn.close()
-        return jsonify(rows or [])
+        rows = rows or []
+        validar_estudiantes_lista(rows)
+        return jsonify(rows)
     curso = request.args.get("curso", "")
     q = f"SELECT * FROM estudiantes WHERE colegio_id={p}"
     params = [tenant_id]
@@ -254,6 +258,7 @@ def api_estudiantes():
         params.append(curso)
     rows = execute(conn, q + " ORDER BY curso,nombre", params, fetch="all")
     conn.close()
+    validar_estudiantes_lista(rows)
     return jsonify(rows)
 
 

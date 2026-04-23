@@ -1,25 +1,45 @@
 """Autenticación y autorización por roles (sesión Flask)."""
+import logging
+from datetime import datetime, timezone
 from functools import wraps
 
 from flask import jsonify, request, session
+
+logger = logging.getLogger(__name__)
+
+ERR_SESION_SIN_COLEGIO = (
+    "sesión inválida: colegio_id no encontrado. Cierre sesión y vuelva a ingresar."
+)
 
 
 def resolve_colegio_id(u):
     """Colegio efectivo para operaciones multi-tenant.
 
-    - Si el usuario tiene `colegio_id` en sesión, se usa (entero).
-    - Si es Superadmin sin colegio asignado, debe enviar `colegio_id` en querystring
-      (GET) o en JSON / form (POST/PATCH/PUT/DELETE).
-    - Otros roles sin colegio en sesión: se asume `1` (compatibilidad con datos viejos).
+    - Si el usuario tiene `colegio_id` en sesión (entero > 0), se usa.
+    - Si es Superadmin sin colegio en sesión o con valor inválido, debe enviar
+      `colegio_id` en querystring (GET) o en JSON / form (POST/PATCH/PUT/DELETE).
+    - Otros roles sin colegio resoluble en sesión: error explícito (no hay fallback
+      a otro colegio).
 
     Retorna ``(colegio_id:int|None, error:str|None)``. Si ``error`` no es None, responder 400.
     """
     rid = u.get("colegio_id")
     if rid is not None and rid != "":
         try:
-            return int(rid), None
+            cid = int(rid)
         except (TypeError, ValueError):
             return None, "colegio_id de sesión inválido"
+        if cid > 0:
+            return cid, None
+        # 0 o negativo: no es tenant válido; Superadmin puede seguir con el request
+        if u.get("rol") != "Superadmin":
+            logger.warning(
+                "resolve_colegio_id: staff sin colegio_id resoluble en sesión (usuario_id=%s, rol=%s, ts=%s)",
+                u.get("id"),
+                u.get("rol"),
+                datetime.now(timezone.utc).isoformat(),
+            )
+            return None, ERR_SESION_SIN_COLEGIO
     if u.get("rol") == "Superadmin":
         raw = request.args.get("colegio_id")
         if raw is None and request.method in ("POST", "PATCH", "PUT", "DELETE"):
@@ -35,7 +55,13 @@ def resolve_colegio_id(u):
         if cid <= 0:
             return None, "Para Superadmin, envíe colegio_id"
         return cid, None
-    return 1, None
+    logger.warning(
+        "resolve_colegio_id: staff sin colegio_id resoluble en sesión (usuario_id=%s, rol=%s, ts=%s)",
+        u.get("id"),
+        u.get("rol"),
+        datetime.now(timezone.utc).isoformat(),
+    )
+    return None, ERR_SESION_SIN_COLEGIO
 
 
 def login_required(f):

@@ -1,6 +1,7 @@
 /*
   Tailwind + app.css: las utilidades escanean templates/ y static/*.js.
   Estilos compartidos (cards, tablas, modales, botones) viven en static/app.css.
+  Tokens de color: única fuente en @theme (consumidos como var(--color-*) en app.css).
 */
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
@@ -9,20 +10,118 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --color-ink: #0f0e17;
-  --color-navy: #143351;
-  --color-emerald: #009368;
-  --color-coral: #f4a07f;
-  --color-sand: #eed474;
-  --color-gold: #eed474;
-  --color-bg-app: #f6f4ef;
-  --color-surf: #ffffff;
-  --color-brd: #e8e3d9;
+
+  /* Paleta canónica (única fuente de verdad para duplicados semánticos) */
+  --color-primary: #143351;
+  --color-accent: #009368;
+  --color-warn: #f39c12;
+  --color-danger: #e74c3c;
+  --color-info: #185fa5;
+  --color-surface: #ffffff;
+  --color-bg: #f6f4ef;
+  --color-border: #e8e3d9;
+  --color-text: #0f0e17;
   --color-muted: #6b7280;
-  --color-t1: #2ecc71;
-  --color-t2: #f39c12;
-  --color-t3: #e74c3c;
-  --color-iblue: #378add;
+  --color-accent-bg: #eafaf1;
+  --color-warn-bg: #fef5e7;
+  --color-danger-bg: #fdf2f8;
+  --color-info-bg: #e6f1fb;
+
+  /* Nombres legacy / UI — referencian la paleta canónica */
+  --color-ink: var(--color-text);
+  --color-navy: var(--color-primary);
+  --color-emerald: var(--color-accent);
+  --color-emerald-dark: color-mix(in srgb, var(--color-accent) 78%, var(--color-text));
+  --color-coral: var(--color-danger);
+  --color-coral-ink: color-mix(in srgb, var(--color-danger) 72%, var(--color-text));
+  --color-sand: var(--color-warn);
+  --color-gold: var(--color-warn);
+  --color-bg-app: var(--color-bg);
+  --color-surf: var(--color-surface);
+  --color-brd: var(--color-border);
+  --color-text-soft: color-mix(in srgb, var(--color-text) 78%, var(--color-muted));
+  --color-t1: var(--color-accent);
+  --color-t1g: var(--color-accent-bg);
+  --color-t1c: var(--color-accent);
+  --color-t2: var(--color-warn);
+  --color-t2g: var(--color-warn-bg);
+  --color-t2c: var(--color-warn);
+  --color-t3: var(--color-danger);
+  --color-t3g: var(--color-danger-bg);
+  --color-t3c: var(--color-danger);
+  --color-ibg: var(--color-info-bg);
+  --color-ic: var(--color-info);
+  --color-iblue: var(--color-info);
+  --color-chart-green: var(--color-accent);
+  --color-chart-amber: var(--color-warn);
+  --color-danger-border: color-mix(in srgb, var(--color-danger) 42%, var(--color-border));
+  --color-danger-text: color-mix(in srgb, var(--color-danger) 62%, var(--color-text));
+  --color-danger-hover: color-mix(in srgb, var(--color-danger-bg) 58%, var(--color-danger) 42%);
+  --color-warn-border: color-mix(in srgb, var(--color-warn) 48%, var(--color-border));
+  --color-info-border: color-mix(in srgb, var(--color-info) 38%, var(--color-border));
+  --color-success-border: color-mix(in srgb, var(--color-accent) 36%, var(--color-border));
+  --color-success-hover: color-mix(in srgb, var(--color-accent-bg) 52%, var(--color-accent) 48%);
+  --color-cita-row-border: color-mix(in srgb, var(--color-warn) 28%, var(--color-border));
+  --color-surface-muted: color-mix(in srgb, var(--color-bg) 45%, var(--color-surface));
+  --color-edge-muted: color-mix(in srgb, var(--color-border) 88%, var(--color-text) 12%);
+  --color-text-slate: color-mix(in srgb, var(--color-muted) 50%, var(--color-text));
+  --color-gest-pe-bg: #fff8e6;
+  --color-gest-pe-fg: #7a5f1a;
+  --color-gest-er-bg: #eaf4ff;
+  --color-gest-er-fg: var(--color-info);
+  --color-gest-ce-bg: var(--color-accent-bg);
+  --color-gest-ce-fg: var(--color-accent);
+  --color-chrome-warm-start: #faf8f4;
+  --color-chrome-warm-mid: #faf6ee;
+  --color-canvas-warm-top: #fffef9;
+  --color-row-hover: var(--color-bg);
+  --color-gradient-table-th-start: var(--color-surface);
+  --color-gradient-table-th-end: var(--color-bg);
+  --color-tl-ori-bg: #e1f5ee;
+  --color-tl-ori-fg: #0f6e56;
+  --color-tl-acu-bg: #eeedfe;
+  --color-tl-acu-fg: #534ab7;
+  --color-tag-doc-bg: #f1efe8;
+  --color-tag-doc-fg: #5f5e5a;
+  --color-tag-acu-bg: #fbeaf0;
+  --color-tag-acu-fg: #993556;
+  --color-tag-sa-bg: #eeedfe;
+  --color-tag-sa-fg: #534ab7;
+  --color-falta-mb-start: #f9f7f1;
+  --color-sn-gradient-start: #f0f8ff;
+  --color-sn-gradient-end: #e4f0fc;
+  --color-sn-border: #b8d4f0;
+  --color-btn-secondary-hover: #f0ece4;
+  --color-red-500: var(--color-danger);
+  --color-red-400: color-mix(in srgb, var(--color-danger) 58%, var(--color-surface));
+  --color-red-950: color-mix(in srgb, var(--color-danger) 88%, var(--color-text));
+  --color-panel-lilac: #f7f5fb;
+  --color-panel-lilac-brd: #e0dce8;
+  --color-adj-zone-bg: #f0f7fb;
+  --color-adj-zone-brd: #c5dbe8;
+  /* Temáticas transversales (.tem-pill) */
+  --color-tem-default-bg: #f1f5f9;
+  --color-tem-default-fg: #475569;
+  --color-tem-default-brd: #e2e8f0;
+  --color-tem-relaciones-bg: #ede9fe;
+  --color-tem-relaciones-fg: #5b21b6;
+  --color-tem-relaciones-brd: #ddd6fe;
+  --color-tem-normas-bg: #dbeafe;
+  --color-tem-normas-fg: #1e40af;
+  --color-tem-normas-brd: #bfdbfe;
+  --color-tem-gestion-bg: #fce7f3;
+  --color-tem-gestion-fg: #9d174d;
+  --color-tem-gestion-brd: #fbcfe8;
+  --color-tem-ambiente-bg: #d1fae5;
+  --color-tem-ambiente-fg: #047857;
+  --color-tem-ambiente-brd: #a7f3d0;
+  --color-tem-participacion-bg: #ffedd5;
+  --color-tem-participacion-fg: #c2410c;
+  --color-tem-participacion-brd: #fed7aa;
+  --color-tem-prevencion-bg: #e0e7ff;
+  --color-tem-prevencion-fg: #3730a3;
+  --color-tem-prevencion-brd: #c7d2fe;
+  --color-proto-warn-fg: #c9a84c;
   --radius-sm: 8px;
   --radius-md: 12px;
 }
@@ -37,7 +136,6 @@
   .ni {
     @apply flex w-full min-h-[38px] cursor-pointer items-center gap-2.5 rounded-md border-0 border-l-[3px] border-transparent bg-transparent px-3 py-1.5 text-[13px] font-medium leading-snug text-white/72 shadow-none transition-colors duration-150 hover:bg-white/[0.06] hover:text-white;
   }
-  /* SVG inline compactos: color vía currentColor, sin “fondos” raros */
   .ni-ic {
     @apply inline-flex h-5 w-5 shrink-0 text-white/80;
   }
@@ -57,9 +155,10 @@
     @apply min-w-0 flex-1 pr-0.5;
   }
   .ni.on {
-    @apply border-[#009368] bg-[rgba(0,147,104,0.14)] font-semibold text-white;
+    border-color: var(--color-emerald);
+    background: color-mix(in srgb, var(--color-emerald) 14%, transparent);
+    @apply font-semibold text-white;
   }
-  /* Variante “pill” (como el ejemplo): sin barra izquierda, fondo suave */
   .ni.ni-pill {
     @apply border-l-0 rounded-xl px-3.5 py-2;
   }
@@ -82,13 +181,31 @@
     @apply mt-2 pb-3;
   }
   .sb-cierre-anio {
-    @apply w-full border border-red-500/40 bg-red-950/35 py-2.5 text-[12px] font-medium leading-snug text-red-100 shadow-sm transition hover:border-red-400/55 hover:bg-red-950/50 hover:text-white;
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid color-mix(in srgb, var(--color-red-500) 40%, transparent);
+    background: color-mix(in srgb, var(--color-red-950) 35%, transparent);
+    padding: 0.625rem 0.75rem;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.375;
+    color: color-mix(in srgb, var(--color-surf) 90%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent);
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+  }
+  .sb-cierre-anio:hover {
+    border-color: color-mix(in srgb, var(--color-red-400) 55%, transparent);
+    background: color-mix(in srgb, var(--color-red-950) 50%, transparent);
+    color: var(--color-surf);
   }
   .sb-cierre-anio.on {
-    @apply border-red-400/65 bg-red-950/55 text-white;
+    border-color: color-mix(in srgb, var(--color-red-400) 65%, transparent);
+    background: color-mix(in srgb, var(--color-red-950) 55%, transparent);
+    color: var(--color-surf);
   }
   .sb-brand {
-    @apply font-display text-[13px] font-semibold leading-snug tracking-tight text-[var(--sand)];
+    @apply font-display text-[13px] font-semibold leading-snug tracking-tight;
+    color: var(--color-sand);
   }
   .sb-user-card {
     @apply rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-3 shadow-sm backdrop-blur-sm;
@@ -97,6 +214,21 @@
     @apply border-t border-white/[0.08] px-4 py-4 sm:px-5;
   }
   .sb-logout {
-    @apply w-full rounded-xl border border-red-500/40 bg-red-950/35 py-2.5 text-[12px] font-medium leading-snug text-red-100 shadow-sm transition hover:border-red-400/55 hover:bg-red-950/50 hover:text-white;
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid color-mix(in srgb, var(--color-red-500) 40%, transparent);
+    background: color-mix(in srgb, var(--color-red-950) 35%, transparent);
+    padding: 0.625rem 0.75rem;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.375;
+    color: color-mix(in srgb, var(--color-surf) 90%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent);
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+  }
+  .sb-logout:hover {
+    border-color: color-mix(in srgb, var(--color-red-400) 55%, transparent);
+    background: color-mix(in srgb, var(--color-red-950) 50%, transparent);
+    color: var(--color-surf);
   }
 }

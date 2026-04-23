@@ -39,6 +39,7 @@ def test_login_estudiante_documento_colegio(client):
     assert j.get("ok") is True
     assert j.get("usuario", {}).get("rol") == "Estudiante"
     assert j.get("usuario", {}).get("estudiante_id") == eid
+    assert j.get("usuario", {}).get("colegio_id") is not None
     assert j.get("sugerir_cambio_clave_estudiante") is True
     _logout(client)
 
@@ -51,7 +52,9 @@ def test_login_estudiante_documento_colegio(client):
 def test_login_docente_no_afectado_por_rama_estudiante(client):
     rv = _login(client, "docente1", "doc123")
     assert rv.status_code == 200
-    assert rv.get_json().get("usuario", {}).get("rol") == "Docente"
+    u = rv.get_json().get("usuario", {})
+    assert u.get("rol") == "Docente"
+    assert u.get("colegio_id") is not None
 
 
 def test_estudiante_desambigua_por_nombre_institucion(client):

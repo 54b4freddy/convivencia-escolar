@@ -36,7 +36,8 @@ def _login_estudiante_por_documento(conn, d):
     pwd_h = hpwd(d.get("contrasena") or "")
     p = ph()
     base = (
-        f"SELECT u.*, c.nombre AS col_nom, e.documento_identidad AS est_documento FROM usuarios u "
+        f"SELECT u.*, c.nombre AS col_nom, e.documento_identidad AS est_documento, e.colegio_id AS estudiante_colegio_id "
+        f"FROM usuarios u "
         f"JOIN estudiantes e ON e.id = u.estudiante_id "
         f"LEFT JOIN colegios c ON c.id = u.colegio_id "
         f"WHERE u.rol = 'Estudiante' AND e.documento_identidad = {p} AND u.contrasena = {p}"
@@ -115,13 +116,26 @@ def api_login():
                 }
             ), 401
         return jsonify({"ok": False, "error": "Usuario o contraseña incorrectos"}), 401
+    rol = u.get("rol")
+    col_id = _norm_colegio_id(u.get("colegio_id")) or _norm_colegio_id(u.get("estudiante_colegio_id"))
+    if rol != "Superadmin" and not col_id:
+        return jsonify(
+            {
+                "ok": False,
+                "error": "Cuenta sin institución asignada. Contacte al administrador.",
+            }
+        ), 401
+    if rol == "Superadmin":
+        session_col = _norm_colegio_id(u.get("colegio_id"))
+    else:
+        session_col = col_id
     session["usuario"] = {
         "id": u["id"],
         "usuario": u["usuario"],
         "rol": u["rol"],
         "nombre": u["nombre"],
         "curso": u.get("curso", ""),
-        "colegio_id": _norm_colegio_id(u.get("colegio_id")),
+        "colegio_id": session_col,
         "colegio_nombre": u.get("col_nom", "") or "",
         "estudiante_id": u.get("estudiante_id"),
         "asignatura": u.get("asignatura") or "",

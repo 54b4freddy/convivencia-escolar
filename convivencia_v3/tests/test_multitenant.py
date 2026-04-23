@@ -3,6 +3,7 @@
 import pytest
 
 from app import app as flask_app
+from routes.authz import ERR_SESION_SIN_COLEGIO
 
 
 def _login(client, usuario, contrasena):
@@ -15,7 +16,7 @@ def _login(client, usuario, contrasena):
     "user,path,method,expected_cid,expect_err",
     [
         ({"rol": "Coordinador", "colegio_id": 5}, "/", "GET", 5, None),
-        ({"rol": "Docente", "colegio_id": None}, "/", "GET", 1, None),
+        ({"rol": "Docente", "colegio_id": None}, "/", "GET", None, ERR_SESION_SIN_COLEGIO),
         ({"rol": "Superadmin", "colegio_id": 9}, "/", "GET", 9, None),
     ],
 )
@@ -73,6 +74,26 @@ def test_reportes_superadmin_con_colegio_query_200(client):
     assert rv.status_code == 200
     data = rv.get_json()
     assert "total" in data
+
+
+def test_api_staff_sesion_sin_colegio_id_400(client):
+    """No debe operar sobre colegio 1: staff con sesión inválida recibe 400 con mensaje explícito."""
+    with client.session_transaction() as sess:
+        sess["usuario"] = {
+            "id": 1,
+            "usuario": "admin",
+            "rol": "Coordinador",
+            "nombre": "X",
+            "curso": "",
+            "colegio_id": None,
+            "colegio_nombre": "",
+            "estudiante_id": None,
+            "asignatura": "",
+            "telefono": "",
+        }
+    rv = client.get("/api/reportes?anio=2026")
+    assert rv.status_code == 400
+    assert (rv.get_json() or {}).get("error") == ERR_SESION_SIN_COLEGIO
 
 
 def test_coordinador_no_patch_usuario_otro_colegio(client):

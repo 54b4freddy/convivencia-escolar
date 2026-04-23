@@ -10,10 +10,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='tailwind.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
-<body class="min-h-screen bg-[var(--bg)] font-sans text-[14px] leading-relaxed text-[var(--ink)] antialiased">
+<body class="min-h-screen bg-[var(--color-bg-app)] font-sans text-[14px] leading-relaxed text-[var(--color-ink)] antialiased">
 <script>try{var m=matchMedia('(min-width:721px)').matches, n=localStorage.getItem('sbNarrow')==='1';if(n&&m)document.documentElement.classList.add('sb-narrow');}catch(e){}</script>
 <div class="sb-backdrop fixed inset-0 z-[25] bg-black/45" id="sbBackdrop" onclick="closeSidebar()"></div>
-<aside id="appSidebar" class="sb sb-tr flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col border-r border-white/[0.06] bg-[var(--navy)] shadow-[2px_0_24px_rgba(0,0,0,0.22)]" aria-label="Navegación principal">
+<aside id="appSidebar" class="sb sb-tr flex fixed left-0 top-0 z-30 h-screen w-[var(--sb)] flex-col border-r border-white/[0.06] bg-[var(--color-navy)] shadow-[2px_0_24px_rgba(0,0,0,0.22)]" aria-label="Navegación principal">
   <div class="sb-head flex shrink-0 flex-col gap-1 border-b border-white/[0.08] px-4 pb-4 pt-7 sm:px-5 sm:pb-5 sm:pt-8">
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0 flex-1 pr-0.5">
@@ -37,14 +37,14 @@
   </div>
 </aside>
 <div class="main flex min-h-screen flex-col">
-  <header class="topbar sticky top-0 z-20 flex items-center justify-between border-b border-[var(--brd)] bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm md:px-[22px]">
+  <header class="topbar sticky top-0 z-20 flex items-center justify-between border-b border-[var(--color-brd)] bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm md:px-[22px]">
     <div class="topbar-l flex items-center gap-3">
-      <button type="button" class="hamb hidden h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-[var(--brd)] bg-white text-[var(--ink)] shadow-sm transition active:translate-y-px max-[720px]:inline-flex" onclick="toggleSidebar()" aria-label="Menú">☰</button>
-      <h1 id="topTitle" class="text-[13px] font-semibold leading-snug tracking-tight text-[var(--navy)] md:text-[15px]">Inicio</h1>
+      <button type="button" class="hamb hidden h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-[var(--color-brd)] bg-white text-[var(--color-ink)] shadow-sm transition active:translate-y-px max-[720px]:inline-flex" onclick="toggleSidebar()" aria-label="Menú">☰</button>
+      <h1 id="topTitle" class="text-[13px] font-semibold leading-snug tracking-tight text-[var(--color-navy)] md:text-[15px]">Inicio</h1>
     </div>
     <div class="topbar-r flex items-center gap-2.5">
-      <label class="text-[12px] text-[var(--mut)]" title="Solo se listan faltas del año académico seleccionado">Año:</label>
-      <select class="yr-sel cursor-pointer rounded-lg border border-[var(--brd)] bg-white px-2.5 py-2 text-[13px] text-[var(--ink)] shadow-sm focus:border-[var(--emerald)] focus:outline-none focus:ring-2 focus:ring-[color:rgba(0,147,104,0.25)]" id="yrSel" onchange="renderCurrentTab()"></select>
+      <label class="text-[12px] text-[var(--color-muted)]" title="Solo se listan faltas del año académico seleccionado">Año:</label>
+      <select class="yr-sel cursor-pointer rounded-lg border border-[var(--color-brd)] bg-white px-2.5 py-2 text-[13px] text-[var(--color-ink)] shadow-sm focus:border-[var(--color-emerald)] focus:outline-none focus:ring-2 focus:ring-[color:rgba(0,147,104,0.25)]" id="yrSel" onchange="renderCurrentTab()"></select>
     </div>
   </header>
   <div id="citaPendBar" class="cita-pend-bar" style="display:none"></div>
@@ -52,8 +52,8 @@
 </div>
 
 <!-- OVERLAY: Registrar falta -->
-<div class="ov" id="ov-falta">
-<div class="modal modal-lg">
+<div class="ov ce-modal-overlay" id="ov-falta">
+<div class="modal modal-lg ce-modal ce-modal-lg">
   <div class="mh falta-mh">
     <div class="mh-l">
       <h3>Registrar falta</h3>
@@ -176,15 +176,15 @@
     </div>
   </div>
   <div class="mf falta-mf">
-    <button type="button" class="btn" onclick="closeOv('ov-falta')">Cancelar</button>
-    <button type="button" class="btn btn-p" onclick="guardarFalta()">Registrar falta</button>
+    <button type="button" class="ce-btn-secondary" onclick="closeOv('ov-falta')">Cancelar</button>
+    <button type="button" class="ce-btn" onclick="guardarFalta()">Registrar falta</button>
   </div>
 </div>
 </div>
 
 <!-- OVERLAY: Ver falta con timeline -->
-<div class="ov" id="ov-ver">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-ver">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh">
     <div class="mh-l"><h3 id="verTitle">Detalle de falta</h3></div>
     <button onclick="closeOv('ov-ver')">×</button>
@@ -195,8 +195,8 @@
         <div id="verBdgs" class="ver-bdgs"></div>
         <div class="ver-actions">
           <button type="button" class="btn btn-g btn-xs" onclick="descargarActaFalta()" title="PDF proceso disciplinario">📄 Acta proceso (PDF)</button>
-          <button type="button" class="btn btn-xs" onclick="document.getElementById('vAnotTxt')?.focus()">✍️ Anotar</button>
-          <button type="button" class="btn btn-xs" onclick="if(document.getElementById('vAdjPanel')?.style.display!=='block')toggleAdjuntosPanel()">📎 Adjuntos</button>
+          <button type="button" class="ce-btn-secondary ce-btn-xs" onclick="document.getElementById('vAnotTxt')?.focus()">✍️ Anotar</button>
+          <button type="button" class="ce-btn-secondary ce-btn-xs" onclick="if(document.getElementById('vAdjPanel')?.style.display!=='block')toggleAdjuntosPanel()">📎 Adjuntos</button>
         </div>
       </div>
       <div class="ver-sum-grid">
@@ -224,14 +224,14 @@
             <div><div class="plbl">SANCIÓN APLICADA</div><div class="pbox t1" id="vSancion"></div></div>
           </div>
         </div>
-        <div id="vCitaSec" style="display:none;margin-bottom:13px;padding:12px;background:var(--t2g);border-radius:var(--r);border:1px solid #e8d4a8">
+        <div id="vCitaSec" style="display:none;margin-bottom:13px;padding:12px;background:var(--color-t2g);border-radius:var(--radius-sm);border:1px solid var(--color-cita-row-border)">
           <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">CITA CON ACUDIENTE</div>
           <div id="vCitaBody" style="font-size:12px;line-height:1.5"></div>
         </div>
-        <div id="vGestionSec" style="display:none;margin-bottom:13px;padding:12px;background:#f7f5fb;border-radius:var(--r);border:1px solid #e0dce8">
+        <div id="vGestionSec" style="display:none;margin-bottom:13px;padding:12px;background:var(--color-panel-lilac);border-radius:var(--radius-sm);border:1px solid var(--color-panel-lilac-brd)">
           <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">ESTADO DE GESTIÓN</div>
           <p id="vGestionTxt" style="font-size:12px;margin:6px 0 10px;line-height:1.55"></p>
-          <button type="button" class="btn btn-p btn-xs" id="vGestionBtn" onclick="openOvGestion()" style="display:none">Definir cierre (coordinación)</button>
+          <button type="button" class="ce-btn ce-btn-xs" id="vGestionBtn" onclick="openOvGestion()" style="display:none">Definir cierre (coordinación)</button>
         </div>
         <div id="vAcuSec" style="display:none;margin-bottom:13px">
           <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:8px">INFORMACIÓN DEL ACUDIENTE</div>
@@ -241,17 +241,17 @@
             <div><label class="fl">Teléfono</label><input id="vTel" readonly></div>
           </div>
         </div>
-        <div id="verAnotSec" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)">
+        <div id="verAnotSec" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--color-brd)">
           <label class="fl" id="verAnotLbl">Agregar observación</label>
           <textarea id="vAnotTxt" rows="3" placeholder="Escriba su observación, seguimiento o acción tomada..."></textarea>
         </div>
-        <div id="vAdjSec" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--brd)">
+        <div id="vAdjSec" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--color-brd)">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
             <div class="fsec" style="padding-top:0;border-top:none;margin-bottom:0">ACTAS Y ARCHIVOS</div>
-            <span id="vAdjChip" class="bdg bg" style="display:none;font-size:10px;font-weight:600"></span>
+            <span id="vAdjChip" class="ce-badge" style="display:none;font-size:10px;font-weight:600"></span>
           </div>
-          <div id="vAdjPanel" style="margin-top:8px;padding:10px;background:#f0f7fb;border-radius:var(--r);border:1px solid #c5dbe8">
-            <div id="vAdjUp" style="display:none;margin-bottom:8px;padding:8px;background:#fff;border-radius:var(--r);border:1px solid var(--brd)">
+          <div id="vAdjPanel" style="margin-top:8px;padding:10px;background:var(--color-adj-zone-bg);border-radius:var(--radius-sm);border:1px solid var(--color-adj-zone-brd)">
+            <div id="vAdjUp" style="display:none;margin-bottom:8px;padding:8px;background:var(--color-surf);border-radius:var(--radius-sm);border:1px solid var(--color-brd)">
               <div class="fr" style="margin-bottom:0">
                 <div>
                   <label class="fl">Tipo de documento</label>
@@ -266,7 +266,7 @@
                 </div>
               </div>
               <div style="display:flex;justify-content:flex-end;margin-top:8px">
-                <button type="button" class="btn btn-p btn-xs" onclick="subirAdjuntoFalta()">Subir</button>
+                <button type="button" class="ce-btn ce-btn-xs" onclick="subirAdjuntoFalta()">Subir</button>
               </div>
             </div>
             <div id="vAdjBody" style="font-size:12px"></div>
@@ -276,18 +276,18 @@
     </div>
   </div>
   <div class="mf">
-    <button class="btn" onclick="closeOv('ov-ver')">Cerrar</button>
-    <button class="btn btn-p" id="verSaveBtn" onclick="guardarAnotacion()" style="display:none">Guardar observación</button>
+    <button class="ce-btn-secondary" onclick="closeOv('ov-ver')">Cerrar</button>
+    <button class="ce-btn" id="verSaveBtn" onclick="guardarAnotacion()" style="display:none">Guardar observación</button>
   </div>
 </div>
 </div>
 
 <!-- OVERLAY: Estudiante -->
-<div class="ov" id="ov-est">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-est">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh est-mh">
     <div class="est-mh-leading">
-      <button type="button" class="btn btn-p btn-est-reset" id="eResetClaveBtn" style="display:none" onclick="resetClavePortalEstudiante()">Restablecer contraseña</button>
+      <button type="button" class="ce-btn btn-est-reset" id="eResetClaveBtn" style="display:none" onclick="resetClavePortalEstudiante()">Restablecer contraseña</button>
     </div>
     <div class="mh-l est-mh-title">
       <h3 id="estTit" style="margin:0">Nuevo estudiante</h3>
@@ -329,13 +329,13 @@
     </div>
     <p class="ferr" id="eErr" style="font-size:12px;margin-top:6px"></p>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-est')">Cancelar</button><button class="btn btn-p" onclick="guardarEstudiante()">Guardar</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-est')">Cancelar</button><button class="ce-btn" onclick="guardarEstudiante()">Guardar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Usuario -->
-<div class="ov" id="ov-usr">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-usr">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh"><div class="mh-l"><h3 id="usrTit">Nuevo usuario</h3></div><button onclick="closeOv('ov-usr')">×</button></div>
   <div class="mb">
     <div class="fr">
@@ -359,13 +359,13 @@
     <div style="margin-bottom:11px"><label class="fl">Teléfono</label><input id="uTel" maxlength="15" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
     <p class="ferr" id="uErr" style="font-size:12px"></p>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-usr')">Cancelar</button><button class="btn btn-p" onclick="guardarUsuario()">Guardar</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-usr')">Cancelar</button><button class="ce-btn" onclick="guardarUsuario()">Guardar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Colegio -->
-<div class="ov" id="ov-col">
-<div class="modal" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-col">
+<div class="modal ce-modal" style="margin-top:14px">
   <div class="mh"><div class="mh-l"><h3 id="colTit">Nueva institución</h3></div><button onclick="closeOv('ov-col')">×</button></div>
   <div class="mb">
     <div class="fr fr1"><div><label class="fl">Nombre de la institución *</label><input id="colNom" maxlength="120"></div></div>
@@ -373,19 +373,19 @@
     <div class="fr"><div><label class="fl">Rector / Representante</label><input id="colRec" maxlength="80"></div><div><label class="fl">Teléfono</label><input id="colTel" maxlength="20"></div></div>
     <div class="fr"><div><label class="fl">Dirección</label><input id="colDir" maxlength="120"></div><div><label class="fl">Correo institucional</label><input id="colEmail" type="email" maxlength="80"></div></div>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-col')">Cancelar</button><button class="btn btn-p" onclick="guardarColegio()">Guardar</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-col')">Cancelar</button><button class="ce-btn" onclick="guardarColegio()">Guardar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Importar estudiantes -->
-<div class="ov" id="ov-import">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-import">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh"><div class="mh-l"><h3>Carga masiva de estudiantes</h3><small><strong>Recomendado (17 u 18 columnas, CSV):</strong> tipo_doc_est, documento_est, apellido1, apellido2, nombre1, nombre2, curso, barreras, tipo_doc_acu, documento_acu, apellido1_acu, apellido2_acu, nombre1_acu, nombre2_acu, parentesco, teléfono, dirección. <strong>Columna 18 (opcional):</strong> contraseña portal del estudiante; si va vacía, se usan los 4 últimos dígitos del documento. <strong>Legado (8 u 9 columnas):</strong> nombre completo estudiante, curso, barreras, nombre completo acudiente, doc. acudiente, tel, dir, doc. estudiante. <strong>Columna 9 (opcional):</strong> misma contraseña portal.</small></div><button onclick="closeOv('ov-import')">×</button></div>
   <div class="mb">
     <div class="abanner ab-i">
       <div>
         <strong>Archivo CSV o TXT (UTF-8):</strong> use el botón <strong>«Elegir archivo»</strong> o pegue el contenido abajo. Excel: <em>Guardar como → CSV UTF-8 (delimitado por comas)</em>.<br>
-        <a class="btn btn-xs" href="/api/estudiantes/plantilla-importacion" download style="margin-top:6px;text-decoration:none;display:inline-block">Descargar plantilla CSV</a>
+        <a class="ce-btn-secondary ce-btn-xs" href="/api/estudiantes/plantilla-importacion" download style="margin-top:6px;text-decoration:none;display:inline-block">Descargar plantilla CSV</a>
         <span class="mut" style="margin-left:8px">Misma estructura que el formato extendido (17–18 columnas).</span><br>
         Las líneas que empiecen con <code>#</code> se ignoran (comentarios). Si el archivo trae <strong>fila de encabezados</strong> (nombres de columnas), se omite automáticamente.
       </div>
@@ -394,16 +394,16 @@
     <label class="fl">Archivo</label>
     <input type="file" id="impFile" accept=".csv,.txt,text/csv,text/plain" style="margin-bottom:8px;font-size:13px" onchange="onImpFileChange(event)">
     <label class="fl">Lista de estudiantes (pegar o cargar archivo)</label>
-    <textarea id="impData" rows="10" style="font-family:monospace;font-size:12px;background:#faf8f4" placeholder="# Extendido (17 cols; 18ª opcional = clave portal):&#10;Tarjeta de identidad (TI),1234567890,García,López,Ana,María,6A,Ninguna identificada,Cédula de ciudadanía (CC),9876543210,García,Pérez,Carlos,,Padre,3001234567,Calle 10 5-20,MiClaveOpc9&#10;# Legado (8 cols; 9ª opcional = clave portal):&#10;Alejandro Pérez, 6A, Ninguna identificada, Roberto Pérez, 1234567890, 3001234567, Calle 10, 1090123456"></textarea>
+    <textarea id="impData" rows="10" style="font-family:monospace;font-size:12px;background:var(--color-chrome-warm-start)" placeholder="# Extendido (17 cols; 18ª opcional = clave portal):&#10;Tarjeta de identidad (TI),1234567890,García,López,Ana,María,6A,Ninguna identificada,Cédula de ciudadanía (CC),9876543210,García,Pérez,Carlos,,Padre,3001234567,Calle 10 5-20,MiClaveOpc9&#10;# Legado (8 cols; 9ª opcional = clave portal):&#10;Alejandro Pérez, 6A, Ninguna identificada, Roberto Pérez, 1234567890, 3001234567, Calle 10, 1090123456"></textarea>
     <div id="impPreview" style="margin-top:8px"></div>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-import')">Cancelar</button><button class="btn btn-g" onclick="previewImport()">Previsualizar</button><button class="btn btn-p" onclick="ejecutarImport()">Importar</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-import')">Cancelar</button><button class="btn btn-g" onclick="previewImport()">Previsualizar</button><button class="ce-btn" onclick="ejecutarImport()">Importar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Editar protocolo/sancion -->
-<div class="ov" id="ov-proto-edit">
-<div class="modal" style="margin-top:14px;max-width:520px">
+<div class="ov ce-modal-overlay" id="ov-proto-edit">
+<div class="modal ce-modal" style="margin-top:14px;max-width:520px">
   <div class="mh"><div class="mh-l"><h3>Protocolo, sanción y temática</h3><small id="peDesc">—</small></div><button onclick="closeOv('ov-proto-edit')">×</button></div>
   <div class="mb">
     <div class="abanner ab-i" style="margin-bottom:12px">Protocolo y sanción se copian al registrar la falta. La <strong>dimensión temática</strong> clasifica el caso (manual de convivencia); puede corregirla si la inferencia no encaja.</div>
@@ -411,38 +411,38 @@
     <div class="fr fr1"><div><label class="fl">Protocolo de atención</label><textarea id="peProto" rows="4" placeholder="Pasos a seguir según el manual de convivencia..."></textarea></div></div>
     <div class="fr fr1"><div><label class="fl">Sanción disciplinar sugerida</label><textarea id="peSancion" rows="3" placeholder="Consecuencia disciplinar establecida..."></textarea></div></div>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-proto-edit')">Cancelar</button><button class="btn btn-p" onclick="guardarProtoSancion()">Guardar</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-proto-edit')">Cancelar</button><button class="ce-btn" onclick="guardarProtoSancion()">Guardar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Nueva falta catálogo -->
-<div class="ov" id="ov-cat-new">
-<div class="modal" style="margin-top:14px;max-width:500px">
+<div class="ov ce-modal-overlay" id="ov-cat-new">
+<div class="modal ce-modal" style="margin-top:14px;max-width:500px">
   <div class="mh"><div class="mh-l"><h3>Nueva falta al catálogo</h3></div><button onclick="closeOv('ov-cat-new')">×</button></div>
   <div class="mb">
     <div class="abanner ab-i" style="margin-bottom:12px">Complete protocolo y sanción en la barra lateral «Protocolos» → «Protocolo por falta del catálogo».</div>
     <div class="fr"><div><label class="fl">Tipo de falta</label><select id="ctTipo"><option>Tipo I</option><option>Tipo II</option><option>Tipo III</option></select></div><div><label class="fl">Descripción de la falta *</label><input id="ctDesc" placeholder="Ej: Uso inadecuado del celular en clase" maxlength="200"></div></div>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-cat-new')">Cancelar</button><button class="btn btn-p" onclick="guardarNuevaCat()">Agregar</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-cat-new')">Cancelar</button><button class="ce-btn" onclick="guardarNuevaCat()">Agregar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Carga masiva catálogo -->
-<div class="ov" id="ov-cat-bulk">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-cat-bulk">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh"><div class="mh-l"><h3>Carga masiva al catálogo</h3><small>Una línea: Tipo, Descripción y opcionalmente Temática</small></div><button onclick="closeOv('ov-cat-bulk')">×</button></div>
   <div class="mb">
     <div class="abanner ab-i" style="margin-bottom:10px;font-size:11px">Cada línea: <code>Tipo I,Descripción breve</code> o <code>Tipo I,Descripción,Nombre de temática</code> (temática opcional; si falta, se infiere por palabras clave). El tipo debe ser <strong>Tipo I</strong>, <strong>Tipo II</strong> o <strong>Tipo III</strong>. Líneas con <code>#</code> se ignoran.</div>
-    <textarea id="catBulkTxt" rows="12" style="width:100%;font-family:monospace;font-size:12px;background:#faf8f4" placeholder="Tipo I,Conflicto verbal leve&#10;Tipo II,Bullying en redes"></textarea>
+    <textarea id="catBulkTxt" rows="12" style="width:100%;font-family:monospace;font-size:12px;background:var(--color-chrome-warm-start)" placeholder="Tipo I,Conflicto verbal leve&#10;Tipo II,Bullying en redes"></textarea>
     <p class="ferr" id="catBulkErr" style="font-size:12px;margin-top:6px"></p>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-cat-bulk')">Cancelar</button><button class="btn btn-p" onclick="guardarCatBulk()">Importar</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-cat-bulk')">Cancelar</button><button class="ce-btn" onclick="guardarCatBulk()">Importar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Ayuda prevención -->
-<div class="ov" id="ov-ayuda-prev">
-<div class="modal" style="max-width:640px;margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-ayuda-prev">
+<div class="modal ce-modal" style="max-width:640px;margin-top:14px">
   <div class="mh">
     <div class="mh-l">
       <h3>Prevención — ¿Qué significa cada bloque?</h3>
@@ -452,7 +452,7 @@
   </div>
   <div class="mb" style="padding:14px 16px;line-height:1.5">
     <h4 style="margin:0 0 8px;font-size:13px;font-weight:600">Alertas ciudadanas (pestaña homónima)</h4>
-    <p style="margin:0 0 10px;font-size:12px;color:var(--ink)">Canal Ley 1620: el estudiante o la familia envía un reporte. <strong>No crea falta</strong> hasta que coordinación u orientación lo revisa.</p>
+    <p style="margin:0 0 10px;font-size:12px;color:var(--color-ink)">Canal Ley 1620: el estudiante o la familia envía un reporte. <strong>No crea falta</strong> hasta que coordinación u orientación lo revisa.</p>
     <p style="margin:0 0 6px;font-size:12px"><strong>Quién actúa:</strong> coordinador, orientador o director (validación, bitácora, abrir caso u orientación).</p>
     <ul style="margin:0 0 14px 18px;font-size:12px;padding:0">
       <li><strong>Abrir caso</strong> — proceso formal.</li>
@@ -460,16 +460,16 @@
       <li><strong>Descartar</strong> — queda registro en auditoría.</li>
     </ul>
     <h4 style="margin:0 0 8px;font-size:13px;font-weight:600">Conductas de riesgo (pestaña homónima)</h4>
-    <p style="margin:0 0 6px;font-size:12px;color:var(--ink)">Registros del observador con categoría formal (tipos I, II o III), ingresados por <strong>coordinación, orientación, dirección o docentes</strong> según permisos del sistema.</p>
-    <p style="margin:0 0 14px;font-size:12px;color:var(--ink)">Desde la misma sección, más abajo, <strong>Reiteración y focos</strong> resume inasistencias y faltas del rango de fechas (Tipo I por estudiante, lugares y personas afectadas indicadas al registrar la falta).</p>
-    <p style="margin:0;font-size:11px;color:var(--mut)">Tratamiento confidencial según política institucional.</p>
+    <p style="margin:0 0 6px;font-size:12px;color:var(--color-ink)">Registros del observador con categoría formal (tipos I, II o III), ingresados por <strong>coordinación, orientación, dirección o docentes</strong> según permisos del sistema.</p>
+    <p style="margin:0 0 14px;font-size:12px;color:var(--color-ink)">Desde la misma sección, más abajo, <strong>Reiteración y focos</strong> resume inasistencias y faltas del rango de fechas (Tipo I por estudiante, lugares y personas afectadas indicadas al registrar la falta).</p>
+    <p style="margin:0;font-size:11px;color:var(--color-muted)">Tratamiento confidencial según política institucional.</p>
   </div>
 </div>
 </div>
 
 <!-- OVERLAY: Promoción — nueva actividad -->
-<div class="ov" id="ov-prom-create">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-prom-create">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh">
     <div class="mh-l">
       <h3>Nueva actividad de promoción</h3>
@@ -514,15 +514,15 @@
     <p class="ferr" id="promErr" style="font-size:12px;margin-top:6px"></p>
   </div>
   <div class="mf">
-    <button type="button" class="btn" onclick="closeOv('ov-prom-create')">Cancelar</button>
-    <button type="button" class="btn btn-p" onclick="promCrear()">Guardar actividad</button>
+    <button type="button" class="ce-btn-secondary" onclick="closeOv('ov-prom-create')">Cancelar</button>
+    <button type="button" class="ce-btn" onclick="promCrear()">Guardar actividad</button>
   </div>
 </div>
 </div>
 
 <!-- OVERLAY: Promoción — detalle / edición -->
-<div class="ov" id="ov-prom">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-prom">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh">
     <div class="mh-l">
       <h3 id="promDetTit">Actividad de promoción</h3>
@@ -563,26 +563,26 @@
     <div class="fr" style="margin-top:8px">
       <div style="flex:2"><label class="fl">Subir evidencia</label><input type="file" id="promEAddFile" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></div>
       <div style="display:flex;gap:8px;align-items:flex-end">
-        <label style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut);cursor:pointer;margin-bottom:2px">
+        <label style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--color-muted);cursor:pointer;margin-bottom:2px">
           <input type="checkbox" id="promESetMain"> Marcar como principal
         </label>
-        <button type="button" class="btn btn-xs btn-p" onclick="promEvidAdd()">Subir</button>
+        <button type="button" class="ce-btn ce-btn-xs" onclick="promEvidAdd()">Subir</button>
       </div>
     </div>
     <div id="promEvidList" style="margin-top:8px"></div>
     <p class="ferr" id="promEErr" style="font-size:12px;margin-top:8px"></p>
   </div>
   <div class="mf">
-    <button class="btn" onclick="closeOv('ov-prom')">Cerrar</button>
+    <button class="ce-btn-secondary" onclick="closeOv('ov-prom')">Cerrar</button>
     <button class="btn btn-d" id="promDelBtn" onclick="promDelete()">Eliminar</button>
-    <button class="btn btn-p" onclick="promSave()">Guardar cambios</button>
+    <button class="ce-btn" onclick="promSave()">Guardar cambios</button>
   </div>
 </div>
 </div>
 
 <!-- OVERLAY: Conductas de riesgo -->
-<div class="ov" id="ov-senal">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-senal">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh"><div class="mh-l"><h3>Registrar conducta de riesgo</h3></div><button onclick="closeOv('ov-senal')">×</button></div>
   <div class="mb">
     <div class="abanner ab-r" style="margin-bottom:12px;font-size:11px;line-height:1.45">Registro institucional de conductas. Complete con hechos observables. La evidencia adjunta es opcional y debe respetar la protección de datos personales.</div>
@@ -599,7 +599,7 @@
       </select></div>
       <div style="flex:2"><label class="fl">Opción</label><select id="crSub" onchange="refreshCrAccion()"><option value="">Primero elija tipo</option></select></div>
     </div>
-    <div style="margin-top:10px;padding:10px 12px;background:var(--ibg);border-radius:var(--r);border:1px solid var(--brd)">
+    <div style="margin-top:10px;padding:10px 12px;background:var(--color-ibg);border-radius:var(--radius-sm);border:1px solid var(--color-brd)">
       <div class="plbl" style="font-size:10px">Acción asociada</div>
       <div id="crAccionText" class="mut" style="margin-top:4px;font-size:12px;line-height:1.45">—</div>
     </div>
@@ -610,13 +610,13 @@
     </div>
     <p class="ferr" id="crErr" style="font-size:12px"></p>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-senal')">Cancelar</button><button class="btn btn-p" onclick="guardarConducta()">Enviar registro</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-senal')">Cancelar</button><button class="ce-btn" onclick="guardarConducta()">Enviar registro</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Coordinador — estado de gestión -->
-<div class="ov" id="ov-gestion">
-<div class="modal" style="margin-top:14px;max-width:440px">
+<div class="ov ce-modal-overlay" id="ov-gestion">
+<div class="modal ce-modal" style="margin-top:14px;max-width:440px">
   <div class="mh"><div class="mh-l"><h3>Cierre de gestión del expediente</h3><small>Solo coordinación (o superadmin)</small></div><button onclick="closeOv('ov-gestion')">×</button></div>
   <div class="mb" style="font-size:12px;line-height:1.5">
     <p class="fhint" style="margin-bottom:12px"><strong>Cerrada</strong> archiva el caso. <strong>En revisión</strong> deja seguimiento sin cierre formal (visible como tal aunque el flujo siga). <strong>Automático</strong> anula la decisión manual y el sistema vuelve a marcar pendiente o en revisión según las anotaciones.</p>
@@ -624,23 +624,23 @@
     <label style="display:flex;gap:8px;margin-bottom:10px;cursor:pointer;align-items:flex-start"><input type="radio" name="gestDec" id="gestDec_rev" value="en_revision" style="margin-top:3px"> En revisión / seguimiento (decisión explícita)</label>
     <label style="display:flex;gap:8px;margin-bottom:10px;cursor:pointer;align-items:flex-start"><input type="radio" name="gestDec" id="gestDec_cerr" value="cerrada" style="margin-top:3px"> Cerrada (archivo)</label>
   </div>
-  <div class="mf"><button type="button" class="btn" onclick="closeOv('ov-gestion')">Cancelar</button><button type="button" class="btn btn-p" onclick="guardarGestionOverlay()">Guardar</button></div>
+  <div class="mf"><button type="button" class="ce-btn-secondary" onclick="closeOv('ov-gestion')">Cancelar</button><button type="button" class="ce-btn" onclick="guardarGestionOverlay()">Guardar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Acudiente solicita cita con rol institucional -->
-<div class="ov" id="ov-cita-solic">
-<div class="modal" style="margin-top:14px;max-width:420px">
+<div class="ov ce-modal-overlay" id="ov-cita-solic">
+<div class="modal ce-modal" style="margin-top:14px;max-width:420px">
   <div class="mh"><div class="mh-l"><h3>Agendar cita</h3><small>La institución recibirá la solicitud y propondrá fecha y hora</small></div><button onclick="closeOv('ov-cita-solic')">×</button></div>
   <div class="mb">
     <input type="hidden" id="solFaltaId" value="">
     <div id="solFaltaRow" style="display:none;margin-bottom:12px">
       <label class="fl">Falta asociada</label>
-      <select id="solFaltaSel" style="width:100%;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit;font-size:13px"></select>
-      <small style="display:block;font-size:10px;color:var(--mut);margin-top:4px">La solicitud queda vinculada al registro seleccionado.</small>
+      <select id="solFaltaSel" style="width:100%;padding:8px;border:1px solid var(--color-brd);border-radius:var(--radius-sm);font-family:inherit;font-size:13px"></select>
+      <small style="display:block;font-size:10px;color:var(--color-muted);margin-top:4px">La solicitud queda vinculada al registro seleccionado.</small>
     </div>
     <label class="fl">¿Con quién desea la cita?</label>
-    <select id="solRolDest" style="width:100%;max-width:100%;padding:8px;border:1px solid var(--brd);border-radius:var(--r);font-family:inherit">
+    <select id="solRolDest" style="width:100%;max-width:100%;padding:8px;border:1px solid var(--color-brd);border-radius:var(--radius-sm);font-family:inherit">
       <option value="">Seleccionar</option>
       <option>Coordinador</option>
       <option>Director</option>
@@ -649,13 +649,13 @@
     </select>
     <p class="ferr" id="solCitaErr" style="font-size:12px;margin-top:8px"></p>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-cita-solic')">Cancelar</button><button class="btn btn-p" onclick="enviarSolicitudCita()">Enviar solicitud</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-cita-solic')">Cancelar</button><button class="ce-btn" onclick="enviarSolicitudCita()">Enviar solicitud</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Prevención — detalle -->
-<div class="ov" id="ov-prev-det">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-prev-det">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh">
     <div class="mh-l"><h3 id="prevDetTit">Detalle</h3><small id="prevDetSub">—</small></div>
     <button onclick="closeOv('ov-prev-det')">×</button>
@@ -663,19 +663,19 @@
   <div class="mb">
     <div id="prevDetBody"></div>
   </div>
-  <div class="mf"><button class="btn" onclick="closeOv('ov-prev-det')">Cerrar</button></div>
+  <div class="mf"><button class="ce-btn-secondary" onclick="closeOv('ov-prev-det')">Cerrar</button></div>
 </div>
 </div>
 
 <!-- OVERLAY: Bitácora alerta ciudadana -->
-<div class="ov" id="ov-rep-bit">
-<div class="modal modal-lg" style="margin-top:14px">
+<div class="ov ce-modal-overlay" id="ov-rep-bit">
+<div class="modal modal-lg ce-modal ce-modal-lg" style="margin-top:14px">
   <div class="mh">
     <div class="mh-l"><h3>Bitácora — alerta ciudadana</h3><small class="mut">Historial de cambios de estado</small></div>
     <button type="button" onclick="closeOv('ov-rep-bit')">×</button>
   </div>
   <div class="mb" id="repBitBody" style="max-height:62vh;overflow:auto;padding:8px 12px"></div>
-  <div class="mf"><button type="button" class="btn" onclick="closeOv('ov-rep-bit')">Cerrar</button></div>
+  <div class="mf"><button type="button" class="ce-btn-secondary" onclick="closeOv('ov-rep-bit')">Cerrar</button></div>
 </div>
 </div>
 

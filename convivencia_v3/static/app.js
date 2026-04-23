@@ -291,7 +291,7 @@ function buildNav(){
     wrap.className='sb-nav-cta';
     const b=document.createElement('button');
     b.type='button';
-    b.className='btn btn-p flex w-full items-center justify-center gap-2.5 rounded-xl px-3 py-3 text-[13px] shadow-md shadow-black/20';
+    b.className='ce-btn';
     b.setAttribute('aria-label','Registrar falta');
     b.appendChild(makeNavIcon('faltas'));
     const sp=document.createElement('span');
@@ -312,7 +312,7 @@ function buildNav(){
       wrap.className='sb-nav-cta sb-nav-cierre';
       const b=document.createElement('button');
       b.type='button';
-      b.className='sb-cierre-anio flex w-full items-center justify-center gap-2.5 rounded-xl px-3 py-3 text-[13px] shadow-md shadow-black/25';
+      b.className='sb-cierre-anio';
       b.setAttribute('data-tab',item.id);
       const ttl=TTLS[item.id]||item.l;
       b.title=ttl;
@@ -497,30 +497,30 @@ async function renderInicio(tab){
     if(tx)temCounts[tx]=(temCounts[tx]||0)+1;
   });
   const temTiles=temList.map(t=>`<div class="ini-tem-tile"><div class="ini-tem-n">${temCounts[t]||0}</div><div class="ini-tem-l">${temBdg(t)}</div></div>`).join('');
-  const temBlock=`<div class="card mb-4"><div class="ch"><h3>Por dimensión temática</h3><span class="mut" style="font-size:11px;font-weight:500">${getAnio()} · clasificación del registro</span></div><div class="ini-tem-grid">${temTiles}</div></div>`;
+  const temBlock=`<div class="ce-card mb-4"><div class="ch"><h3>Por dimensión temática</h3><span class="mut" style="font-size:11px;font-weight:500">${getAnio()} · clasificación del registro</span></div><div class="ini-tem-grid">${temTiles}</div></div>`;
   tab.innerHTML=`
     <div class="stats mb-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4 max-[720px]:flex max-[720px]:gap-2.5 max-[720px]:overflow-x-auto max-[720px]:pb-2 max-[720px]:[-webkit-overflow-scrolling:touch] max-[720px]:snap-x max-[720px]:snap-mandatory">
-      <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.length}</div><div class="l">Total ${getAnio()}</div><div class="stat-ln sl-b"></div></div>
-      <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo I').length}</div><div class="l">Tipo I — Leves</div><div class="stat-ln sl-g"></div></div>
-      <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo II').length}</div><div class="l">Tipo II — Graves</div><div class="stat-ln sl-a"></div></div>
-      <div class="stat relative overflow-hidden rounded-xl border border-[var(--brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo III').length}</div><div class="l">Tipo III — Muy graves</div><div class="stat-ln sl-r"></div></div>
+      <div class="stat relative overflow-hidden rounded-xl border border-[var(--color-brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.length}</div><div class="l">Total ${getAnio()}</div><div class="stat-ln sl-b"></div></div>
+      <div class="stat relative overflow-hidden rounded-xl border border-[var(--color-brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo I').length}</div><div class="l">Tipo I — Leves</div><div class="stat-ln sl-g"></div></div>
+      <div class="stat relative overflow-hidden rounded-xl border border-[var(--color-brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo II').length}</div><div class="l">Tipo II — Graves</div><div class="stat-ln sl-a"></div></div>
+      <div class="stat relative overflow-hidden rounded-xl border border-[var(--color-brd)] bg-white p-3.5 shadow-sm shadow-black/[0.04] max-[720px]:min-w-[170px] max-[720px]:shrink-0 max-[720px]:snap-start max-[720px]:py-3 max-[720px]:px-3"><div class="n max-[720px]:text-xl">${faltasAll.filter(f=>f.tipo_falta==='Tipo III').length}</div><div class="l">Tipo III — Muy graves</div><div class="stat-ln sl-r"></div></div>
     </div>
     ${temBlock}
     <div class="ini-grid grid grid-cols-1 gap-4 min-[1021px]:grid-cols-3">
-      <div class="card">
+      <div class="ce-card">
         <div class="ch"><h3>Pendiente <span class="ini-count">(${proc.length})</span></h3></div>
         <div class="ini-list">${proc.length?fCards(proc):'<div class="empty">Nada pendiente con usted en este momento según ese orden.</div>'}</div>
       </div>
-      <div class="card">
-        <div class="ch"><h3>Gravedad <span style="font-size:12px;font-weight:500;color:var(--mut)">(Tipo II y III)</span></h3></div>
+      <div class="ce-card">
+        <div class="ch"><h3>Gravedad <span style="font-size:12px;font-weight:500;color:var(--color-muted)">(Tipo II y III)</span></h3></div>
         <div class="ini-list">${atn.length?fCards(atn):'<div class="empty">Sin faltas Tipo II o III en este año.</div>'}</div>
       </div>
-      <div class="card">
-        <div class="ch"><h3>Faltas recientes</h3>${canReg?`<button type="button" class="btn btn-p btn-xs" onclick="openOv('ov-falta')">+ Registrar</button>`:''}</div>
+      <div class="ce-card">
+        <div class="ch"><h3>Faltas recientes</h3>${canReg?`<button type="button" class="ce-btn ce-btn-xs" onclick="openOv('ov-falta')">+ Registrar</button>`:''}</div>
         <div class="ini-list">${fCards(rec)}</div>
       </div>
     </div>
-    <div class="card mt-1">
+    <div class="ce-card mt-1">
       <div class="ch"><h3>Panorama para la acción</h3></div>
       <div class="ini-panorama">
         <div class="ini-pan-col">
@@ -538,24 +538,26 @@ async function renderInicio(tab){
 function escHtml(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-const _TEM_STY={
-  'Relaciones Respetuosas':'background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe',
-  'Normas de convivencia':'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe',
-  'Gestión Emocional':'background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8',
-  'Ambiente Físico y seguro':'background:#d1fae5;color:#047857;border:1px solid #a7f3d0',
-  'Participación activa':'background:#ffedd5;color:#c2410c;border:1px solid #fed7aa',
-  'Prevención de conflictos':'background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe',
+/* Tier semántico por etiqueta de temática (catálogo / manual): t3 convivencia grave, t2 académico-normativo, t1 prevención-bienestar, info resto */
+const _TEM_TIER={
+  'Relaciones Respetuosas':'t3',
+  'Normas de convivencia':'t2',
+  'Gestión Emocional':'t1',
+  'Ambiente Físico y seguro':'t1',
+  'Participación activa':'t2',
+  'Prevención de conflictos':'t1',
 };
 function temBdg(lab){
-  const t=String(lab==null?'':lab).trim();
-  if(!t)return'';
-  const st=_TEM_STY[t]||'background:#f1f5f9;color:#475569;border:1px solid #e2e8f0';
-  return`<span class="tem-pill" style="${st}">${escHtml(t)}</span>`;
+  const raw=String(lab==null?'':lab).trim();
+  if(!raw)return'';
+  const key=Object.keys(_TEM_TIER).find(k=>k.toLowerCase()===raw.toLowerCase());
+  const tier=key?_TEM_TIER[key]:'info';
+  return`<span class="tem-pill tem-${tier}">${escHtml(raw)}</span>`;
 }
 function estGestionBdg(f){
   const eg=f.estado_gestion||'pendiente';
-  const cls=eg==='cerrada'?'ce':eg==='en_revision'?'er':'pe';
-  return`<span class="bdg beg-${cls}">${EST_GEST_TXT[eg]||eg}</span>`;
+  const cls=eg==='cerrada'?'ce-badge-gest-ce':eg==='en_revision'?'ce-badge-gest-er':'ce-badge-gest-pe';
+  return`<span class="ce-badge ${cls}">${EST_GEST_TXT[eg]||eg}</span>`;
 }
 function fCitaBlock(f){
   const c=f.cita_acudiente;
@@ -571,14 +573,14 @@ function fCitaBlock(f){
       if(canSol){
         row+=`<button type="button" class="btn btn-g btn-xs" onclick="event.stopPropagation();citaConfirmar(${c.id})">Confirmar</button> <button type="button" class="btn btn-d btn-xs" onclick="event.stopPropagation();citaRechazar(${c.id})">Rechazar</button>`;
       }else{
-        row+=`<span style="color:var(--mut);font-size:11px">(pendiente confirmación del acudiente)</span>`;
+        row+=`<span style="color:var(--color-muted);font-size:11px">(pendiente confirmación del acudiente)</span>`;
       }
       row+='</div>';
       parts.push(row);
     }else if(st==='confirmada'){
       parts.push(`<div class="fc-cita" onclick="event.stopPropagation()"><strong>Cita confirmada</strong> · ${escHtml(fh||'—')}</div>`);
     }else if(st==='rechazada'||st==='cancelada'){
-      parts.push(`<div class="fc-cita" onclick="event.stopPropagation()"><span style="color:var(--mut)">Cita ${st==='rechazada'?'rechazada':'cancelada'}</span></div>`);
+      parts.push(`<div class="fc-cita" onclick="event.stopPropagation()"><span style="color:var(--color-muted)">Cita ${st==='rechazada'?'rechazada':'cancelada'}</span></div>`);
     }
   }
   return parts.join('');
@@ -589,17 +591,17 @@ function fCards(faltas){
     <div class="fcard ${f.tipo_falta==='Tipo III'?'t3':f.tipo_falta==='Tipo II'?'t2':''}" onclick="verFalta(${f.id})">
       <div class="fc-top">
         <span class="fc-est">${f.estudiante}</span>
-        <div class="fc-bdg">${bdg(f.tipo_falta)}${estGestionBdg(f)}${(f.tematica||'').trim()?temBdg(f.tematica):''}<span class="bdg bg">${f.curso}</span>${(f.anotaciones?.length||0)>0?`<span class="bdg bi">${f.anotaciones.length} seg.</span>`:''}</div>
+        <div class="fc-bdg">${bdg(f.tipo_falta)}${estGestionBdg(f)}${(f.tematica||'').trim()?temBdg(f.tematica):''}<span class="ce-badge">${f.curso}</span>${(f.anotaciones?.length||0)>0?`<span class="ce-badge ce-badge-info">${f.anotaciones.length} seg.</span>`:''}</div>
       </div>
       <div class="fc-meta"><span>${f.fecha}</span><span>${f.docente}</span></div>
       <div class="fc-desc">${f.falta_especifica} — ${f.descripcion}</div>
       ${fCitaBlock(f)}
-      <div class="fc-foot"><span class="fc-proc">${f.proceso_inicial}</span><span style="font-size:11px;color:var(--mut)">Ver →</span></div>
+      <div class="fc-foot"><span class="fc-proc">${f.proceso_inicial}</span><span style="font-size:11px;color:var(--color-muted)">Ver →</span></div>
     </div>`).join('');
 }
 
 function bdg(t){
-  const m={'Tipo I':`<span class="bdg b1"><span class="dot dg"></span>Tipo I</span>`,'Tipo II':`<span class="bdg b2"><span class="dot da"></span>Tipo II</span>`,'Tipo III':`<span class="bdg b3"><span class="dot dr"></span>Tipo III</span>`};
+  const m={'Tipo I':`<span class="ce-badge ce-badge-t1"><span class="ce-badge-dot"></span>Tipo I</span>`,'Tipo II':`<span class="ce-badge ce-badge-t2"><span class="ce-badge-dot"></span>Tipo II</span>`,'Tipo III':`<span class="ce-badge ce-badge-t3"><span class="ce-badge-dot"></span>Tipo III</span>`};
   return m[t]||t;
 }
 
@@ -618,7 +620,7 @@ async function refreshCitasPendientes(){
     pa.forEach(c=>{
       html+=`<div class="cita-pend-row"><span><strong>${escHtml(c.estudiante)}</strong> · ${escHtml(c.falta_especifica||'')} · con <strong>${escHtml(c.rol_destino)}</strong></span>`;
       html+=`<input type="datetime-local" id="citaDt-${c.id}" aria-label="Fecha y hora cita">`;
-      html+=`<button type="button" class="btn btn-p btn-xs" onclick="propCitaStaff(${c.id})">Enviar propuesta</button></div>`;
+      html+=`<button type="button" class="ce-btn ce-btn-xs" onclick="propCitaStaff(${c.id})">Enviar propuesta</button></div>`;
     });
   }
   if(pc.length&&CU.rol==='Acudiente'){
@@ -717,13 +719,13 @@ function refreshAcudienteCitaPanel(){
   }
   const eid=document.getElementById('rEst')?.value;
   if(!eid){
-    body.innerHTML='<span style="color:var(--mut)">Seleccione primero al estudiante en el paso 1.</span>';
+    body.innerHTML='<span style="color:var(--color-muted)">Seleccione primero al estudiante en el paso 1.</span>';
     wrap.style.display='block';
     return;
   }
   const e=window._rEstById&&window._rEstById[Number(eid)];
   if(!e){
-    body.innerHTML='<span style="color:var(--mut)">Cargue el curso y el estudiante en el paso 1 para ver los datos de contacto.</span>';
+    body.innerHTML='<span style="color:var(--color-muted)">Cargue el curso y el estudiante en el paso 1 para ver los datos de contacto.</span>';
     wrap.style.display='block';
     return;
   }
@@ -796,14 +798,14 @@ function faltasTabRender(){
   }else{
     tb.innerHTML=list.map(f=>{
       const eg=f.estado_gestion||'pendiente';
-      const cls=eg==='cerrada'?'ce':eg==='en_revision'?'er':'pe';
-      const tb_=f.tipo_falta==='Tipo III'?'b3':f.tipo_falta==='Tipo II'?'b2':'b1';
+      const tb_=f.tipo_falta==='Tipo III'?'ce-badge-t3':f.tipo_falta==='Tipo II'?'ce-badge-t2':'ce-badge-t1';
+      const gestCls=eg==='cerrada'?'ce-badge-gest-ce':eg==='en_revision'?'ce-badge-gest-er':'ce-badge-gest-pe';
       return`<tr onclick="verFalta(${f.id})">
         <td title="${escHtml(f.estudiante)}">${escHtml(f.estudiante)}</td>
         <td>${escHtml(f.curso)}</td>
         <td>${escHtml(f.fecha)}</td>
-        <td><span class="bdg ${tb_}"><span class="dot ${f.tipo_falta==='Tipo III'?'dr':f.tipo_falta==='Tipo II'?'da':'dg'}"></span>${escHtml(f.tipo_falta)}</span></td>
-        <td><span class="bdg beg-${cls}">${egTxt[eg]||eg}</span></td>
+        <td><span class="ce-badge ${tb_}"><span class="ce-badge-dot"></span>${escHtml(f.tipo_falta)}</span></td>
+        <td><span class="ce-badge ${gestCls}">${egTxt[eg]||eg}</span></td>
       </tr>`;
     }).join('');
   }
@@ -825,37 +827,37 @@ function faltasTabResetFilt(){
 async function renderFaltas(tab){
   const canReg=['Coordinador','Director','Docente','Superadmin'].includes(CU.rol);
   const plantillasFaltasBar=['Docente','Director','Orientador'].includes(CU.rol)
-    ?`<div class="card" style="margin-bottom:12px;padding:10px 14px;background:var(--ibg);border:1px solid var(--brd)">
+    ?`<div class="ce-card" style="margin-bottom:12px;padding:10px 14px;background:var(--color-ibg);border:1px solid var(--color-brd)">
       <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px">
-        <div style="font-size:12px;color:var(--mut);line-height:1.45;flex:1;min-width:200px">
-          <strong style="color:var(--ink)">Formatos en blanco</strong> — PDF con datos del colegio para imprimir o completar a mano; luego adjúntelo al registro de la falta.
+        <div style="font-size:12px;color:var(--color-muted);line-height:1.45;flex:1;min-width:200px">
+          <strong style="color:var(--color-ink)">Formatos en blanco</strong> — PDF con datos del colegio para imprimir o completar a mano; luego adjúntelo al registro de la falta.
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
-          <button type="button" class="btn btn-xs btn-p" onclick="window.open('/api/pdf/plantilla/acta-descargos','_blank')">Acta de descargos</button>
-          <button type="button" class="btn btn-xs" onclick="window.open('/api/pdf/plantilla/acta-sesion','_blank')">Acta de sesión</button>
+          <button type="button" class="ce-btn ce-btn-xs" onclick="window.open('/api/pdf/plantilla/acta-descargos','_blank')">Acta de descargos</button>
+          <button type="button" class="ce-btn-secondary ce-btn-xs" onclick="window.open('/api/pdf/plantilla/acta-sesion','_blank')">Acta de sesión</button>
         </div>
       </div>
     </div>`
     :'';
   const acuAgenda=CU.rol==='Acudiente'?`
-    <div class="card" style="margin-bottom:12px">
+    <div class="ce-card" style="margin-bottom:12px">
       <div class="ch" style="align-items:flex-start;flex-wrap:wrap;gap:12px">
         <div style="flex:1;min-width:200px">
           <h3 style="margin-bottom:4px">Agendar cita con la institución</h3>
-          <p style="font-size:12px;color:var(--mut);line-height:1.45;max-width:560px">Este botón es independiente de cada falta: puede usarlo en cualquier momento. Elija la falta vinculada a la reunión y el rol con quien desea hablar; la institución propondrá fecha y hora y usted confirmará en el portal.</p>
+          <p style="font-size:12px;color:var(--color-muted);line-height:1.45;max-width:560px">Este botón es independiente de cada falta: puede usarlo en cualquier momento. Elija la falta vinculada a la reunión y el rol con quien desea hablar; la institución propondrá fecha y hora y usted confirmará en el portal.</p>
         </div>
-        <button type="button" class="btn btn-p" style="flex-shrink:0" onclick="abrirSolicitudCitaGlobal()">Agendar cita</button>
+        <button type="button" class="ce-btn" style="flex-shrink:0" onclick="abrirSolicitudCitaGlobal()">Agendar cita</button>
       </div>
     </div>`:'';
   const optsCurso=`<option value="">Curso</option>${CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('')}`;
   tab.innerHTML=`
     ${acuAgenda}
     ${plantillasFaltasBar}
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3 id="fcCountTit">Cargando…</h3>
         <div class="ch-r">
           <input class="srch ft-srch" id="fcSrch" placeholder="Buscar…" oninput="faltasTabRender()">
-          ${canReg?`<button class="btn btn-p btn-xs" onclick="openOv('ov-falta')">+ Registrar</button>`:''}
+          ${canReg?`<button class="ce-btn ce-btn-xs" onclick="openOv('ov-falta')">+ Registrar</button>`:''}
         </div>
       </div>
       <div class="ft-toolbar">
@@ -868,10 +870,10 @@ async function renderFaltas(tab){
         <select id="ftEstado" class="ft-inp" onchange="faltasTabRender()">
           <option value="">Estado</option><option value="pendiente">Pendiente</option><option value="en_revision">En revisión</option><option value="cerrada">Cerrada</option>
         </select>
-        <button type="button" class="btn btn-xs" onclick="faltasTabResetFilt()">Limpiar</button>
+        <button type="button" class="ce-btn-secondary ce-btn-xs" onclick="faltasTabResetFilt()">Limpiar</button>
       </div>
-      <div class="table-wrap ft-tw">
-        <table id="ftTable" class="table-faltas">
+      <div class="table-wrap ce-table-wrap ft-tw">
+        <table id="ftTable" class="ce-table table-faltas">
           <thead>
             <tr>
               <th class="ft-sort" data-sort="estudiante" onclick="faltasTabToggleSort('estudiante')">Estudiante <span class="ft-ind"></span></th>
@@ -918,7 +920,7 @@ async function asistOnCursoChange(){
   window._asistEstList=Array.isArray(list)?list:[];
   if(wrap){
     wrap.innerHTML=window._asistEstList.map(e=>
-      `<button type="button" class="btn btn-xs" style="margin:4px" data-aid="${e.id}" onclick="asistToggleEst(${e.id})">${String(e.nombre).replace(/</g,'&lt;')}</button>`
+      `<button type="button" class="ce-btn-secondary ce-btn-xs" style="margin:4px" data-aid="${e.id}" onclick="asistToggleEst(${e.id})">${String(e.nombre).replace(/</g,'&lt;')}</button>`
     ).join('')||'<span class="mut">Sin estudiantes en este curso</span>';
   }
   asistPaintAbsRows();
@@ -951,7 +953,7 @@ function asistPaintAbsRows(){
       <option value="1" ${v.justificada===true?'selected':''}>Justificada</option>
       <option value="0" ${v.justificada===false?'selected':''}>No justif.</option>
     </select>`;
-    return`<tr><td>${String(v.nombre).replace(/</g,'&lt;')}</td><td>${canTri?sel:'<span class="mut">Pendiente</span>'}</td><td><button type="button" class="btn btn-xs" onclick="asistToggleEst(${id})">Quitar</button></td></tr>`;
+    return`<tr><td>${String(v.nombre).replace(/</g,'&lt;')}</td><td>${canTri?sel:'<span class="mut">Pendiente</span>'}</td><td><button type="button" class="ce-btn-secondary ce-btn-xs" onclick="asistToggleEst(${id})">Quitar</button></td></tr>`;
   }).join('');
 }
 function asistJusPick(id,val){
@@ -1002,32 +1004,32 @@ async function renderAsistencia(tab){
     ${errApi?`<div class="abanner ab-r">${errApi}</div>`:''}
     <div class="abanner ab-i" style="font-size:11px">Los ausentes pueden marcarse como justificados o no; coordinación y dirección pueden revisar y corregir el estado después del registro.</div>
     ${canTri?`
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>Nueva toma</h3></div>
       <div style="padding:12px;display:grid;gap:10px;max-width:640px">
         <div class="fr"><div><label class="fl">Fecha</label><input type="date" id="asistFecha" value="${hoy}"></div><div><label class="fl">Curso</label>${cursoSel}</div></div>
         <div><label class="fl">Asignatura / espacio</label>
           <input id="asistAsig" placeholder="Ej: Matemáticas" maxlength="120" value="${predAsig}">
-          ${CU.rol==='Docente'?`<button type="button" class="btn btn-xs" style="margin-left:8px" onclick="guardarAsigPred()">Guardar como predeterminada</button>`:''}
+          ${CU.rol==='Docente'?`<button type="button" class="ce-btn-secondary ce-btn-xs" style="margin-left:8px" onclick="guardarAsigPred()">Guardar como predeterminada</button>`:''}
         </div>
         <div><label class="fl">Estudiantes — pulse para marcar ausencia</label><div id="asistChips" class="mut" style="line-height:1.6">Elija curso primero</div></div>
         <table class="tbl" style="max-width:520px"><thead><tr><th>Ausente</th><th>Justificación (al registrar)</th><th></th></tr></thead><tbody id="asistAbsBody"><tr><td colspan="3" class="mut">Elija curso y pulse nombres</td></tr></tbody></table>
         <p class="ferr" id="asistErr" style="font-size:12px"></p>
-        <button type="button" class="btn btn-p" onclick="guardarAsistToma()">Guardar toma</button>
+        <button type="button" class="ce-btn" onclick="guardarAsistToma()">Guardar toma</button>
       </div>
     </div>
     `:''}
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>Historial reciente</h3></div>
       <div style="padding:9px">${list.length?list.map(t=>{
         const det=(t.detalles||[]).filter(d=>d.ausente);
         return`<div class="fcard" style="margin-bottom:10px;cursor:default">
-          <div class="fc-top"><span class="fc-est">${t.fecha} · ${t.curso}</span><span class="bdg bg">${t.asignatura||'—'}</span></div>
+          <div class="fc-top"><span class="fc-est">${t.fecha} · ${t.curso}</span><span class="ce-badge">${t.asignatura||'—'}</span></div>
           <div class="fc-meta"><span>${t.docente_nombre||''}</span><span>${t.creado_en||''}</span></div>
           ${det.length?`<table class="tbl" style="margin-top:8px;font-size:12px"><thead><tr><th>Estudiante</th><th>Justificada</th>${canJustReview?'<th>Revisar</th>':''}</tr></thead><tbody>
             ${det.map(d=>{
               const j=d.justificada;
-              const review=canJustReview?`<td><button type="button" class="btn btn-xs" onclick="asistSetJust(${d.id},true)">Marcar sí</button> <button type="button" class="btn btn-xs" onclick="asistSetJust(${d.id},false)">Marcar no</button></td>`:'';
+              const review=canJustReview?`<td><button type="button" class="ce-btn-secondary ce-btn-xs" onclick="asistSetJust(${d.id},true)">Marcar sí</button> <button type="button" class="ce-btn-secondary ce-btn-xs" onclick="asistSetJust(${d.id},false)">Marcar no</button></td>`:'';
               return`<tr><td>${String(d.estudiante_nombre||'—').replace(/</g,'&lt;')}</td><td>${asistJusTxt(j)}</td>${review}</tr>`;
             }).join('')}
           </tbody></table>`:'<div class="mut" style="margin-top:6px">Sin ausencias registradas</div>'}
@@ -1041,11 +1043,11 @@ async function renderAsistencia(tab){
 async function renderEstudiantes(tab){
   const ests=await api('/api/estudiantes');window._ec=ests;
   tab.innerHTML=`
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>${ests.length} estudiantes</h3>
         <div class="ch-r">
           <select id="fECur" style="font-size:12px;padding:5px 9px" onchange="filtEst()"><option value="">Todos los cursos</option>${CURSOS.map(c=>`<option>${c}</option>`).join('')}</select>
-          <button class="btn btn-p btn-xs" onclick="openNuevoEst()">+ Agregar</button>
+          <button class="ce-btn ce-btn-xs" onclick="openNuevoEst()">+ Agregar</button>
           <button class="btn btn-g btn-xs" onclick="openOv('ov-import')">Carga masiva</button>
         </div>
       </div>
@@ -1076,13 +1078,13 @@ function filtEst(){const cur=document.getElementById('fECur')?.value||'';const l
 async function renderUsuarios(tab){
   const usrs=await api('/api/usuarios');
   tab.innerHTML=`
-    <div class="card">
-      <div class="ch"><h3>${usrs.length} usuarios</h3><button class="btn btn-p btn-xs" onclick="openNuevoUsr()">+ Nuevo usuario</button></div>
+    <div class="ce-card">
+      <div class="ch"><h3>${usrs.length} usuarios</h3><button class="ce-btn ce-btn-xs" onclick="openNuevoUsr()">+ Nuevo usuario</button></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th style="width:14%">Usuario</th><th>Nombre</th><th style="width:12%">Rol</th><th style="width:10%">Curso</th><th style="width:110px">Acciones</th></tr></thead>
           <tbody>${usrs.map(u=>`<tr>
-            <td><code style="font-size:11px;background:#f0ece4;padding:2px 5px;border-radius:3px">${u.usuario}</code></td>
+            <td><code style="font-size:11px;background:var(--color-btn-secondary-hover);padding:2px 5px;border-radius:3px">${u.usuario}</code></td>
             <td>${u.nombre}</td><td><span class="tag ${TGCLS[u.rol]||'t-doc'}">${u.rol}</span></td><td>${u.curso||'—'}</td>
             <td style="display:flex;gap:3px">
               <button class="btn btn-xs btn-i" onclick="editarUsr(${u.id})">Editar</button>
@@ -1098,8 +1100,8 @@ async function renderUsuarios(tab){
 async function renderCatalogo(tab){
   const cat=await api('/api/catalogo');catCache=cat;
   tab.innerHTML=`
-    <div class="card">
-      <div class="ch"><h3>Catálogo de faltas</h3><div class="ch-r"><button class="btn btn-g btn-xs" onclick="openOv('ov-cat-bulk')">Carga masiva</button><button class="btn btn-p btn-xs" onclick="openOv('ov-cat-new')">+ Nueva falta</button></div></div>
+    <div class="ce-card">
+      <div class="ch"><h3>Catálogo de faltas</h3><div class="ch-r"><button class="btn btn-g btn-xs" onclick="openOv('ov-cat-bulk')">Carga masiva</button><button class="ce-btn ce-btn-xs" onclick="openOv('ov-cat-new')">+ Nueva falta</button></div></div>
       <div class="tbar">
         <button class="tb-btn on" onclick="setCF('Tipo I',this)">Tipo I — Leves</button>
         <button class="tb-btn" onclick="setCF('Tipo II',this)">Tipo II — Graves</button>
@@ -1118,8 +1120,8 @@ function filasCat(cat,tipo){
     <td style="font-weight:500;white-space:normal">${f.descripcion}</td>
     <td>${bdg(f.tipo)}</td>
     <td style="white-space:normal;vertical-align:middle">${(f.tematica||'').trim()?temBdg(f.tematica):'<span class="mut" style="font-size:11px">—</span>'}</td>
-    <td style="font-size:11px;color:var(--mut);white-space:normal;line-height:1.4">${f.protocolo||'<span style=color:#c9a84c>Sin definir — edite en Protocolos</span>'}</td>
-    <td style="font-size:11px;color:var(--mut);white-space:normal;line-height:1.4">${f.sancion||'<span style=color:#c9a84c>Sin definir — edite en Protocolos</span>'}</td>
+    <td style="font-size:11px;color:var(--color-muted);white-space:normal;line-height:1.4">${f.protocolo||'<span style=color:var(--color-proto-warn-fg)>Sin definir — edite en Protocolos</span>'}</td>
+    <td style="font-size:11px;color:var(--color-muted);white-space:normal;line-height:1.4">${f.sancion||'<span style=color:var(--color-proto-warn-fg)>Sin definir — edite en Protocolos</span>'}</td>
     <td><button type="button" class="btn btn-xs btn-d" onclick="borrarCat(${f.id})" title="Eliminar del catálogo">✕</button></td>
   </tr>`).join('');
 }
@@ -1132,8 +1134,8 @@ function htmlFilasProtoCat(cat){
     <td style="font-weight:500;white-space:normal">${f.descripcion}</td>
     <td>${bdg(f.tipo)}</td>
     <td style="white-space:normal;vertical-align:middle">${(f.tematica||'').trim()?temBdg(f.tematica):'<span class="mut" style="font-size:11px">—</span>'}</td>
-    <td style="font-size:11px;color:var(--mut);white-space:normal;line-height:1.35">${f.protocolo||'<span style=color:#c9a84c>Sin definir</span>'}</td>
-    <td style="font-size:11px;color:var(--mut);white-space:normal;line-height:1.35">${f.sancion||'<span style=color:#c9a84c>Sin definir</span>'}</td>
+    <td style="font-size:11px;color:var(--color-muted);white-space:normal;line-height:1.35">${f.protocolo||'<span style=color:var(--color-proto-warn-fg)>Sin definir</span>'}</td>
+    <td style="font-size:11px;color:var(--color-muted);white-space:normal;line-height:1.35">${f.sancion||'<span style=color:var(--color-proto-warn-fg)>Sin definir</span>'}</td>
     <td><button type="button" class="btn btn-xs btn-i" onclick="editarProtoPorId(${f.id})">Editar protocolo, sanción y temática</button></td>
   </tr>`).join('');
 }
@@ -1142,15 +1144,15 @@ async function renderProto(tab){
   const cat=await api('/api/catalogo');
   catCache=cat;
   tab.innerHTML=`
-    <div id="coProtoRoot" style="background:var(--surf);border:1px solid var(--brd);border-radius:var(--rl) var(--rl) 0 0;overflow:hidden">
+    <div id="coProtoRoot" style="background:var(--color-surf);border:1px solid var(--color-brd);border-radius:var(--rl) var(--rl) 0 0;overflow:hidden">
       <div class="tbar">
         <button type="button" class="tb-btn" onclick="showP2('pp1',this)">Protocolos de atención</button>
         <button type="button" class="tb-btn" onclick="showP2('pp2',this)">Procesos disciplinares</button>
         <button type="button" class="tb-btn on" id="tbProtoP3" onclick="showP2('pp3',this)">Protocolo por falta del catálogo</button>
       </div>
     </div>
-    <div class="proto-toolstrip" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border:1px solid var(--brd);border-top:none;background:rgba(0,0,0,.02)">
-      <span style="font-size:11px;color:var(--mut);line-height:1.4;flex:1;min-width:200px">Las pestañas <strong>I / II / III</strong> son referencia general. La edición es por ítem del catálogo (tabla de abajo) o en <strong>Catálogo de faltas</strong>.</span>
+    <div class="proto-toolstrip" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border:1px solid var(--color-brd);border-top:none;background:color-mix(in srgb,var(--color-text) 2%,var(--color-surface))">
+      <span style="font-size:11px;color:var(--color-muted);line-height:1.4;flex:1;min-width:200px">Las pestañas <strong>I / II / III</strong> son referencia general. La edición es por ítem del catálogo (tabla de abajo) o en <strong>Catálogo de faltas</strong>.</span>
       <button type="button" class="btn btn-xs btn-i" onclick="showTab('co-cat',null)">Catálogo de faltas</button>
       <button type="button" class="btn btn-xs btn-g" onclick="openOv('ov-cat-bulk')">Carga masiva al catálogo</button>
     </div>
@@ -1165,7 +1167,7 @@ async function renderProto(tab){
       <div class="pc"><div class="pc-h ph3">Proceso — Tipo III</div><div class="pc-b"><p>• En riesgo inminente: llamar a Policía Nacional.</p><p>• Informe inmediato al rector y convocatoria del Comité.</p><p>• Activación de la Ruta de Atención Integral.</p></div></div>
     </div>
     <div id="pp3" style="display:block;margin-top:10px">
-      <div class="card">
+      <div class="ce-card">
         <div class="ch"><h3>Protocolo y sanción por ítem del catálogo</h3></div>
         <div class="mb" style="padding:12px 14px">
           <p class="mut" style="font-size:11px;margin:0 0 10px;line-height:1.45">Texto que verá el docente al registrar una falta (pasos 2 y 4). Use <strong>Editar protocolo y sanción</strong> en cada fila.</p>
@@ -1264,7 +1266,7 @@ async function renderReportesEst(tab) {
   const tbody = list.length
     ? list
         .map((r) => {
-          const urg = r.urgencia === 'urgente' ? '<span class="reit-bdg crit">Urgente</span>' : '<span class="bdg bg">Puede esperar</span>';
+          const urg = r.urgencia === 'urgente' ? '<span class="reit-bdg crit">Urgente</span>' : '<span class="ce-badge">Puede esperar</span>';
           const st = escHtml(r.estado || '');
           const cat = escHtml(REP_CAT_LBL[r.categoria_visual] || r.categoria_visual || '—');
           const lug = escHtml(REP_LUG_LBL[r.lugar_clave] || r.lugar_clave || '—');
@@ -1276,8 +1278,8 @@ async function renderReportesEst(tab) {
           const btns =
             r.estado === 'pendiente_validacion'
               ? `${bitBtn}<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">
-                 <button type="button" class="btn btn-xs btn-p" onclick="patchRepEst(${Number(r.id)},'caso_abierto')">Abrir caso formal</button>
-                 <button type="button" class="btn btn-xs" onclick="patchRepEst(${Number(r.id)},'orientacion')">Orientación privada</button>
+                 <button type="button" class="ce-btn ce-btn-xs" onclick="patchRepEst(${Number(r.id)},'caso_abierto')">Abrir caso formal</button>
+                 <button type="button" class="ce-btn-secondary ce-btn-xs" onclick="patchRepEst(${Number(r.id)},'orientacion')">Orientación privada</button>
                  <button type="button" class="btn btn-xs btn-d" onclick="patchRepEst(${Number(r.id)},'descartado')">Descartar</button>
                  </div>`
               : bitBtn;
@@ -1295,14 +1297,14 @@ async function renderReportesEst(tab) {
         .join('')
     : '<tr><td colspan="8" class="empty">Sin alertas registradas</td></tr>';
   tab.innerHTML = `
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>Cómo entra el estudiante</h3></div>
-      <div class="mb" style="padding:12px 14px;font-size:13px;line-height:1.55;color:var(--mut)">
+      <div class="mb" style="padding:12px 14px;font-size:13px;line-height:1.55;color:var(--color-muted)">
         <p style="margin:0 0 8px"><strong>Cómo entra el estudiante</strong> — debe existir su ficha en el colegio (alta o carga masiva), que crea el acceso al portal. En <code>/login</code> marca <strong>«Soy estudiante»</strong>, usuario = <strong>documento</strong> (sin puntos) y la contraseña que definió la institución (por defecto los <strong>4 últimos dígitos</strong> del documento si no se indicó otra). Si el documento está en más de un colegio, el sistema pide el <strong>nombre de la I.E.</strong> La página pública <code>/reporte/&lt;institución&gt;</code> usa el mismo documento y contraseña. El personal autorizado puede <strong>restablecer la contraseña</strong> desde <strong>Editar estudiante</strong>.</p>
         <p style="margin:0">Las alertas <strong>no crean falta</strong> solas: quedan pendientes hasta que usted elija abrir caso, orientación o descartar. Cada cambio de estado exige una <strong>nota de al menos 10 caracteres</strong> y queda registrada en la <strong>bitácora</strong> del reporte.</p>
       </div>
     </div>
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>Bandeja de alertas ciudadanas</h3></div>
       <div class="table-wrap mb" style="padding:0 8px 12px">
         <table>
@@ -1319,29 +1321,29 @@ async function renderReportes(tab){
   const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const mData=new Array(12).fill(0);Object.entries(rep.por_mes||{}).forEach(([m,v])=>{const i=parseInt(m)-1;if(i>=0&&i<12)mData[i]=v;});
   const maxM=Math.max(...mData,1);
-  const bars=(data,color)=>{if(!data||!Object.keys(data).length)return`<div style="font-size:11px;color:var(--mut);padding:6px 0">Sin datos</div>`;const entries=Array.isArray(data)?data:Object.entries(data).sort((a,b)=>b[1]-a[1]);const mx=Math.max(...(Array.isArray(data)?data.map(d=>d[1]):Object.values(data)),1);return entries.map(([k,v])=>`<div class="brow"><div class="blbl">${k}</div><div class="btrk"><div class="bfil" style="width:${Math.round(v/mx*100)}%;background:${color}"></div></div><div class="bval">${v}</div></div>`).join('');};
+  const bars=(data,color)=>{if(!data||!Object.keys(data).length)return`<div style="font-size:11px;color:var(--color-muted);padding:6px 0">Sin datos</div>`;const entries=Array.isArray(data)?data:Object.entries(data).sort((a,b)=>b[1]-a[1]);const mx=Math.max(...(Array.isArray(data)?data.map(d=>d[1]):Object.values(data)),1);return entries.map(([k,v])=>`<div class="brow"><div class="blbl">${k}</div><div class="btrk"><div class="bfil" style="width:${Math.round(v/mx*100)}%;background:${color}"></div></div><div class="bval">${v}</div></div>`).join('');};
   tab.innerHTML=`
     <div class="rep-grid">
-      <div class="rc"><h4>POR TIPO DE FALTA</h4>${bars(rep.por_tipo,'#378ADD')}</div>
-      <div class="rc"><h4>TOP ESTUDIANTES</h4>${bars(rep.top_estudiantes,'#e74c3c')}</div>
-      <div class="rc"><h4>POR CURSO</h4>${bars(rep.por_curso,'#639922')}</div>
-      <div class="rc"><h4>POR DOCENTE</h4>${bars(rep.por_docente,'#BA7517')}</div>
+      <div class="rc"><h4>POR TIPO DE FALTA</h4>${bars(rep.por_tipo,'var(--color-iblue)')}</div>
+      <div class="rc"><h4>TOP ESTUDIANTES</h4>${bars(rep.top_estudiantes,'var(--color-t3)')}</div>
+      <div class="rc"><h4>POR CURSO</h4>${bars(rep.por_curso,'var(--color-chart-green)')}</div>
+      <div class="rc"><h4>POR DOCENTE</h4>${bars(rep.por_docente,'var(--color-chart-amber)')}</div>
     </div>
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>Distribución mensual ${getAnio()}</h3></div>
       <div style="padding:14px;display:flex;gap:5px;align-items:flex-end;height:90px">
         ${mData.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div style="font-size:10px;color:var(--mut)">${v||''}</div>
-          <div style="width:100%;background:#e74c3c;border-radius:2px 2px 0 0;height:${Math.round(v/maxM*58)}px;min-height:${v?2:0}px"></div>
-          <div style="font-size:9px;color:var(--mut)">${meses[i]}</div>
+          <div style="font-size:10px;color:var(--color-muted)">${v||''}</div>
+          <div style="width:100%;background:var(--color-t3);border-radius:2px 2px 0 0;height:${Math.round(v/maxM*58)}px;min-height:${v?2:0}px"></div>
+          <div style="font-size:9px;color:var(--color-muted)">${meses[i]}</div>
         </div>`).join('')}
       </div>
     </div>
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>Áreas de mejoramiento</h3></div>
       <div style="padding:13px" id="mejoramientoPanel">Cargando sugerencias...</div>
     </div>
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>Generar reportes</h3></div>
       <div style="padding:14px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -1349,7 +1351,7 @@ async function renderReportes(tab){
             <label class="fl">Reporte por curso (PDF)</label>
             <div style="display:flex;gap:6px;margin-top:4px">
               <select id="repCursoSel" style="flex:1;font-size:12px;padding:6px 8px">${CURSOS.map(c=>`<option>${c}</option>`).join('')}</select>
-              <button class="btn btn-p btn-xs" onclick="dlRepCurso('pdf')">PDF</button>
+              <button class="ce-btn ce-btn-xs" onclick="dlRepCurso('pdf')">PDF</button>
             </div>
             <div class="fhint">Reporte completo del curso con seguimiento</div>
           </div>
@@ -1358,24 +1360,24 @@ async function renderReportes(tab){
             <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
               <select id="repEstCurso" style="font-size:12px;padding:6px 8px;width:110px" onchange="cargarEstRep()">${CURSOS.map(c=>`<option>${c}</option>`).join('')}</select>
               <select id="repEstSel" style="flex:1;font-size:12px;padding:6px 8px;min-width:140px"><option value="">Seleccionar estudiante</option></select>
-              <button class="btn btn-p btn-xs" onclick="dlRepEst('pdf')">PDF</button>
+              <button class="ce-btn ce-btn-xs" onclick="dlRepEst('pdf')">PDF</button>
             </div>
             <div class="fhint">Historial completo — seleccione curso y luego el estudiante</div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--brd);display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-p btn-xs" onclick="window.location.href='/api/pdf/general?anio='+getAnio()">PDF general del año</button>
-          <a href="/api/exportar-csv?anio=${getAnio()}" class="btn btn-xs" style="text-decoration:none">CSV completo</a>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--color-brd);display:flex;gap:8px;flex-wrap:wrap">
+          <button class="ce-btn ce-btn-xs" onclick="window.location.href='/api/pdf/general?anio='+getAnio()">PDF general del año</button>
+          <a href="/api/exportar-csv?anio=${getAnio()}" class="ce-btn-secondary ce-btn-xs" style="text-decoration:none">CSV completo</a>
         </div>
       </div>
     </div>
-    <div class="card">
+    <div class="ce-card">
       <div class="ch"><h3>Formatos convivencia (plantillas vacías)</h3></div>
-      <div style="padding:14px;font-size:12px;color:var(--mut)">
+      <div style="padding:14px;font-size:12px;color:var(--color-muted)">
         <p style="margin:0 0 10px;line-height:1.45">PDF con nombre, municipio y NIT del colegio. Descargue, imprima o complete y firme a mano; luego adjunte el archivo al registro de la falta (desde el detalle o al crearla).</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn btn-p btn-xs" onclick="window.open('/api/pdf/plantilla/acta-descargos','_blank')">Acta de descargos</button>
-          <button type="button" class="btn btn-p btn-xs" onclick="window.open('/api/pdf/plantilla/acta-sesion','_blank')">Acta de sesión (comité / acudientes)</button>
+          <button type="button" class="ce-btn ce-btn-xs" onclick="window.open('/api/pdf/plantilla/acta-descargos','_blank')">Acta de descargos</button>
+          <button type="button" class="ce-btn ce-btn-xs" onclick="window.open('/api/pdf/plantilla/acta-sesion','_blank')">Acta de sesión (comité / acudientes)</button>
         </div>
       </div>
     </div>`;
@@ -1389,15 +1391,15 @@ async function renderReportes(tab){
         Object.entries(data).sort().forEach(([curso,info])=>{
           const hasSug=info.sugerencias&&info.sugerencias.length>0;
           if(!hasSug)return;
-          html+=`<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--brd)">`;
+          html+=`<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--color-brd)">`;
           html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">`;
           html+=`<span style="font-size:12px;font-weight:600">Curso ${curso}</span>`;
-          html+=`<span class="bdg bg">${info.total} faltas</span>`;
-          html+=`<span class="bdg b1">${info.t1} tipo I</span>`;
-          if(info.t2>0)html+=`<span class="bdg b2">${info.t2} tipo II</span>`;
-          if(info.t3>0)html+=`<span class="bdg b3">${info.t3} tipo III</span>`;
+          html+=`<span class="ce-badge">${info.total} faltas</span>`;
+          html+=`<span class="ce-badge ce-badge-t1">${info.t1} tipo I</span>`;
+          if(info.t2>0)html+=`<span class="ce-badge ce-badge-t2">${info.t2} tipo II</span>`;
+          if(info.t3>0)html+=`<span class="ce-badge ce-badge-t3">${info.t3} tipo III</span>`;
           html+='</div>';
-          info.sugerencias.forEach(s=>{ html+=`<div style="margin-bottom:4px;font-size:11px;color:var(--mut)">${s}</div>`; });
+          info.sugerencias.forEach(s=>{ html+=`<div style="margin-bottom:4px;font-size:11px;color:var(--color-muted)">${s}</div>`; });
           html+='</div>';
         });
         mp.innerHTML=html||'<div class="empty">No hay sugerencias para este período</div>';
@@ -1431,7 +1433,7 @@ function dlRepEst(fmt='pdf'){
 
 // ── Cierre de año ─────────────────────────────────────────────────────────────
 function renderAnio(tab){
-  tab.innerHTML=`<div class="card"><div class="ch"><h3>Cierre de año escolar</h3></div>
+  tab.innerHTML=`<div class="ce-card"><div class="ch"><h3>Cierre de año escolar</h3></div>
     <div style="padding:14px">
       <div class="abanner ab-a" style="margin-bottom:12px">Esta acción archiva las faltas del año actual. Se pueden consultar filtrando por año en la barra superior.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1445,7 +1447,7 @@ function renderAnio(tab){
 async function renderPerfil(tab){
   const ests=await api('/api/estudiantes');
   tab.innerHTML=`
-    <div class="card" style="margin-bottom:12px">
+    <div class="ce-card" style="margin-bottom:12px">
       <div style="padding:13px">
         <label class="fl">Seleccionar estudiante</label>
         <select id="perfSel" style="max-width:320px" onchange="renderPerfilDet()">
@@ -1465,12 +1467,12 @@ async function renderPerfilDet(){
   const faltas=(await api(`/api/faltas?anio=${getAnio()}`)).filter(f=>f.estudiante_id===eid||f.estudiante===nom);
   const ini=nom.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
   det.innerHTML=`
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--brd)">
-        <div style="width:44px;height:44px;border-radius:50%;background:var(--ibg);color:var(--ic);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0">${ini}</div>
+    <div class="ce-card">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--color-brd)">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--color-ibg);color:var(--color-ic);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0">${ini}</div>
         <div>
           <div style="font-size:14px;font-weight:600">${nom}</div>
-          <div style="font-size:12px;color:var(--mut)">Curso ${cur} · ${faltas.length} faltas en ${getAnio()}</div>
+          <div style="font-size:12px;color:var(--color-muted)">Curso ${cur} · ${faltas.length} faltas en ${getAnio()}</div>
         </div>
         <div style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap">${['Tipo I','Tipo II','Tipo III'].map(t=>`${bdg(t)} <span style="font-size:12px;font-weight:600;margin-right:4px">${faltas.filter(f=>f.tipo_falta===t).length}</span>`).join('')}</div>
         <button class="btn btn-g btn-xs" onclick="window.location.href='/api/reporte-estudiante?estudiante=${encodeURIComponent(nom)}&anio=todos'">CSV historial</button>
@@ -1483,14 +1485,14 @@ async function renderPerfilDet(){
 async function renderSACol(tab){
   const cols=await api('/api/colegios');
   const tagR={Coordinador:'t-co',Director:'t-di',Orientador:'t-or',Docente:'t-doc'};
-  tab.innerHTML=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-p" onclick="openNuevoCol()">+ Nueva institución</button></div>`;
+  tab.innerHTML=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="ce-btn" onclick="openNuevoCol()">+ Nueva institución</button></div>`;
   cols.forEach(col=>{
     const d=document.createElement('div');d.className='col-card';
     d.innerHTML=`
       <div class="col-head">
         <div><h3>${col.nombre}</h3><small>NIT: ${col.nit||'—'} · ${col.municipio||'—'} · Rector: ${col.rector||'—'}</small></div>
         <div style="display:flex;gap:6px;align-items:center">
-          <span style="color:rgba(255,255,255,.4);font-size:11px">${col.num_estudiantes} est · ${col.num_usuarios} usr</span>
+          <span style="color:color-mix(in srgb,var(--color-surface) 42%,transparent);font-size:11px">${col.num_estudiantes} est · ${col.num_usuarios} usr</span>
           <button class="btn btn-xs btn-i" onclick="editarCol(${col.id})">Editar</button>
         </div>
       </div>
@@ -1500,7 +1502,7 @@ async function renderSACol(tab){
           <div class="cd"><label>TELÉFONO</label><span>${col.telefono||'—'}</span></div>
           <div class="cd"><label>EMAIL</label><span>${col.email||'—'}</span></div>
         </div>
-        <div style="font-size:11px;font-weight:600;color:var(--mut);letter-spacing:.06em;margin-bottom:7px">USUARIOS (${col.num_usuarios})</div>
+        <div style="font-size:11px;font-weight:600;color:var(--color-muted);letter-spacing:.06em;margin-bottom:7px">USUARIOS (${col.num_usuarios})</div>
         <div class="col-users">${(col.usuarios||[]).map(u=>`<div class="cu-chip"><span class="tag ${tagR[u.rol]||'t-doc'}">${u.rol}</span><span>${u.nombre}${u.curso?' ('+u.curso+')':''}</span></div>`).join('')}</div>
       </div>`;
     tab.appendChild(d);
@@ -1514,7 +1516,7 @@ async function verFalta(id){
   const f=await api(`/api/faltas/${id}`);
   window.verFObj=f;
   document.getElementById('verTitle').textContent=`Falta — ${f.estudiante}`;
-  document.getElementById('verBdgs').innerHTML=bdg(f.tipo_falta)+((f.tematica||'').trim()?temBdg(f.tematica):'')+estGestionBdg(f)+`<span class="bdg bg">${f.curso}</span><span class="bdg bg">${f.anio}</span>`;
+  document.getElementById('verBdgs').innerHTML=bdg(f.tipo_falta)+((f.tematica||'').trim()?temBdg(f.tematica):'')+estGestionBdg(f)+`<span class="ce-badge">${f.curso}</span><span class="ce-badge">${f.anio}</span>`;
   const vtr=document.getElementById('vTemRow');
   const vtb=document.getElementById('vTemBdg');
   const ttx=(f.tematica||'').trim();
@@ -1560,7 +1562,7 @@ async function verFalta(id){
     }else if(c.estado==='confirmada'){
       h=`<p><strong>Cita confirmada</strong> · ${escHtml(fh||'—')}</p>`;
     }else if(c.estado==='rechazada'||c.estado==='cancelada'){
-      h=`<p style="color:var(--mut)">Cita ${c.estado==='rechazada'?'rechazada':'cancelada'}.</p>`;
+      h=`<p style="color:var(--color-muted)">Cita ${c.estado==='rechazada'?'rechazada':'cancelada'}.</p>`;
     }else{
       h=`<p>${escHtml(c.estado||'—')}</p>`;
     }
@@ -1849,9 +1851,9 @@ function syncAdjuntosUI(f){
     box.innerHTML='<div class="empty" style="font-size:12px;padding:6px 0">Sin archivos.</div>';
     return;
   }
-  box.innerHTML=adj.map(a=>`<div class="adj-row" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--brd)">
-    <div><span class="bdg bg">${escHtml(catAdjLbl(a.categoria))}</span> <strong>${escHtml(a.nombre_original||'archivo')}</strong>
-    <div style="font-size:10px;color:var(--mut);margin-top:3px">${escHtml(a.subido_por_nombre||'')} · ${escHtml(a.creado_en||'')}</div></div>
+  box.innerHTML=adj.map(a=>`<div class="adj-row" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--color-brd)">
+    <div><span class="ce-badge">${escHtml(catAdjLbl(a.categoria))}</span> <strong>${escHtml(a.nombre_original||'archivo')}</strong>
+    <div style="font-size:10px;color:var(--color-muted);margin-top:3px">${escHtml(a.subido_por_nombre||'')} · ${escHtml(a.creado_en||'')}</div></div>
     <div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap">
       <a class="btn btn-xs btn-g" href="/api/faltas/${f.id}/adjuntos/${a.id}" target="_blank" rel="noopener">Descargar</a>
       ${puedeBorrarAdj(a)?`<button type="button" class="btn btn-xs btn-d" onclick="borrarAdjunto(${f.id},${a.id})">Eliminar</button>`:''}
@@ -2213,7 +2215,7 @@ async function ejecutarImport(){
     toast(msg,ne&&!r.insertados?'e':undefined);
     if(ne){
       const prev=document.getElementById('impPreview');
-      if(prev)prev.innerHTML=`<div class="abanner" style="margin-top:8px;font-size:12px;max-height:220px;overflow:auto;border-left:3px solid #e74c3c;padding-left:8px">`+
+      if(prev)prev.innerHTML=`<div class="abanner" style="margin-top:8px;font-size:12px;max-height:220px;overflow:auto;border-left:3px solid var(--color-t3);padding-left:8px">`+
         (r.errores||[]).slice(0,40).map(e=>`<div>${escHtml(String(e))}</div>`).join('')+
         (ne>40?`<div class="mut" style="margin-top:6px">… y ${ne-40} más</div>`:'')+`</div>`;
     }
@@ -2240,8 +2242,7 @@ let toastT;
 function toast(msg,type){
   const t=document.getElementById('toast');
   t.textContent=msg;
-  const r=getComputedStyle(document.documentElement);
-  t.style.borderLeftColor=type==='e'?'#e74c3c':(r.getPropertyValue('--emerald').trim()||'#009368');
+  t.style.borderLeftColor=type==='e'?'var(--color-t3)':'var(--color-emerald)';
   t.classList.add('show');
   clearTimeout(toastT);
   toastT=setTimeout(()=>t.classList.remove('show'),3500);

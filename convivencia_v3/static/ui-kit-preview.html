@@ -3,266 +3,495 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UI kit — vista previa local (Convivencia Escolar)</title>
+  <title>Design system — Convivencia v3 (galería estática)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <!-- Mismos CSS que el dashboard (sin Flask): rutas relativas a esta carpeta -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="tailwind.css" />
   <link rel="stylesheet" href="app.css" />
   <style>
-    /* Solo en esta página: tipografía objetivo (DM) + fondo tipo prototipo */
-    .preview-page {
-      font-family: "DM Sans", "Inter", system-ui, sans-serif;
-      background: #f8fafc;
-      color: var(--ink);
-      min-height: 100vh;
-      padding: 28px 18px 56px;
+    /* Solo layout de esta página; colores vía tokens (--color-*) */
+    .ds-page{max-width:1100px;margin:0 auto;padding:0 18px 64px}
+    .ds-hero{
+      margin:0 -18px 28px;padding:22px 18px 26px;
+      background:linear-gradient(135deg,var(--color-navy) 0%,color-mix(in srgb,var(--color-navy) 72%,var(--color-emerald)) 100%);
+      color:var(--color-surf);border-bottom:1px solid color-mix(in srgb,var(--color-surf) 18%,transparent);
+      box-shadow:0 12px 40px color-mix(in srgb,var(--color-ink) 12%,transparent);
     }
-    .preview-inner {
-      max-width: 960px;
-      margin: 0 auto;
+    .ds-hero-title{font-family:var(--font-display),system-ui,sans-serif;font-size:clamp(1.05rem,2.5vw,1.35rem);font-weight:600;letter-spacing:-0.02em;line-height:1.25;margin:0}
+    .ds-hero-note{font-size:12px;opacity:.88;margin:10px 0 0;max-width:62ch;line-height:1.5}
+    .ds-h2{font-family:var(--font-display),system-ui,sans-serif;font-size:1.08rem;font-weight:600;color:var(--color-navy);margin:0 0 12px;letter-spacing:-0.02em}
+    .ds-h3{font-size:13px;font-weight:600;color:var(--color-muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px}
+    .ds-section{margin-bottom:36px}
+    .ds-lead{font-size:13px;color:var(--color-muted);line-height:1.55;margin:-4px 0 14px;max-width:65ch}
+    .ds-note{font-size:12px;color:var(--color-muted);padding:10px 14px;border:1px dashed var(--color-brd);border-radius:var(--radius-sm);background:var(--color-surf);margin-bottom:18px;line-height:1.5}
+    .ds-swatch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}
+    .ds-swatch{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--color-brd);border-radius:var(--radius-sm);background:var(--color-surf)}
+    .ds-swatch-chip{height:40px;border-radius:var(--radius-sm);border:1px solid var(--color-brd)}
+    .ds-swatch code{font-size:10px;color:var(--color-text-soft);word-break:break-all;line-height:1.35;font-family:var(--font-mono),ui-monospace,monospace}
+    .ds-font-row{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+    .ds-font-card{border:1px solid var(--color-brd);border-radius:var(--radius-md);padding:14px 16px;background:var(--color-surf)}
+    .ds-font-label{font-size:11px;font-weight:600;color:var(--color-muted);letter-spacing:.05em;margin-bottom:8px}
+    .ds-flex-gap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .ds-modal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:18px}
+    .ds-mod-intro{font-size:12px;color:var(--color-muted);margin:0 0 8px}
+    /* Réplicas de overlay: anula fixed fullscreen para incrustar en la galería */
+    .ds-ov-demo.ov,.ds-ov-demo.ce-modal-overlay{
+      position:relative;display:flex;align-items:flex-start;justify-content:center;
+      padding:14px;background:color-mix(in srgb,var(--color-ink) 22%,transparent);
+      border-radius:var(--radius-md);overflow:hidden;min-height:120px;
     }
-    .preview-h1 {
-      font-family: "DM Serif Display", "Space Grotesk", Georgia, serif;
-      font-size: 1.85rem;
-      font-weight: 400;
-      color: #1a2e4a;
-      letter-spacing: -0.02em;
-      margin: 0 0 8px;
-      line-height: 1.2;
+    .ds-ov-demo .modal,.ds-ov-demo .ce-modal{margin:0;max-height:min(340px,55vh);width:100%;box-shadow:0 18px 40px color-mix(in srgb,var(--color-ink) 35%,transparent)}
+    .ds-ov-demo .mb{max-height:min(220px,42vh)}
+    .ds-ov-demo .mh-l small{font-size:11px}
+    .ds-toast-fake{
+      display:inline-block;background:var(--color-navy);color:var(--color-surf);padding:10px 15px;border-radius:var(--r);
+      font-size:12px;border-left:3px solid var(--color-emerald);margin-right:12px;margin-top:6px;
     }
-    .preview-lead {
-      font-size: 14px;
-      line-height: 1.55;
-      color: #64748b;
-      margin: 0 0 22px;
-      max-width: 58ch;
-    }
-    .preview-note {
-      font-size: 12px;
-      line-height: 1.5;
-      color: #64748b;
-      padding: 10px 14px;
-      border: 1px dashed #cbd5e1;
-      border-radius: 10px;
-      margin-bottom: 22px;
-      background: #fff;
-    }
-    .preview-section-title {
-      font-family: "DM Serif Display", Georgia, serif;
-      font-size: 1.05rem;
-      color: #1a2e4a;
-      margin: 0 0 12px;
-    }
-    .preview-section {
-      margin-bottom: 32px;
-    }
-    /* Reutiliza reglas #ov-falta .falta-catref de app.css */
-    #ov-falta.preview-falta-scope {
-      position: static;
-      display: block;
-      padding: 0;
-      background: transparent;
-      overflow: visible;
-    }
-    .preview-grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-    }
-    @media (max-width: 720px) {
-      .preview-grid-3 {
-        grid-template-columns: 1fr;
-      }
-    }
-    .preview-asist-card {
-      border-radius: 12px;
-      margin-bottom: 12px;
-    }
-    .preview-asist-card--focus {
-      border-color: #1a2e4a !important;
-      box-shadow: 0 0 0 1px rgba(26, 46, 74, 0.12);
-    }
-    .preview-kv {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 600;
-      color: #64748b;
-      margin-bottom: 6px;
-    }
+    .ds-toast-fake.ds-toast-err{border-left-color:var(--color-t3)}
   </style>
 </head>
-<body class="preview-page">
-  <div class="preview-inner">
-    <h1 class="preview-h1">Vista previa del UI kit</h1>
-    <p class="preview-lead">
-      Archivo estático para revisar colores, tarjetas, tablas y componentes sin subir cambios a GitHub.
-      Carga los mismos <code>tailwind.css</code> y <code>app.css</code> que usa el dashboard.
+<body class="min-h-screen">
+  <header class="ds-hero" role="banner">
+    <h1 class="ds-hero-title">DESIGN SYSTEM — Convivencia v3 — 21 de abril de 2026</h1>
+    <p class="ds-hero-note">
+      Galería local de componentes y tokens definidos en <code>styles/tailwind-input.css</code> (<code>@theme</code>) y estilos compartidos en <code>app.css</code>.
+      Abra este archivo desde la carpeta <code>static</code> o sirva la carpeta con un servidor estático.
     </p>
-    <div class="preview-note">
-      <strong>Uso:</strong> abra este HTML desde el explorador (doble clic) en
-      <code>convivencia_v3/static/ui-kit-preview.html</code>, o sirva la carpeta <code>static</code> con cualquier servidor local.
-      Si los estilos no cargan, compruebe que <code>tailwind.css</code> y <code>app.css</code> estén en la misma carpeta.
+  </header>
+
+  <div class="ds-page">
+    <div class="ds-note">
+      <strong>Uso:</strong> requiere <code>tailwind.css</code> y <code>app.css</code> en la misma carpeta. Los modales abajo son <strong>réplicas estáticas</strong> (mismas clases que en <code>templates/dashboard.html</code>); no ejecutan <code>app.js</code>.
     </div>
 
-    <section class="preview-section" aria-labelledby="sec-form">
-      <h2 id="sec-form" class="preview-section-title">Formulario — referencia (Registrar falta)</h2>
-      <div class="card">
-        <div class="ch">
-          <h3>Registrar falta</h3>
-          <small class="mut">Ejemplo de jerarquía: título + ayuda breve</small>
+    <!-- Tipografía -->
+    <section class="ds-section" aria-labelledby="sec-type">
+      <h2 id="sec-type" class="ds-h2">Tipografía</h2>
+      <p class="ds-lead">Cuerpo e interfaz usan Inter; títulos de cabecera y modales usan Space Grotesk (<code>var(--font-display)</code>); números tabulares con JetBrains Mono.</p>
+      <div class="ds-font-row">
+        <div class="ds-font-card">
+          <div class="ds-font-label">Sans — var(--font-sans)</div>
+          <p style="font-family:var(--font-sans),system-ui,sans-serif;font-size:15px;line-height:1.55;margin:0;color:var(--color-ink)">
+            Registro disciplinar y convivencia escolar. Inter 400/500/600 para UI y formularios.
+          </p>
         </div>
-        <div style="padding: 16px 18px 18px">
-          <div class="fr fr1">
-            <div>
-              <label class="fl">Estudiante *</label>
-              <select><option>Valeria Martínez — 9°A</option></select>
-            </div>
-          </div>
-          <div class="fr fr1" style="margin-top: 4px">
-            <div>
-              <label class="fl">Falta específica *</label>
-              <select><option>[T1F10] Uso de bicicletas ajenas sin permiso</option></select>
-            </div>
-          </div>
-
-          <div id="ov-falta" class="preview-falta-scope" style="margin-top: 14px">
-            <div class="falta-catref" style="display: block">
-              <div>✦ CLASIFICACIÓN AUTOMÁTICA ASIGNADA</div>
-              <p>Texto explicativo breve según el catálogo y la descripción (se muestra en gris para no competir con el título).</p>
-              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-                <span class="bdg b1"><span class="dot dg"></span>Tipo I • Falta leve</span>
-                <span class="tem-pill" style="background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe">Normas de convivencia</span>
-              </div>
-              <div class="falta-catref-gap">
-                <div class="plbl">Protocolo sugerido</div>
-                <div class="pbox t1">Diálogo entre partes y acuerdo escrito en el observador.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="preview-grid-3" style="margin-top: 18px">
-            <div>
-              <div class="preview-kv">Fecha *</div>
-              <input type="date" value="2026-04-21" />
-            </div>
-            <div>
-              <div class="preview-kv">Hora *</div>
-              <input type="time" value="09:30" />
-            </div>
-            <div>
-              <div class="preview-kv">Reportado por</div>
-              <input type="text" value="Ana Coordinadora" readonly />
-            </div>
-          </div>
+        <div class="ds-font-card">
+          <div class="ds-font-label">Display — var(--font-display)</div>
+          <p style="font-family:var(--font-display),system-ui,sans-serif;font-size:20px;font-weight:600;letter-spacing:-0.02em;margin:0;color:var(--color-navy)">
+            Convivencia Escolar
+          </p>
+          <p class="mut" style="margin:8px 0 0;font-size:12px">Títulos barra superior, <code>.mh-l h3</code>, <code>.ch h3</code></p>
+        </div>
+        <div class="ds-font-card">
+          <div class="ds-font-label">Mono — var(--font-mono)</div>
+          <p class="tabular-nums" style="font-size:18px;margin:0;color:var(--color-ink)">2026-04-21 · 09:30 · 1 248</p>
+          <p class="mut" style="margin:8px 0 0;font-size:12px"><code>.tabular-nums</code> / estadísticas</p>
         </div>
       </div>
     </section>
 
-    <section class="preview-section" aria-labelledby="sec-tabs">
-      <h2 id="sec-tabs" class="preview-section-title">Pestañas (Prevención)</h2>
-      <div class="card" style="padding: 14px 16px 16px">
-        <div class="tabs" style="margin-bottom: 12px">
+    <!-- Tokens @theme: colores -->
+    <section class="ds-section" aria-labelledby="sec-colors">
+      <h2 id="sec-colors" class="ds-h2">Colores del <code>@theme</code></h2>
+      <p class="ds-lead">Muestra de variables consumidas como <code>var(--color-…)</code> en <code>app.css</code> y en plantillas.</p>
+      <div class="ds-swatch-grid" id="dsColorSwatches"></div>
+    </section>
+
+    <!-- Radios -->
+    <section class="ds-section" aria-labelledby="sec-radius">
+      <h2 id="sec-radius" class="ds-h2">Radios</h2>
+      <div class="ds-flex-gap">
+        <div class="ds-swatch" style="max-width:160px"><div class="ds-swatch-chip" style="border-radius:var(--radius-sm);background:var(--color-ibg)"></div><code>--radius-sm</code></div>
+        <div class="ds-swatch" style="max-width:160px"><div class="ds-swatch-chip" style="border-radius:var(--radius-md);background:var(--color-t2g)"></div><code>--radius-md</code></div>
+      </div>
+    </section>
+
+    <!-- Botones .btn y ce-* -->
+    <section class="ds-section" aria-labelledby="sec-btn">
+      <h2 id="sec-btn" class="ds-h2">Botones <code>.btn</code> (legacy) y <code>.ce-btn</code></h2>
+      <p class="ds-lead"><code>.btn.btn-p</code> comparte reglas con <code>.ce-btn</code>. Secundario neutro: <code>.btn</code> sin variante o <code>.ce-btn-secondary</code>.</p>
+      <div class="ce-card" style="padding:16px 18px">
+        <div class="ds-h3">Legacy .btn</div>
+        <div class="ds-flex-gap" style="margin-bottom:14px">
+          <button type="button" class="btn">Secundario (.btn)</button>
+          <button type="button" class="btn btn-p">Primario (.btn-p)</button>
+          <button type="button" class="btn btn-d">Peligro (.btn-d)</button>
+          <button type="button" class="btn btn-g">Éxito suave (.btn-g)</button>
+          <button type="button" class="btn btn-i">Info (.btn-i)</button>
+        </div>
+        <div class="ds-flex-gap" style="margin-bottom:14px">
+          <button type="button" class="btn btn-xs">.btn-xs</button>
+          <button type="button" class="btn btn-p btn-xs">.btn-p.btn-xs</button>
+        </div>
+        <div class="ds-h3">Librería ce-*</div>
+        <div class="ds-flex-gap">
+          <button type="button" class="ce-btn-secondary">ce-btn-secondary</button>
+          <button type="button" class="ce-btn">ce-btn</button>
+          <button type="button" class="ce-btn-secondary ce-btn-xs">ce-btn-secondary ce-btn-xs</button>
+          <button type="button" class="ce-btn ce-btn-xs">ce-btn ce-btn-xs</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards -->
+    <section class="ds-section" aria-labelledby="sec-cards">
+      <h2 id="sec-cards" class="ds-h2">Tarjetas: <code>.ce-card</code> / <code>.card</code> y <code>.fcard</code></h2>
+      <div class="ce-card" style="margin-bottom:12px">
+        <div class="ch"><h3>ce-card + .ch</h3><span class="ce-badge">Ejemplo</span></div>
+        <div style="padding:14px 16px;font-size:13px;color:var(--color-text-soft)">Contenido con borde y cabecera estándar.</div>
+      </div>
+      <p class="ds-h3" style="margin-top:18px">fcard — lista / hover (borde acento Tipo II, III, reiteración)</p>
+      <div class="fcard"><div class="fc-top"><span class="fc-est">2026-04-20 · 7°B</span><span class="ce-badge">Matemáticas</span></div><div class="fc-meta"><span>Docente</span><span>10:12</span></div><div class="fc-desc">Descripción breve de una falta o registro en tarjeta clicable.</div></div>
+      <div class="fcard t2"><div class="fc-top"><span class="fc-est">.fcard.t2</span><span class="ce-badge ce-badge-t2">Tipo II</span></div><div class="fc-meta"><span>Sistema</span></div><div class="mut" style="font-size:12px">Borde izquierdo ámbar.</div></div>
+      <div class="fcard t3"><div class="fc-top"><span class="fc-est">.fcard.t3</span><span class="ce-badge ce-badge-t3">Tipo III</span></div><div class="mut" style="font-size:12px">Borde izquierdo rojo.</div></div>
+      <div class="fcard t1r"><div class="fc-top"><span class="fc-est">.fcard.t1r</span><span class="ce-badge ce-badge-t1">Reiteración</span></div><div class="mut" style="font-size:12px">Mismo acento que alertas Tipo II.</div></div>
+    </section>
+
+    <!-- abanner -->
+    <section class="ds-section" aria-labelledby="sec-ab">
+      <h2 id="sec-ab" class="ds-h2"><code>.abanner</code></h2>
+      <div class="ce-card" style="padding:16px 18px">
+        <div class="abanner ab-i"><strong>ab-i</strong> — información (fondo azul suave del tema).</div>
+        <div class="abanner ab-a"><strong>ab-a</strong> — atención / advertencia leve.</div>
+        <div class="abanner ab-r"><strong>ab-r</strong> — error o riesgo.</div>
+        <div class="abanner ab-g" style="margin-bottom:0"><strong>ab-g</strong> — éxito / confirmación.</div>
+      </div>
+    </section>
+
+    <!-- Badges y pills -->
+    <section class="ds-section" aria-labelledby="sec-bdg">
+      <h2 id="sec-bdg" class="ds-h2">Badges y pills</h2>
+      <p class="ds-lead">Tipos de falta y gestión (<code>.bdg</code> / <code>.ce-badge</code>), estados de expediente (<code>.beg-*</code>) y dimensión temática (<code>.tem-pill.tem-t1|t2|t3|info</code>).</p>
+      <div class="ce-card" style="padding:16px 18px">
+        <div class="ds-h3" style="margin-top:0">Tipos de falta — <code>.bdg .b1</code> / <code>.b2</code> / <code>.b3</code></div>
+        <div class="ds-flex-gap" style="margin-bottom:12px">
+          <span class="bdg b1"><span class="dot dg"></span>Tipo I</span>
+          <span class="bdg b2"><span class="dot da"></span>Tipo II</span>
+          <span class="bdg b3"><span class="dot dr"></span>Tipo III</span>
+        </div>
+        <div class="ds-h3">Neutral e info — <code>.bdg .bg</code>, <code>.bdg .bi</code></div>
+        <div class="ds-flex-gap" style="margin-bottom:12px">
+          <span class="bdg bg">Neutral (.bg)</span>
+          <span class="bdg bi">Informativo (.bi)</span>
+        </div>
+        <div class="ds-h3">Estados de gestión — <code>.bdg .beg-pe</code> / <code>.beg-er</code> / <code>.beg-ce</code></div>
+        <div class="ds-flex-gap" style="margin-bottom:12px">
+          <span class="bdg beg-pe">Pendiente</span>
+          <span class="bdg beg-er">En revisión</span>
+          <span class="bdg beg-ce">Cerrada</span>
+        </div>
+        <div class="ds-h3">Temáticas — <code>.tem-pill.tem-t1</code> / <code>.tem-t2</code> / <code>.tem-t3</code> / <code>.tem-info</code></div>
+        <div class="ds-flex-gap" style="margin-bottom:12px;align-items:flex-start">
+          <span class="tem-pill tem-t1">t1 · prevención / bienestar</span>
+          <span class="tem-pill tem-t2">t2 · normas / académico</span>
+          <span class="tem-pill tem-t3">t3 · convivencia interpersonal</span>
+          <span class="tem-pill tem-info">info · otras temáticas</span>
+        </div>
+        <div class="ds-h3"><code>.ce-badge</code> (sistema nuevo)</div>
+        <div class="ds-flex-gap" style="margin-bottom:10px">
+          <span class="ce-badge">Neutral</span>
+          <span class="ce-badge ce-badge-t1"><span class="ce-badge-dot"></span>Tipo I</span>
+          <span class="ce-badge ce-badge-t2"><span class="ce-badge-dot"></span>Tipo II</span>
+          <span class="ce-badge ce-badge-t3"><span class="ce-badge-dot"></span>Tipo III</span>
+        </div>
+        <div class="ds-flex-gap" style="margin-bottom:10px">
+          <span class="ce-badge ce-badge-gest-pe">Pendiente</span>
+          <span class="ce-badge ce-badge-gest-er">En revisión</span>
+          <span class="ce-badge ce-badge-gest-ce">Cerrada</span>
+        </div>
+        <p class="mut" style="font-size:12px;margin:0">Reiteración: <span class="reit-bdg crit">.reit-bdg.crit</span></p>
+      </div>
+    </section>
+
+    <!-- Tabla -->
+    <section class="ds-section" aria-labelledby="sec-table">
+      <h2 id="sec-table" class="ds-h2">Tabla — <code>.ce-table-wrap</code> / <code>.ce-table</code></h2>
+      <div class="ce-table-wrap">
+        <table class="ce-table">
+          <thead><tr><th>Fecha</th><th>Estado</th><th>Detalle</th></tr></thead>
+          <tbody>
+            <tr><td>2026-04-19</td><td><span class="ce-badge">Pendiente</span></td><td class="mut">Ejemplo de fila</td></tr>
+            <tr><td>2026-04-18</td><td><span class="ce-badge ce-badge-t1">Tipo I</span></td><td class="mut">Hover en fila</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tabs + falta ref -->
+    <section class="ds-section" aria-labelledby="sec-misc">
+      <h2 id="sec-misc" class="ds-h2">Pestañas y bloque catálogo (registrar falta)</h2>
+      <div class="ce-card" style="padding:14px 16px">
+        <div class="tabs" style="margin-bottom:12px">
           <button type="button" class="tab-btn on">Alertas ciudadanas</button>
           <button type="button" class="tab-btn">Conductas de riesgo</button>
         </div>
-        <p class="mut" style="margin: 0; font-size: 12px; line-height: 1.5">
-          Estado activo: <code>.tab-btn.on</code> (sin botón verde sólido; más limpio y alineado al prototipo).
-        </p>
+        <div class="falta-catref" style="display:block;margin-top:8px">
+          <div>REFERENCIA DEL CATÁLOGO</div>
+          <p style="font-size:12px;margin:8px 0">Texto guía; badges de tipo y temática.</p>
+          <div class="ds-flex-gap">
+            <span class="bdg b1"><span class="dot dg"></span>Tipo I</span>
+            <span class="tem-pill tem-t2">Normas de convivencia</span>
+          </div>
+          <div class="falta-catref-gap">
+            <div class="plbl">Protocolo sugerido</div>
+            <div class="pbox t1">Diálogo entre partes y acuerdo escrito.</div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="preview-section" aria-labelledby="sec-badges">
-      <h2 id="sec-badges" class="preview-section-title">Badges y alertas</h2>
-      <div class="card" style="padding: 14px 16px">
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px">
-          <span class="bdg bg">Pendientes: <strong>1</strong></span>
-          <span class="bdg bg">Urgentes: <strong>0</strong></span>
-          <span class="bdg b1"><span class="dot dg"></span>Tipo I</span>
-          <span class="bdg b2"><span class="dot da"></span>Tipo II</span>
-          <span class="reit-bdg crit">Urgente</span>
-        </div>
-        <div class="abanner ab-i">Información (azul suave)</div>
-        <div class="abanner ab-a" style="margin-top: 8px">Atención (ámbar suave)</div>
-        <div class="abanner ab-r" style="margin-top: 8px">Error o riesgo alto</div>
+    <!-- Modales -->
+    <section class="ds-section" aria-labelledby="sec-modals">
+      <h2 id="sec-modals" class="ds-h2">Modales (<code>.ov.ce-modal-overlay</code> + <code>.modal.ce-modal</code>)</h2>
+      <p class="ds-lead">Cada bloque reproduce la misma jerarquía que el overlay correspondiente en <code>dashboard.html</code> (clases y tamaños típicos). Aquí el contenedor <code>.ds-ov-demo</code> sustituye el posicionamiento fijo del overlay real.</p>
+
+      <div class="ds-modal-grid">
+
+        <article>
+          <h3 class="ds-h3">#ov-falta</h3>
+          <p class="ds-mod-intro">Registrar falta — <code>modal-lg</code>, pie con <code>ce-btn-secondary</code> + <code>ce-btn</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh falta-mh"><div class="mh-l"><h3>Registrar falta</h3><small>Ejemplo — pasos resumidos</small></div><button type="button" class="falta-close" aria-label="Cerrar">×</button></div>
+              <div class="mb falta-mb"><div class="abanner ab-r" style="margin-bottom:10px;font-size:12px">Alerta Tipo II/III (demo).</div><div class="fr fr1"><div><label class="fl">Campo</label><select><option>Ejemplo</option></select></div></div></div>
+              <div class="mf falta-mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Registrar falta</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-ver</h3>
+          <p class="ds-mod-intro">Detalle de falta + timeline — <code>modal-lg</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Detalle de falta</h3></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><p class="mut" style="font-size:12px">Cuerpo con timeline (<code>#verTL</code> en la app).</p></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cerrar</button><button type="button" class="ce-btn">Guardar observación</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-est</h3>
+          <p class="ds-mod-intro">Estudiante — <code>.mh.est-mh</code>, <code>modal-lg</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh est-mh">
+                <div class="est-mh-leading"><button type="button" class="ce-btn btn-est-reset ce-btn-xs">Restablecer contraseña</button></div>
+                <div class="mh-l est-mh-title"><h3>Nuevo estudiante</h3><small>Texto de ayuda</small></div>
+                <button type="button" class="mh-ghost-close" aria-label="Cerrar">×</button>
+              </div>
+              <div class="mb"><div class="fsec" style="padding-top:0;border-top:none">DATOS DEL ESTUDIANTE</div><div class="fr fr1"><div><label class="fl">Curso</label><select><option>6A</option></select></div></div></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Guardar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-usr</h3>
+          <p class="ds-mod-intro">Usuario — <code>modal-lg</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Nuevo usuario</h3></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><div class="fr"><div><label class="fl">Usuario</label><input placeholder="login" /></div><div><label class="fl">Rol</label><select><option>Docente</option></select></div></div></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Guardar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-col</h3>
+          <p class="ds-mod-intro">Institución — modal estándar (sin <code>modal-lg</code>).</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal ce-modal">
+              <div class="mh"><div class="mh-l"><h3>Nueva institución</h3></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><div class="fr fr1"><div><label class="fl">Nombre</label><input placeholder="I.E. …" /></div></div></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Guardar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-import</h3>
+          <p class="ds-mod-intro">Carga masiva CSV — <code>modal-lg</code>, <code>.abanner.ab-i</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Carga masiva de estudiantes</h3><small>Formato CSV / columnas</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><div class="abanner ab-i" style="font-size:12px;margin-bottom:10px"><strong>CSV UTF-8</strong> — instrucciones breves.</div><label class="fl">Pegar datos</label><textarea rows="3" placeholder="# línea de ejemplo…"></textarea></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="btn btn-g">Previsualizar</button><button type="button" class="ce-btn">Importar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-proto-edit</h3>
+          <p class="ds-mod-intro">Protocolo / sanción — modal ancho máx. ~520px en dashboard.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal ce-modal" style="max-width:520px">
+              <div class="mh"><div class="mh-l"><h3>Protocolo, sanción y temática</h3><small>—</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><div class="abanner ab-i" style="margin-bottom:10px;font-size:12px">Texto informativo.</div><label class="fl">Protocolo</label><textarea rows="2"></textarea></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Guardar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-cat-new</h3>
+          <p class="ds-mod-intro">Nueva falta al catálogo — <code>max-width:500px</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal ce-modal" style="max-width:500px">
+              <div class="mh"><div class="mh-l"><h3>Nueva falta al catálogo</h3></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><div class="abanner ab-i" style="font-size:12px;margin-bottom:10px">Complete protocolo en la barra lateral.</div><div class="fr fr1"><div><label class="fl">Descripción</label><input /></div></div></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Agregar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-cat-bulk</h3>
+          <p class="ds-mod-intro">Carga masiva catálogo — <code>modal-lg</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Carga masiva al catálogo</h3><small>Una línea por ítem</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><textarea rows="4" style="font-family:var(--font-mono),monospace;font-size:12px" placeholder="Tipo I,Descripción"></textarea></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Importar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-ayuda-prev</h3>
+          <p class="ds-mod-intro">Ayuda prevención — <code>max-width:640px</code>, sin pie en plantilla.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal ce-modal" style="max-width:640px">
+              <div class="mh"><div class="mh-l"><h3>Prevención — ¿Qué significa cada bloque?</h3><small>Guía rápida</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb" style="padding:14px 16px;line-height:1.5"><p style="font-size:12px;margin:0;color:var(--color-ink)">Contenido de ayuda con listas y párrafos.</p></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-prom-create</h3>
+          <p class="ds-mod-intro">Nueva actividad de promoción — <code>modal-lg</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Nueva actividad de promoción</h3><small>Planeación y público</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb" style="padding:12px 14px"><div class="fr fr1"><div><label class="fl">Título</label><input placeholder="Taller…" /></div></div></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Guardar actividad</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-prom</h3>
+          <p class="ds-mod-intro">Detalle / edición promoción — pie con cerrar, eliminar, guardar.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Actividad de promoción</h3><small>Subtítulo</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb" style="padding:12px 14px"><p class="mut" style="font-size:12px;margin:0">Formulario de edición + evidencias.</p></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cerrar</button><button type="button" class="btn btn-d">Eliminar</button><button type="button" class="ce-btn">Guardar cambios</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-senal</h3>
+          <p class="ds-mod-intro">Conducta de riesgo — <code>.abanner.ab-r</code>, bloque acción <code>var(--color-ibg)</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Registrar conducta de riesgo</h3></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb">
+                <div class="abanner ab-r" style="font-size:11px;margin-bottom:10px">Registro institucional — datos observables.</div>
+                <div style="padding:10px 12px;background:var(--color-ibg);border-radius:var(--radius-sm);border:1px solid var(--color-brd)"><div class="plbl" style="font-size:10px">Acción asociada</div><div class="mut" style="font-size:12px">—</div></div>
+              </div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Enviar registro</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-gestion</h3>
+          <p class="ds-mod-intro">Cierre de gestión — <code>max-width:440px</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal ce-modal" style="max-width:440px">
+              <div class="mh"><div class="mh-l"><h3>Cierre de gestión del expediente</h3><small>Solo coordinación</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb" style="font-size:12px"><p class="fhint">Opciones de estado.</p><label style="display:flex;gap:8px;margin-bottom:8px;cursor:pointer"><input type="radio" name="ds-gest" /> Automático</label><label style="display:flex;gap:8px;cursor:pointer"><input type="radio" name="ds-gest" /> Cerrada</label></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Guardar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-cita-solic</h3>
+          <p class="ds-mod-intro">Solicitud de cita — <code>max-width:420px</code>.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal ce-modal" style="max-width:420px">
+              <div class="mh"><div class="mh-l"><h3>Agendar cita</h3><small>La institución propondrá fecha</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><label class="fl">¿Con quién?</label><select><option>Orientador</option></select></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cancelar</button><button type="button" class="ce-btn">Enviar solicitud</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-prev-det</h3>
+          <p class="ds-mod-intro">Detalle prevención — solo Cerrar en pie.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Detalle</h3><small>Alerta / conducta</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb"><p class="mut" style="font-size:12px;margin:0">Cuerpo dinámico <code>#prevDetBody</code>.</p></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cerrar</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article>
+          <h3 class="ds-h3">#ov-rep-bit</h3>
+          <p class="ds-mod-intro">Bitácora alerta ciudadana — cuerpo con scroll.</p>
+          <div class="ds-ov-demo ov ce-modal-overlay" aria-hidden="true">
+            <div class="modal modal-lg ce-modal ce-modal-lg">
+              <div class="mh"><div class="mh-l"><h3>Bitácora — alerta ciudadana</h3><small class="mut">Historial</small></div><button type="button" aria-label="Cerrar">×</button></div>
+              <div class="mb" style="max-height:140px;overflow:auto;padding:8px 12px;font-size:12px"><div>2026-04-20 — Estado cambiado…</div><div>2026-04-19 — Creado…</div></div>
+              <div class="mf"><button type="button" class="ce-btn-secondary">Cerrar</button></div>
+            </div>
+          </div>
+        </article>
+
       </div>
     </section>
 
-    <section class="preview-section" aria-labelledby="sec-table">
-      <h2 id="sec-table" class="preview-section-title">Tabla</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Recibido</th>
-              <th>Urgencia</th>
-              <th>Estudiante</th>
-              <th>Resumen</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="font-size: 12px">2026-04-20 14:05</td>
-              <td><span class="bdg bg">Puede esperar</span></td>
-              <td><strong>Valentina Torres</strong><div class="mut">6A</div></td>
-              <td class="mut" style="font-size: 12px">Algo malo en el colegio · Patio</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="preview-section" aria-labelledby="sec-asist">
-      <h2 id="sec-asist" class="preview-section-title">Asistencia — tarjetas historial</h2>
-      <p class="mut" style="font-size: 12px; margin: -4px 0 12px">
-        Primera tarjeta con borde acento (como en su captura); las demás neutras.
-      </p>
-      <div class="fcard preview-asist-card preview-asist-card--focus" style="cursor: default">
-        <div class="fc-top">
-          <span class="fc-est">2026-04-17 · 6A</span>
-          <span class="bdg bg">Inglés</span>
-        </div>
-        <div class="fc-meta"><span>Ana Coordinadora</span><span>2026-04-17 00:49</span></div>
-        <table style="margin-top: 8px; font-size: 12px; width: 100%; border-collapse: collapse; border: 1px solid var(--brd); border-radius: 8px; overflow: hidden">
-          <thead>
-            <tr><th>Estudiante</th><th>Justificada</th><th>Revisar</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Sebastián García</td>
-              <td>Pendiente</td>
-              <td>
-                <button type="button" class="btn btn-xs">Marcar sí</button>
-                <button type="button" class="btn btn-xs">Marcar no</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="fcard preview-asist-card" style="cursor: default">
-        <div class="fc-top">
-          <span class="fc-est">2026-04-16 · 6A</span>
-          <span class="bdg bg">Naturales</span>
-        </div>
-        <div class="fc-meta"><span>Ana Coordinadora</span><span>2026-04-16 10:12</span></div>
-        <div class="mut" style="margin-top: 8px; font-size: 12px">Sin ausencias registradas</div>
-      </div>
-    </section>
-
-    <section class="preview-section" aria-labelledby="sec-btns">
-      <h2 id="sec-btns" class="preview-section-title">Botones</h2>
-      <div class="card" style="padding: 14px 16px">
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-          <button type="button" class="btn">Secundario</button>
-          <button type="button" class="btn btn-p">Primario</button>
-          <button type="button" class="btn btn-d">Peligro</button>
-          <button type="button" class="btn btn-g">Éxito suave</button>
-          <button type="button" class="btn btn-i">Info</button>
-        </div>
+    <!-- Toast -->
+    <section class="ds-section" aria-labelledby="sec-toast">
+      <h2 id="sec-toast" class="ds-h2">Toast (<code>#toast</code> en la app)</h2>
+      <p class="ds-lead">En <code>app.js</code>, <code>toast()</code> asigna <code>border-left-color</code> a <code>var(--color-t3)</code> (error) o <code>var(--color-emerald)</code> (éxito). Debajo, réplicas estáticas (sin el elemento <code>#toast</code> global para no pisar el posicionamiento fijo).</p>
+      <div class="ds-flex-gap" style="align-items:flex-start">
+        <span class="ds-toast-fake">Operación correcta</span>
+        <span class="ds-toast-fake ds-toast-err">Algo salió mal</span>
       </div>
     </section>
   </div>
+
+  <script>
+    (function () {
+      var tokens = [
+        'ink','navy','emerald','emerald-dark','coral','coral-ink','sand','gold','bg-app','surf','brd','muted','text-soft',
+        't1','t1g','t1c','t2','t2g','t2c','t3','t3g','t3c','ibg','ic','iblue','chart-green','chart-amber',
+        'danger-bg','danger-border','danger-text','danger-hover','warn-border','info-border','success-border','success-hover',
+        'cita-row-border','surface-muted','edge-muted','text-slate','gest-pe-bg','gest-pe-fg','gest-er-bg','gest-er-fg','gest-ce-bg','gest-ce-fg',
+        'chrome-warm-start','chrome-warm-mid','canvas-warm-top','row-hover','gradient-table-th-start','gradient-table-th-end',
+        'tl-ori-bg','tl-ori-fg','tl-acu-bg','tl-acu-fg','tag-doc-bg','tag-doc-fg','tag-acu-bg','tag-acu-fg','tag-sa-bg','tag-sa-fg',
+        'falta-mb-start','sn-gradient-start','sn-gradient-end','sn-border','btn-secondary-hover','red-500','red-400','red-950',
+        'panel-lilac','panel-lilac-brd','adj-zone-bg','adj-zone-brd',
+        'proto-warn-fg'
+      ];
+      var root = document.getElementById('dsColorSwatches');
+      if (!root) return;
+      root.innerHTML = tokens.map(function (name) {
+        var v = 'var(--color-' + name + ')';
+        return '<div class="ds-swatch"><div class="ds-swatch-chip" style="background:' + v + '"></div><code>--color-' + name + '</code></div>';
+      }).join('');
+    })();
+  </script>
 </body>
 </html>
